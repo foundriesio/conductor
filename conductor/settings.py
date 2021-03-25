@@ -129,3 +129,4 @@ try:
     from conductor.local_settings import *
 except ImportError:
     pass
+exec(open(os.getenv('CONDUCTOR_EXTRA_SETTINGS', '/dev/null')).read())
