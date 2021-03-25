@@ -1,0 +1,105 @@
+timeouts:
+  job:
+    minutes: 20
+  connection:
+    minutes: 2
+  action:
+    minutes: 2
+context:
+  test_character_delay: 10
+  lava_test_results_dir: "/home/fio/lava-%s"
+device_type: {{ device_type }}
+job_name: basic tests
+priority: 50
+visibility: public
+metadata:
+  build-url: '{{ build_url }}'
+  build-id: '{{ build_id }}'
+  trigger: '{{ trigger }}'
+actions:
+- deploy:
+    timeout:
+      minutes: 10
+    to: flasher
+    images:
+      image:
+        url: {{ IMAGE_URL }}
+        compression: gz
+        headers:
+          OSF-TOKEN: OSF-TOKEN
+{% if device_type == "imx8mmevk" or device_type == "imx6ullevk" %}
+      bootloader:
+        url: {{ BOOTLOADER_URL }}
+        headers:
+          OSF-TOKEN: OSF-TOKEN
+{% endif %}
+{% if device_type == "imx6ullevk" %}
+      splimage:
+        url: {{ SPLIMG_URL }}
+        headers:
+          OSF-TOKEN: OSF-TOKEN
+{% endif %}
+
+- boot:
+    prompts:
+    {% for prompt in prompts %}
+     - "{{ prompt }}"
+    {% endfor %}
+    timeout:
+      minutes: 8
+    auto_login:
+      login_prompt: 'login:'
+      username: fio
+      password_prompt: "Password:"
+      password: "fio"
+      login_commands:
+      - sudo su
+      - fio
+    method: minimal
+    transfer_overlay:
+      download_command: cd /tmp ; wget
+      unpack_command: tar -C / -xzf
+
+- test:
+    timeout:
+      minutes: 15
+    definitions:
+    - repository: http://github.com/mwasilew/test-definitions.git
+      from: git
+      path: automated/linux/fs-resize/fs-resize.yaml
+      name: fs-resize
+    - repository: http://github.com/mwasilew/test-definitions.git
+      from: git
+      path: automated/linux/network-basic/network-basic.yaml
+      name: network-basic
+      params:
+        INTERFACE: "{{ net_interface }}"
+        SKIP_INSTALL: true
+        CURL: wget
+        DHCLIENT: "udhcpc -i"
+    - repository: http://github.com/mwasilew/test-definitions.git
+      from: git
+      path: automated/linux/docker/docker.yaml
+      name: docker
+      params:
+        IMAGE: "hello-world"
+    - repository: http://github.com/mwasilew/test-definitions.git
+      from: git
+      path: automated/linux/kernel-config-checker/kernel-config-checker.yaml
+      name: kernel-config-checker
+      params:
+        # add more mandatory configs here
+        CONFIG_VALUES: "CONFIG_CGROUPS"
+    - repository: http://github.com/mwasilew/test-definitions.git
+      from: git
+      path: automated/linux/ostree/ostree.yaml
+      name: ostree
+      params:
+        OSTREE_HASH: "{{ os_tree_hash }}"
+    - repository: http://github.com/mwasilew/test-definitions.git
+      from: git
+      path: automated/linux/aklite/aklite.yaml
+      name: aklite
+      params:
+        TARGET: {{ target }}
+

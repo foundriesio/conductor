@@ -1,0 +1,11 @@
+aiohttp
+amqp
+asgiref
+celery
+contextlib2
+Django
+pyzmq
+requests
+whitenoise
+zmq
+
