@@ -8,7 +8,6 @@ RUN pip3 install -r /tmp/requirements.txt
 
 COPY . /conductor-build/
 RUN cd /conductor-build/ && python3 setup.py install
-ENV CONDUCTOR_CELERY_BROKER_URL="amqp://conductor:secret@172.17.0.1/conductor"
 RUN rm -rf /conductor-build/
-COPY entrypoint.sh /root/
-ENTRYPOINT ["/root/entrypoint.sh"]
+RUN conductor-admin collectstatic
+RUN useradd -U conductor

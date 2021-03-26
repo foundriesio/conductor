@@ -1,0 +1,54 @@
+version: '3.4'
+
+x-common-config: &common_config
+  image: conductor/foundriesio
+  build:
+    context: .
+  volumes:
+    - home:/app
+    - ${EXTRA_SETTINGS_PATH}:/home/conductor_settings.py
+  environment:
+    - CONDUCTOR_CELERY_BROKER_URL="amqp://conductor:secret@172.17.0.1/conductor"
+    - CONDUCTOR_EXTRA_SETTINGS=/home/conductor_settings.py
+    - LOGLEVEL=INFO
+    - USRNAME=conductor
+    - GROUPNAME=conductor
+
+volumes:
+  home:
+
+services:
+  dbmigrate:
+    <<: *common_config
+    command: conductor-admin migrate
+    deploy:
+      restart_policy:
+        condition: none
+
+  web:
+    <<: *common_config
+    command: /usr/bin/gunicorn conductor.wsgi --log-level ${LOGLEVEL} --bind 0.0.0.0:8000
+    ports:
+      - '9000:8000'
+    depends_on:
+      - dbmigrate
+
+  tmp:
+    <<: *common_config
+    command: echo ${USRNAME}
+
+  worker:
+    <<: *common_config
+    command: conductor-worker --uid ${USRNAME} --gid ${GROUPNAME}
+    depends_on:
+      - dbmigrate
+
+  websocket:
+    <<: *common_config
+    command: conductor-ws -v 1
+    ports:
+      - '9001:8001'
+    depends_on:
+      - dbmigrate
+
+
