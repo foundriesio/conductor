@@ -111,8 +111,8 @@ CELERY_BROKER_TRANSPORT_OPTIONS = {
     'queue_name_prefix': os.getenv('CONDUCTOR_CELERY_QUEUE_NAME_PREFIX', ''),
     'polling_interval': os.getenv('CONDUCTOR_CELERY_POLL_INTERVAL', 1),
 }
-CELERY_ACCEPT_CONTENT = ['json', 'msgpack', 'yaml']
-CELERY_TASK_SERIALIZER = 'msgpack'
+CELERY_ACCEPT_CONTENT = ['json', 'yaml']
+CELERY_TASK_SERIALIZER = 'json'
 CELERY_BEAT_SCHEDULE_FILENAME = os.path.join(DATA_DIR, 'celerybeat-schedule')
 CELERY_BEAT_SCHEDULE = {}
 
@@ -129,4 +129,7 @@ try:
     from conductor.local_settings import *
 except ImportError:
     pass
-exec(open(os.getenv('CONDUCTOR_EXTRA_SETTINGS', '/dev/null')).read())
+try:
+    exec(open(os.getenv('CONDUCTOR_EXTRA_SETTINGS', '/dev/null')).read())
+except FileNotFoundError:
+    pass
