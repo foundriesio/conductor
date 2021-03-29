@@ -25,7 +25,7 @@ logger = get_task_logger(__name__)
 def _get_os_tree_hash(url, project):
     logger.debug("Retrieving ostree hash with base url: %s" % url)
     # ToDo: add headers for authentication
-    token = settings.get("FIO_API_TOKEN")
+    token = getattr(settings, "FIO_API_TOKEN", None)
     authentication = {
         "OSF-TOKEN": token,
     }
