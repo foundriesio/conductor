@@ -1,4 +1,4 @@
 include Dockerfile
+recursive-include conductor/core/templates/ *
 
 exclude           conductor/local_settings.py
-recursive-include conductor/*/templates/ *
