@@ -116,7 +116,7 @@ class LAVADeviceType(models.Model):
 
     def get_settings(self):
         if self.__settings__ is None:
-            self.__settings__ = yaml.safe_load(self.project_settings or '') or {}
+            self.__settings__ = yaml.safe_load(self.device_type_settings or '') or {}
         return self.__settings__
 
 

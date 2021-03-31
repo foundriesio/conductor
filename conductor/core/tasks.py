@@ -68,6 +68,16 @@ def create_build_run(build_id, run_url, run_name):
         "os_tree_hash": run.ostree_hash,
         "target": build.build_id,
     }
+    dt_settings = device_type.get_settings()
+    for key, value in dt_settings.items():
+        try:
+            context.update({key: value.format(run_url=run_url, run_name=run_name)})
+        except KeyError:
+            # ignore KeyError in case of misformatted string
+            pass
+        except AttributeError:
+            # ignore values that are not strings
+            pass
     template = get_template("lava_template.yaml")
     lava_job_definition = template.render(context)
     job_ids = build.project.submit_lava_job(lava_job_definition)
