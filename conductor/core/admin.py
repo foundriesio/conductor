@@ -41,6 +41,7 @@ class LAVAJobAdmin(admin.ModelAdmin):
 
 class PDUAgentAdmin(admin.ModelAdmin):
     models = models.PDUAgent
+    list_display = ['__str__', 'state']
 
 admin.site.register(models.Project, ProjectAdmin)
 admin.site.register(models.Build, BuildAdmin)
