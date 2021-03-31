@@ -5,6 +5,7 @@ celery
 contextlib2
 Django
 pyzmq
+PyYAML
 requests
 whitenoise
 zmq

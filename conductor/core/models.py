@@ -13,11 +13,24 @@
 # limitations under the License.
 
 import requests
+import yaml
 from django.db import models
 from urllib.parse import urljoin
 
 
 DEFAULT_TIMEOUT=60
+
+
+def yaml_validator(value):
+    if value is None:
+        return
+    if len(value) == 0:
+        return
+    try:
+        if not isinstance(yaml.safe_load(value), dict):
+            raise ValidationError("Dictionary object expected")
+    except yaml.YAMLError as e:
+        raise ValidationError(e)
 
 
 class Project(models.Model):
@@ -93,9 +106,18 @@ class LAVADeviceType(models.Model):
     name = models.CharField(max_length=32)
     net_interface = models.CharField(max_length=32)
     project = models.ForeignKey(Project, on_delete=models.CASCADE)
+    # keep device type specific settings in the TextField
+    device_type_settings = models.TextField(blank=True, null=True, validators=[yaml_validator])
 
     def __str__(self):
         return self.name
+
+    __settings__ = None
+
+    def get_settings(self):
+        if self.__settings__ is None:
+            self.__settings__ = yaml.safe_load(self.project_settings or '') or {}
+        return self.__settings__
 
 
 class LAVADevice(models.Model):
