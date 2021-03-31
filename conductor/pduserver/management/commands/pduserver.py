@@ -94,6 +94,8 @@ async def websocket_handler(request):
             if agent.name in request.app["agents"].keys():
                 await ws.send_json({"error": "already logged in"})
             request.app["agents"][agent.name] = ws
+            agent.state = PDUAgent.STATE_ONLINE
+            await sync_to_async(agent.save, thread_sensitive=True)()
             if agent.message:
                 logger.debug(f"Sending msg {agent.message} to {agent.name}")
                 await ws.send_json({"msg": agent.message})
@@ -114,6 +116,8 @@ async def websocket_handler(request):
                 await ws.close()
                 logger.info(f"connection closed from {request.remote}({agent.name})")
                 request.app["agents"].pop(agent.name)
+                agent.state = PDUAgent.STATE_OFFLINE
+                await sync_to_async(agent.save, thread_sensitive=True)()
 
     return ws
 
@@ -124,10 +128,18 @@ async def on_shutdown(app):
     for name, ws in app["agents"].items():
         logger.debug(name)
         await ws.close(code=aiohttp.WSCloseCode.GOING_AWAY, message="Server shutdown")
+        try:
+            agent = await sync_to_async(PDUAgent.objects.get, thread_sensitive=True)(name=name)
+            agent.state = PDUAgent.STATE_OFFLINE
+            await sync_to_async(agent.save, thread_sensitive=True)()
+            logger.debug("Turning %s offline" % name)
+        except PDUAgent.DoesNotExist:
+            pass
 
 
 async def on_startup(app):
     app["zmq"] = asyncio.create_task(zmq_message_forward(app))
+
 
 class Command(BaseCommand):
     help = "Runs websocket server for agents"
