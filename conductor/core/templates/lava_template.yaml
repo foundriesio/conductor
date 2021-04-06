@@ -39,7 +39,16 @@ actions:
         headers:
           OSF-TOKEN: OSF-TOKEN
 {% endif %}
-
+{% if device_type == "imx8mmevk" %}
+      uboot:
+        url: {{ UBOOT_URL }}
+        headers:
+          OSF-TOKEN: OSF-TOKEN
+      sitimg:
+        url: {{ SITIMG_URL }}
+        headers:
+          OSF-TOKEN: OSF-TOKEN
+{% endif %}
 - boot:
     prompts:
     {% for prompt in prompts %}
