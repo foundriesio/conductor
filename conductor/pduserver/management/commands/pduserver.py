@@ -42,7 +42,7 @@ async def zmq_message_forward(app):
         agent_name = message["agent"]
         agent_ws = app["agents"].get(agent_name)
         if agent_ws is not None:
-            await agent_ws.send_json(json.loads(data[2]))
+            await agent_ws.send_json(message)
 
     with contextlib.suppress(asyncio.CancelledError):
         logger.info("waiting for events")
@@ -82,7 +82,9 @@ async def websocket_handler(request):
     logger.info(f"connection from {request.remote}")
 
     ws = web.WebSocketResponse()
+    logger.info("Prepare ws")
     await ws.prepare(request)
+    logger.info("After prepare")
     # check if client authenticates properly
     auth = request.headers.get("Authorization")
     if auth:
