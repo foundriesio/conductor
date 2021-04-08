@@ -19,7 +19,7 @@ from django.http import HttpResponse, HttpResponseNotAllowed, HttpResponseForbid
 from django.views.decorators.csrf import csrf_exempt
 
 from conductor.core.models import Project, Build
-from conductor.core.tasks import create_build_run
+from conductor.core.tasks import create_build_run, merge_lmp_manifest
 
 
 def process_lava_notification(request, job_id, job_status):
@@ -74,3 +74,11 @@ def process_jobserv_webhook(request):
         return HttpResponse("Created", status=201)
     else:
         return HttpResponseNotAllowed(["POST"])
+
+
+@csrf_exempt
+def process_lmp_build(request):
+    if request.method == 'POST':
+        # assume this call means successful LmP build
+        merge_lmp_manifest.delay()
+    return HttpResponse("OK")

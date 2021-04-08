@@ -124,6 +124,13 @@ INTERNAL_ZMQ_SOCKET = "ipc:///tmp/conductor.msgs"
 INTERNAL_ZMQ_TIMEOUT = 5
 
 FIO_API_TOKEN = os.getenv("FIO_API_TOKEN")
+FIO_REPOSITORY_SCRIPT_PATH_PREFIX = f"{BASE_DIR}/conductor/scripts/"
+FIO_REPOSITORY_TOKEN = os.getenv("FIO_REPOSITORY_TOKEN")
+FIO_REPOSITORY_BASE = "https://source.foundries.io/factories/"
+FIO_REPOSITORY_HOME = "%s/repositories/" % BASE_DIR
+FIO_REPOSITORY_REMOTE_NAME = "origin"
+FIO_BASE_MANIFEST = "https://github.com/foundriesio/lmp-manifest"
+FIO_BASE_REMOTE_NAME = "lmp"
 
 try:
     from conductor.local_settings import *

@@ -19,5 +19,6 @@ from . import views
 
 urlpatterns = [
     path('jobserv/', views.process_jobserv_webhook),
+    path('lmp/', views.process_lmp_build),
     path('lavajob/([0-9]+)/(?:Submitted|Running|Canceling|Complete|Incomplete|Canceled)', views.process_lava_notification),
 ]

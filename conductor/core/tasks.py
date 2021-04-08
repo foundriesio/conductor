@@ -12,10 +12,12 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import os
 import requests
+import subprocess
 from conductor.celery import app as celery
 from celery.utils.log import get_task_logger
-from conductor.core.models import Run, Build, LAVADeviceType, LAVAJob
+from conductor.core.models import Run, Build, LAVADeviceType, LAVAJob, Project
 from django.conf import settings
 from django.template.loader import get_template
 
@@ -89,3 +91,66 @@ def create_build_run(build_id, run_url, run_name):
             project=build.project
         )
 
+
+class ProjectMisconfiguredError(Exception):
+    pass
+
+
+def __project_repository_exists(project):
+    repository_path = os.path.join(settings.FIO_REPOSITORY_HOME, project.name)
+    if os.path.exists(repository_path):
+        if os.path.isdir(repository_path):
+            # do nothing, directory exists
+            return True
+        else:
+            # raise exception, there should not be a file with this name
+            raise ProjectMisconfiguredError()
+    return False
+
+
+@celery.task
+def create_project_repository(project_id):
+    project = None
+    try:
+        project = Project.objects.get(pk=project_id)
+    except Project.DoesNotExist:
+        # do nothing if project is not found
+        return
+    # check if repository DIR already exists
+    repository_path = os.path.join(settings.FIO_REPOSITORY_HOME, project.name)
+    if not __project_repository_exists(project):
+        # create repository DIR
+        os.makedirs(repository_path)
+    # call shell script to clone and configure repository
+    cmd = [os.path.join(settings.FIO_REPOSITORY_SCRIPT_PATH_PREFIX, "checkout_repository.sh"),
+           "-d", repository_path,
+           "-r", settings.FIO_REPOSITORY_REMOTE_NAME,
+           "-u", "%s/%s/lmp-manifest.git" % (settings.FIO_REPOSITORY_BASE, project.name),
+           "-l", settings.FIO_BASE_REMOTE_NAME,
+           "-w", settings.FIO_BASE_MANIFEST,
+           "-t", settings.FIO_REPOSITORY_TOKEN]
+    print(cmd)
+    try:
+        subprocess.run(cmd, check=True)
+    except subprocess.CalledProcessError:
+        pass
+
+
+@celery.task
+def merge_lmp_manifest():
+    # merge LmP manifest into all project manifst repositories
+    projects = Project.objects.all()
+    for project in projects:
+        repository_path = os.path.join(settings.FIO_REPOSITORY_HOME, project.name)
+        if not __project_repository_exists(project):
+            # ignore project with no repository
+            continue
+        # call shell script to merge manifests
+        cmd = [os.path.join(settings.FIO_REPOSITORY_SCRIPT_PATH_PREFIX,"merge_manifest.sh"),
+               "-d", repository_path,
+               "-r", settings.FIO_REPOSITORY_REMOTE_NAME,
+               "-l", settings.FIO_BASE_REMOTE_NAME]
+        try:
+            subprocess.run(cmd, check=True)
+        except subprocess.CalledProcessError:
+            pass

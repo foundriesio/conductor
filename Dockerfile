@@ -1,7 +1,7 @@
 FROM ubuntu:focal
 
 RUN apt-get update -q=2 && \
-    apt-get install -q=2 --no-install-recommends python3-pip gunicorn
+    apt-get install -q=2 --no-install-recommends python3-pip gunicorn git
 
 COPY requirements.txt /tmp/
 RUN pip3 install -r /tmp/requirements.txt

@@ -17,7 +17,8 @@ import json
 import logging
 import uuid
 import zmq
-from conductor.core.models import PDUAgent
+from conductor.core.models import PDUAgent, Project
+from conductor.core.tasks import create_project_repository
 from django.conf import settings
 from django.db.models.signals import post_save
 from django.dispatch import receiver
@@ -54,3 +55,10 @@ def on_pduagent_save(sender, instance, created, **kwargs):
         send_message(".pduagent", data)
         instance.message = None
         instance.save()
+
+
+@receiver(post_save, sender=Project)
+def on_project_save(sender, instance, created, **kwargs):
+    #if created:
+    #    create_project_repository.delay(instance.id)
+    create_project_repository.delay(instance.id)
