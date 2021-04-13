@@ -163,3 +163,31 @@ class ApiViewTest(TestCase):
         )
         self.assertEqual(response.status_code, 405)
 
+    @patch("conductor.core.tasks.merge_lmp_manifest.delay")
+    def test_jobserv_lmp_webhook(self, merge_lmp_manifest_mock):
+        request_body_dict = {
+            "status": "PASSED",
+            "build_id": 1,
+            "url": "https://api.foundries.io/projects/testProject1/lmp/builds/73/",
+            "trigger_name": "platform-master",
+            "runs": [
+                {"url": "example.com", "name": "name1"}
+            ]
+        }
+        response = self.client.post(
+            "/api/lmp/",
+            request_body_dict,
+            content_type="application/json",
+            **{"HTTP_X_JobServ_Sig":"Token: blah"}
+        )
+        self.assertEqual(response.status_code, 200)
+        # check if build was created
+        merge_lmp_manifest_mock.assert_called()
+
+    def test_jobserv_lmp_get(self):
+        response = self.client.get(
+            "/api/lmp/",
+            **{"HTTP_X_JobServ_Sig":"Token: blah"}
+        )
+        self.assertEqual(response.status_code, 405)
+
