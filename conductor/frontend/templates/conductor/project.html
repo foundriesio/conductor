@@ -1,0 +1,27 @@
+{% extends "conductor/base.html" %}
+
+{% block content %}
+    <div class="row">
+        <div class="col-md-12 col-sm-12">
+            <h2>Name: {{ project.name }}</h2>
+        </div>
+        <div class="col-md-12 col-sm-12">
+            <a href="{{ project.lava_url }}">{{ project.lava_url }}</a>
+        </div>
+        <div class="col-md-12 col-sm-12">
+            <h3>Device Types:</h3>
+            {% for devtype in project.lavadevicetype_set.all %}
+                <h4>{{ devtype.name }}</h4>
+                <pre>
+                {{ devtype.device_type_settings }}
+                </pre>
+            {% endfor %}
+        </div>
+        <div class="col-md-12 col-sm-12">
+            <h3>Recent Builds:</h3>
+            {% for build in project.build_set.all %}
+            <a href="{{ build.url }}">{{ build.url }}</a><br/>
+            {% endfor %}
+        </div>
+    </div>
+{% endblock %}

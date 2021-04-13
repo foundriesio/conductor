@@ -12,4 +12,12 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-__version__ = '1.6.0'
+from django.urls import path
+
+from . import views
+
+
+urlpatterns = [
+    path('', views.index),
+    path('project/<int:project_id>/', views.project, name="project-details"),
+]

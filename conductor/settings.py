@@ -35,6 +35,7 @@ INSTALLED_APPS = [
     'conductor.core',
     'conductor.api',
     'conductor.pduserver',
+    'conductor.frontend',
 ]
 
 MIDDLEWARE = [

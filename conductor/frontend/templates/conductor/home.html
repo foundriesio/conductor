@@ -1,0 +1,18 @@
+{% extends "conductor/base.html" %}
+
+{% block content %}
+    <div class="col-md-12 col-sm-12">
+        <h2>Projects:</h2>
+    </div>
+    {% for project in projects %}
+        <div class="row">
+            <a href="#">
+            <div class="col-md-12 col-sm-12">
+                <strong>
+                    <a href="{% url 'project-details' project.pk %}">{{ project.name }}</a>
+                </strong>
+            </div>
+            </a>
+        </div>
+    {% endfor %}
+{% endblock %}
