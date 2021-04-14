@@ -19,7 +19,7 @@ from django.http import HttpResponse, HttpResponseNotAllowed, HttpResponseForbid
 from django.views.decorators.csrf import csrf_exempt
 
 from conductor.core.models import Project, Build
-from conductor.core.tasks import create_build_run, merge_lmp_manifest
+from conductor.core.tasks import create_build_run, merge_lmp_manifest, update_build_commit_id
 
 
 def process_lava_notification(request, job_id, job_status):
@@ -74,10 +74,15 @@ def process_jobserv_webhook(request):
     project = get_object_or_404(Project, name=project_name)
     # create new Build
     build, _ = Build.objects.get_or_create(url=build_url, project=project, build_id=build_id)
+    run_url = None
     for run in request_body_json.get("runs"):
         run_url = run.get("url")
         run_name = run.get("name")
         create_build_run.delay(build.pk, run_url, run_name)
+    if run_url is not None:
+        # only call update_build_commit_id once as
+        # all runs should contain identical GIT_SHA
+        update_build_commit_id.delay(build.pk, run_url)
 
     return HttpResponse("Created", status=201)
 

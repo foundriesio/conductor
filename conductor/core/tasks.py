@@ -19,7 +19,9 @@ from conductor.celery import app as celery
 from celery.utils.log import get_task_logger
 from conductor.core.models import Run, Build, LAVADeviceType, LAVAJob, Project
 from django.conf import settings
+from django.db import transaction
 from django.template.loader import get_template
+from urllib.parse import urljoin
 
 logger = get_task_logger(__name__)
 
@@ -31,7 +33,7 @@ def _get_os_tree_hash(url, project):
     authentication = {
         "OSF-TOKEN": token,
     }
-    os_tree_hash_request = requests.get("%s/other/ostree.sha.txt" % url, headers=authentication)
+    os_tree_hash_request = requests.get(urljoin(url, "other/ostree.sha.txt"), headers=authentication)
     if os_tree_hash_request.status_code == 200:
         return os_tree_hash_request.text.strip()
     return None
@@ -90,6 +92,27 @@ def create_build_run(build_id, run_url, run_name):
             definition=lava_job_definition,
             project=build.project
         )
+
+
+@celery.task
+def update_build_commit_id(build_id, run_url):
+    token = getattr(settings, "FIO_API_TOKEN", None)
+    authentication = {
+        "OSF-TOKEN": token,
+    }
+    run_json_request = requests.get(urljoin(run_url, ".rundef.json"), headers=authentication)
+    if run_json_request.status_code == 200:
+        with transaction.atomic():
+            build = None
+            try:
+                build = Build.objects.get(pk=build_id)
+            except Build.DoesNotExist:
+                return None
+
+            run_json = run_json_request.json()
+            commit_id = run_json['env']['GIT_SHA']
+            build.commit_id = commit_id
+            build.save()
 
 
 class ProjectMisconfiguredError(Exception):
@@ -154,3 +177,10 @@ def merge_lmp_manifest():
             subprocess.run(cmd, check=True)
         except subprocess.CalledProcessError:
             pass
+
+
+#@celery.task
+#def check_build_release():
+#    # this task should run once or twice a day
+#    # it fills in Build.is_release field based on the repository tags
+#    pass

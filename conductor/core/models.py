@@ -64,6 +64,12 @@ class Build(models.Model):
     url = models.URLField()
     project = models.ForeignKey(Project, on_delete=models.CASCADE)
     build_id = models.IntegerField()
+    # git sha1 from manifest repository
+    # can be empty to ensure backward compatibility
+    commit_id = models.CharField(max_length=40, blank=True, null=True)
+    # set to True when commit is accompanied with a tag
+    # this is filled by task run on regular interval
+    is_release = models.BooleanField(default=False)
 
     def __str__(self):
         return str(self.build_id)
