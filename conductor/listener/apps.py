@@ -12,25 +12,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from conductor.settings import CELERY_TASK_DEFAULT_QUEUE
-import os
-import sys
-
-def main():
-    queues = set()
-    queues.add(CELERY_TASK_DEFAULT_QUEUE)
-    argv = [
-        sys.executable, '-m', 'celery',
-        # default celery args:
-        '-A', 'conductor',
-        'worker',
-        '--queues=' + ','.join(queues),
-        '--max-tasks-per-child=5000',
-        '--max-memory-per-child=1500000',
-        '--loglevel=DEBUG'
-    ] + sys.argv[1:]
-    os.execvp(sys.executable, argv)
+from django.apps import AppConfig
 
 
-if __name__ == "__main__":
-    main()
+class ApiConfig(AppConfig):
+    name = 'conductor.listener'

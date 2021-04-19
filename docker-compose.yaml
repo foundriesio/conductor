@@ -1,15 +1,15 @@
 version: '3.4'
 
 x-common-config: &common_config
-  image: conductor/foundriesio
+  image: foundriesio/conductor:1.7.0
   build:
     context: .
   volumes:
     - home:/app
-    - ${EXTRA_SETTINGS_PATH}:/home/conductor_settings.py
+    - ${EXTRA_SETTINGS_PATH}:/home/
   environment:
     - CONDUCTOR_CELERY_BROKER_URL="amqp://conductor:secret@172.17.0.1/conductor"
-    - CONDUCTOR_EXTRA_SETTINGS=/home/conductor_settings.py
+    - CONDUCTOR_EXTRA_SETTINGS=/home/extra_settings.py
     - LOGLEVEL=INFO
     - USRNAME=conductor
     - GROUPNAME=conductor
@@ -51,4 +51,9 @@ services:
     depends_on:
       - dbmigrate
 
+  listener:
+    <<: *common_config
+    command: conductor-listener -v 2
+    depends_on:
+      - dbmigrate
 

@@ -15,6 +15,7 @@
 import requests
 import yaml
 from django.db import models
+from django.utils import timezone
 from urllib.parse import urljoin
 
 
@@ -39,6 +40,7 @@ class Project(models.Model):
     # request POST header
     secret = models.CharField(max_length=128)
     lava_url = models.URLField()
+    websocket_url = models.URLField(blank=True, null=True)
     lava_api_token = models.CharField(max_length=128)
 
     def submit_lava_job(self, definition):
@@ -131,6 +133,9 @@ class LAVADevice(models.Model):
     name = models.CharField(max_length=32)
     project = models.ForeignKey(Project, on_delete=models.CASCADE)
     pduagent = models.ForeignKey(PDUAgent, null=True, blank=True, on_delete=models.CASCADE)
+    # field to record when device was requested to go to maintenance
+    # because it's supposed to run OTA job
+    ota_started = models.DateTimeField(null=True, blank=True)
 
     CONTROL_LAVA = "LAVA"
     CONTROL_PDU = "PDU"
@@ -147,6 +152,28 @@ class LAVADevice(models.Model):
     def __str__(self):
         return self.name
 
+    def __request_state(self, state):
+        auth = {
+            "Authorization": f"Token {self.project.lava_api_token}"
+        }
+        device_url = urljoin(self.project.lava_url, "/".join(["devices", self.name]))
+        device_request = requests.get(device_url, headers=auth)
+        if device_request.status_code == 200:
+            device_json = device_request.json()
+            device_json['health'] = state
+            device_put_request = requests.put(device_url, data=device_json, headers=auth)
+
+    def request_maintenance(self):
+        # send request to LAVA server to change device state to Maintenance
+        # this prevents from scheduling more LAVA jobs while the device
+        # runs OTA update and tests
+        self.__request_state("Maintenance")
+        self.ota_started = timezone.now()
+        self.save()
+
+    def request_online(self):
+        self.__request_state("Good")
+
 
 class LAVAJob(models.Model):
     job_id = models.IntegerField()
@@ -154,6 +181,18 @@ class LAVAJob(models.Model):
     device = models.ForeignKey(LAVADevice, null=True, blank=True, on_delete=models.CASCADE)
     definition = models.TextField()
     project = models.ForeignKey(Project, on_delete=models.CASCADE)
+    JOB_LAVA = "LAVA"
+    JOB_OTA = "OTA"
+    JOB_CHOICES = [
+        (JOB_LAVA, "Lava"),
+        (JOB_OTA, "OTA")
+    ]
+
+    job_type = models.CharField(
+        max_length=16,
+        choices=JOB_CHOICES,
+        default=JOB_LAVA
+    )
 
     def __str__(self):
         return self.job_id

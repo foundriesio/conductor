@@ -36,6 +36,7 @@ INSTALLED_APPS = [
     'conductor.api',
     'conductor.pduserver',
     'conductor.frontend',
+    'conductor.listener',
 ]
 
 MIDDLEWARE = [
@@ -103,6 +104,7 @@ USE_TZ = True
 
 STATIC_URL = '/static/'
 STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
+DEFAULT_AUTO_FIELD = 'django.db.models.AutoField'
 
 CELERY_BROKER_URL = os.getenv('CONDUCTOR_CELERY_BROKER_URL')
 CELERY_TASK_ALWAYS_EAGER = CELERY_BROKER_URL is None

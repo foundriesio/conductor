@@ -32,6 +32,7 @@ setup(
             'conductor-admin=conductor.manage:main',
             'conductor-ws=conductor.run.websockets:main',
             'conductor-worker=conductor.run.worker:main',
+            'conductor-listener=conductor.run.listener:main',
         ]
     },
     scripts=["conductor/scripts/checkout_repository.sh", "conductor/scripts/merge_manifest.sh"],

@@ -15,9 +15,10 @@
 import os
 import requests
 import subprocess
+import yaml
 from conductor.celery import app as celery
 from celery.utils.log import get_task_logger
-from conductor.core.models import Run, Build, LAVADeviceType, LAVAJob, Project
+from conductor.core.models import Run, Build, LAVADeviceType, LAVADevice, LAVAJob, Project
 from django.conf import settings
 from django.db import transaction
 from django.template.loader import get_template
@@ -40,7 +41,7 @@ def _get_os_tree_hash(url, project):
 
 
 @celery.task
-def create_build_run(build_id, run_url, run_name):
+def create_build_run(build_id, run_url, run_name, lava_job_type=LAVAJob.JOB_LAVA):
     logger.debug("Received task for build: %s" % build_id)
     device_type = None
     try:
@@ -83,6 +84,8 @@ def create_build_run(build_id, run_url, run_name):
             # ignore values that are not strings
             pass
     template = get_template("lava_template.yaml")
+    if lava_job_type == LAVAJob.JOB_OTA:
+        template = get_template("lava_deploy_template.yaml")
     lava_job_definition = template.render(context)
     job_ids = build.project.submit_lava_job(lava_job_definition)
     logger.debug(job_ids)
@@ -90,8 +93,33 @@ def create_build_run(build_id, run_url, run_name):
         LAVAJob.objects.create(
             job_id=job,
             definition=lava_job_definition,
-            project=build.project
+            project=build.project,
+            job_type=lava_job_type,
         )
+        if lava_job_type != LAVAJob.JOB_OTA:
+            # only create OTA jobs for each 'regular' job
+            create_ota_job(build_id, run_url, run_name)
+
+
+@celery.task
+def create_ota_job(build_id, run_url, run_name):
+    # only do OTA from previous platform build
+    # this is current limitation
+    build = None
+    try:
+        build = Build.objects.get(pk=build_id)
+    except Build.DoesNotExist:
+        return None
+    # find previous platform build
+    previous_builds = build.project.build_set.filter(build_id__lt=build.build_id).order_by('-build_id')
+    if previous_builds:
+        previous_build = previous_builds[0]
+        try:
+            run = previous_build.run_set.get(run_name=run_name)
+            run_url = f"{previous_build.url}runs/{run.run_name}/"
+            create_build_run(previous_build.id, run_url, run.run_name, lava_job_type=LAVAJob.JOB_OTA)
+        except Run.DoesNotExist:
+            return None
 
 
 @celery.task
@@ -184,3 +212,68 @@ def merge_lmp_manifest():
 #    # this task should run once or twice a day
 #    # it fills in Build.is_release field based on the repository tags
 #    pass
+
+
+@celery.task
+def device_pdu_action(device_id, power_on=True):
+    lava_device = None
+    try:
+        lava_device = LAVADevice.objects.get(pk=device_id)
+    except LAVADevice.DoesNotExist:
+        return
+    # get device dictionary
+    device_dict_url = urljoin(lava_device.project.lava_url, f"devices/{lava_device.name}/dictionary?render=true")
+    auth = {
+        "Authorization": f"Token {lava_device.project.lava_api_token}"
+    }
+    device_request = requests.get(device_dict_url, headers=auth)
+    device_dict = None
+    if device_request.status_code == 200:
+        device_dict = yaml.load(device_request.text, Loader=yaml.SafeLoader)
+    # extract power on/off command(s)
+    cmds = device_dict['commands']['power_on']
+    if not power_on:
+        cmds = device_dict['commands']['power_off']
+    if not isinstance(cmds, list):
+        cmds = [cmds]
+    # use PDUAgent to run command(s) remotely
+    if lava_device.pduagent:
+        for cmd in cmds:
+            lava_device.pduagent.message = cmd
+            lava_device.pduagent.save()
+
+
+@celery.task
+def process_testjob_notification(event_data):
+    job_id = event_data.get("job")
+    try:
+        lava_job = LAVAJob.objects.get(job_id=job_id)
+        device_name = event_data.get("device")
+        lava_db_device = None
+        logger.debug(f"Processing job: {job_id}")
+        logger.debug(f"LAVA device name: {device_name}")
+        if device_name:
+            lava_db_device = LAVADevice.objects.get(name=device_name)
+            lava_job.device = lava_db_device
+            lava_job.save()
+            logger.debug(f"LAVA device is: {lava_db_device.id}")
+        if lava_job.job_type == LAVAJob.JOB_OTA and \
+                event_data.get("state") == "Running" and \
+                lava_db_device:
+            lava_db_device.request_maintenance()
+        if lava_job.job_type == LAVAJob.JOB_OTA and \
+                event_data.get("state") == "Finished" and \
+                lava_db_device:
+            device_pdu_action(lava_db_device.id, power_on=True)
+
+    except LAVAJob.DoesNotExist:
+        logger.debug(f"Job {job_id} not found")
+        return
+    except LAVADevice.DoesNotExist:
+        logger.debug(f"Device from job {job_id} not found")
+        return
+
+
+@celery.task
+def process_device_notification(event_data):
+    pass
