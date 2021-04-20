@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import logging
 import requests
 import yaml
 from django.db import models
@@ -20,6 +21,7 @@ from urllib.parse import urljoin
 
 
 DEFAULT_TIMEOUT=60
+logger = logging.getLogger()
 
 
 def yaml_validator(value):
@@ -157,11 +159,20 @@ class LAVADevice(models.Model):
             "Authorization": f"Token {self.project.lava_api_token}"
         }
         device_url = urljoin(self.project.lava_url, "/".join(["devices", self.name]))
+        if not device_url.endswith("/"):
+            device_url = device_url + "/"
         device_request = requests.get(device_url, headers=auth)
         if device_request.status_code == 200:
             device_json = device_request.json()
             device_json['health'] = state
-            device_put_request = requests.put(device_url, data=device_json, headers=auth)
+            logger.info(device_json)
+            device_put_request = requests.put(device_url, json=device_json, headers=auth)
+            if device_put_request.status_code == 200:
+                logger.info(f"Requested state: {state} for device: {self.name}")
+            else:
+                logger.warning("LAVA API request rejected")
+                logger.warning(device_put_request.status_code)
+                logger.warning(device_put_request.text)
 
     def request_maintenance(self):
         # send request to LAVA server to change device state to Maintenance

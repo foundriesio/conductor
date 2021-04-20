@@ -13,6 +13,7 @@
 # limitations under the License.
 
 import os
+import sys
 from pathlib import Path
 
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -134,6 +135,27 @@ FIO_REPOSITORY_HOME = "%s/repositories/" % BASE_DIR
 FIO_REPOSITORY_REMOTE_NAME = "origin"
 FIO_BASE_MANIFEST = "https://github.com/foundriesio/lmp-manifest"
 FIO_BASE_REMOTE_NAME = "lmp"
+
+LOGGING = {
+    'version': 1,
+    'disable_existing_loggers': False,
+    'filters': {
+    },
+    'handlers': {
+        'console': {
+            'level': 'INFO',
+            'class': 'logging.StreamHandler',
+            'stream': sys.stdout,
+        },
+    },
+    'loggers': {
+        '': {
+            'handlers': ['console'],
+            'level': 'INFO',
+            'propagate': True,
+        },
+    }
+}
 
 try:
     from conductor.local_settings import *
