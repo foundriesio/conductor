@@ -19,9 +19,11 @@ import yaml
 from conductor.celery import app as celery
 from celery.utils.log import get_task_logger
 from conductor.core.models import Run, Build, LAVADeviceType, LAVADevice, LAVAJob, Project
+from datetime import timedelta
 from django.conf import settings
 from django.db import transaction
 from django.template.loader import get_template
+from django.utils import timezone
 from urllib.parse import urljoin
 
 logger = get_task_logger(__name__)
@@ -277,3 +279,33 @@ def process_testjob_notification(event_data):
 @celery.task
 def process_device_notification(event_data):
     pass
+
+
+@celery.task
+def check_ota_completed():
+    # This is a periodic task which checks all devices which are in
+    # OTA configuration. The default timeout for performing OTA and
+    # running all tests is 30 minutes. If the device is not updated
+    # after this timeout OTA is considered to be unsuccessful. The
+    # device is moved back under LAVA control.
+    deadline = timezone.now() - timedelta(minutes=30)
+    devices = LAVADevice.objects.filter(
+        controlled_by=LAVADevice.CONTROL_PDU,
+        ota_started__lt=deadline
+    )
+    for device in devices:
+        current_target = device.get_current_target()
+        # determine whether current target is correct
+        last_build = device.project.build_set.first()
+        last_run = build.run_set.get(run_name=device.device_type.name)
+        if current_target.get('ostree-hash') == last_run.ostree_hash:
+            # update successful
+            logger.info(f"Device {device.name} successfully updated to {last_build.build_id}")
+        else:
+            logger.info(f"Device {device.name} NOT updated to {last_build.build_id}")
+
+        # switch the device to LAVA control
+        device.request_online()
+        device.controlled_by = LAVADevice.CONTROL_LAVA
+        device.save()
+

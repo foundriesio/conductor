@@ -133,6 +133,7 @@ class LAVADeviceType(models.Model):
 class LAVADevice(models.Model):
     device_type = models.ForeignKey(LAVADeviceType, on_delete=models.CASCADE)
     name = models.CharField(max_length=32)
+    auto_register_name = models.CharField(max_length=64, null=True, blank=True)
     project = models.ForeignKey(Project, on_delete=models.CASCADE)
     pduagent = models.ForeignKey(PDUAgent, null=True, blank=True, on_delete=models.CASCADE)
     # field to record when device was requested to go to maintenance
@@ -184,6 +185,19 @@ class LAVADevice(models.Model):
 
     def request_online(self):
         self.__request_state("Good")
+
+    def get_current_target(self):
+        # checks the current target reported by FIO API
+        token = getattr(settings, "FIO_API_TOKEN", None)
+        authentication = {
+            "OSF-TOKEN": token,
+        }
+        if self.auto_register_name:
+            url = f"https://api.foundries.io/ota/devices/{self.auto_register_name}/"
+            device_details_request = requests.get(urljoin(url, "other/ostree.sha.txt"), headers=authentication)
+            if device_details_request.status_code == 200:
+                return device_details_request.json()
+        return {}
 
 
 class LAVAJob(models.Model):
