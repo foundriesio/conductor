@@ -43,6 +43,8 @@ async def zmq_message_forward(app):
         agent_ws = app["agents"].get(agent_name)
         if agent_ws is not None:
             await agent_ws.send_json(message)
+            app["logger"].debug("Message: %s sent", data[0])
+            app["logger"].debug("%s", message)
 
     with contextlib.suppress(asyncio.CancelledError):
         logger.info("waiting for events")
@@ -165,11 +167,9 @@ class Command(BaseCommand):
         else:
             self.logger.setLevel(logging.DEBUG)
 
-        if options["logfile"] == "-":
-            handler = logging.StreamHandler()
-        else:
+        if options["logfile"] != "-":
             handler = logging.handlers.WatchedFileHandler(options["logfile"])
-        self.logger.addHandler(handler)
+            self.logger.addHandler(handler)
 
         self.logger.info("Starting pduserver")
         # Create the aiohttp application
