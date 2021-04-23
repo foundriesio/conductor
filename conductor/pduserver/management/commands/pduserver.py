@@ -107,14 +107,15 @@ async def websocket_handler(request):
                 await sync_to_async(agent.save, thread_sensitive=True)()
             try:
                 async for msg in ws:
+                    logger.debug(f"Received websocket message from {agent.name}")
                     if msg.type == aiohttp.WSMsgType.ERROR:
                         logger.exception(ws.exception())
                     if msg.type == aiohttp.WSMsgType.CLOSE:
                         request.app["agents"].pop(agent.name)
-                        logger.info("Removed {agent.name}")
+                        logger.info(f"Removed {agent.name}")
             except asyncio.exceptions.CancelledError:
                 request.app["agents"].pop(agent.name)
-                logger.info("Removed {agent.name} on exception")
+                logger.info(f"Removed {agent.name} on exception")
 
         except PDUAgent.DoesNotExist:
             # ignore unathorized request
