@@ -105,12 +105,16 @@ async def websocket_handler(request):
                 await ws.send_json({"msg": agent.message})
                 agent.message = None
                 await sync_to_async(agent.save, thread_sensitive=True)()
-            async for msg in ws:
-                if msg.type == aiohttp.WSMsgType.ERROR:
-                    logger.exception(ws.exception())
-                if msg.type == aiohttp.WSMsgType.CLOSE:
-                    request.app["agents"].pop(agent.name)
-                    logger.info("Removed {agent.name}")
+            try:
+                async for msg in ws:
+                    if msg.type == aiohttp.WSMsgType.ERROR:
+                        logger.exception(ws.exception())
+                    if msg.type == aiohttp.WSMsgType.CLOSE:
+                        request.app["agents"].pop(agent.name)
+                        logger.info("Removed {agent.name}")
+            except asyncio.exceptions.CancelledError:
+                request.app["agents"].pop(agent.name)
+                logger.info("Removed {agent.name} on exception")
 
         except PDUAgent.DoesNotExist:
             # ignore unathorized request
@@ -119,7 +123,8 @@ async def websocket_handler(request):
             if not request.app["in_shutdown"]:
                 await ws.close()
                 logger.info(f"connection closed from {request.remote}({agent.name})")
-                request.app["agents"].pop(agent.name)
+                if agent.name in request.app["agents"].keys():
+                    request.app["agents"].pop(agent.name)
                 agent.state = PDUAgent.STATE_OFFLINE
                 await sync_to_async(agent.save, thread_sensitive=True)()
 
