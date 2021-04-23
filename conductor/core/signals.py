@@ -15,6 +15,7 @@
 import datetime
 import json
 import logging
+import time
 import uuid
 import zmq
 from conductor.core.models import PDUAgent, Project
@@ -40,7 +41,11 @@ def send_message(topic, data):
             b(json.dumps(data)),
         ]
         logger.debug(f"Sending message {data} to {settings.INTERNAL_ZMQ_SOCKET}")
-        socket.send_multipart(msg, zmq.DONTWAIT)
+        tracker = socket.send_multipart(msg, zmq.DONTWAIT, copy=False, track=True)
+        while not tracker.done:
+            logger.debug("Waiting for tracker")
+            time.sleep(1)
+
         logger.debug("Message sent")
     except (TypeError, ValueError, zmq.ZMQError):
         logger.error("Message sending failed %s" % (settings.EVENT_TOPIC + topic))
