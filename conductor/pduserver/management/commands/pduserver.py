@@ -162,22 +162,20 @@ class Command(BaseCommand):
 
     def handle(self, *args, **options):
         self.logger = logging.getLogger("pduserver")
+        self.logger.setLevel(logging.DEBUG)
         if options["verbosity"] == 0:
             self.logger.setLevel(logging.ERROR)
         elif options["verbosity"] == 1:
             self.logger.setLevel(logging.WARN)
         elif options["verbosity"] == 2:
             self.logger.setLevel(logging.INFO)
-        elif options["verbosity"] == 3:
-            self.logger.setLevel(logging.DEBUG)
-        else:
-            self.logger.setLevel(logging.DEBUG)
 
         if options["logfile"] != "-":
             handler = logging.handlers.WatchedFileHandler(options["logfile"])
             self.logger.addHandler(handler)
 
         self.logger.info("Starting pduserver")
+        self.logger.debug("Debug enabled")
         # Create the aiohttp application
         app = web.Application()
 

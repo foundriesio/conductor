@@ -39,6 +39,7 @@ def send_message(topic, data):
             b(datetime.datetime.utcnow().isoformat()),
             b(json.dumps(data)),
         ]
+        logger.debug(f"Sending message {data} to {settings.INTERNAL_ZMQ_SOCKET}")
         socket.send_multipart(msg, zmq.DONTWAIT)
         logger.debug("Message sent")
     except (TypeError, ValueError, zmq.ZMQError):
@@ -52,6 +53,7 @@ def on_pduagent_save(sender, instance, created, **kwargs):
             "agent": str(instance.name),
             "cmd": str(instance.message),
         }
+        logger.debug(f"Sending message with data {data}")
         send_message(".pduagent", data)
         instance.message = None
         instance.save()

@@ -234,6 +234,8 @@ def device_pdu_action(device_id, power_on=True):
         device_dict = yaml.load(device_request.text, Loader=yaml.SafeLoader)
     # extract power on/off command(s)
     cmds = device_dict['commands']['power_on']
+    logger.debug("Commands to be sent")
+    logger.debug(cmds)
     if not power_on:
         cmds = device_dict['commands']['power_off']
     if not isinstance(cmds, list):
