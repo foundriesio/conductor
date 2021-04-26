@@ -39,7 +39,7 @@ services:
 
   worker:
     <<: *common_config
-    command: conductor-worker --uid ${USRNAME} --gid ${GROUPNAME}
+    command: conductor-worker
     depends_on:
       - dbmigrate
 
