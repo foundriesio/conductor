@@ -114,7 +114,8 @@ async def websocket_handler(request):
                         request.app["agents"].pop(agent.name)
                         logger.info(f"Removed {agent.name}")
             except asyncio.exceptions.CancelledError:
-                request.app["agents"].pop(agent.name)
+                if agent.name in request.app["agents"].keys():
+                    request.app["agents"].pop(agent.name)
                 logger.info(f"Removed {agent.name} on exception")
 
         except PDUAgent.DoesNotExist:
