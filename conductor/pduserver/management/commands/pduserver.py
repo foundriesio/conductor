@@ -83,7 +83,7 @@ async def websocket_handler(request):
     logger = request.app["logger"]
     logger.info(f"connection from {request.remote}")
 
-    ws = web.WebSocketResponse()
+    ws = web.WebSocketResponse(autoping=True, heartbeat=59)
     logger.info("Prepare ws")
     await ws.prepare(request)
     logger.info("After prepare")
