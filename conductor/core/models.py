@@ -114,6 +114,8 @@ class PDUAgent(models.Model):
 
 class LAVADeviceType(models.Model):
     name = models.CharField(max_length=32)
+    # name of the device in the Foundries factory
+    ota_name = models.CharField(max_length=64, blank=True, null=True)
     net_interface = models.CharField(max_length=32)
     project = models.ForeignKey(Project, on_delete=models.CASCADE)
     # keep device type specific settings in the TextField
