@@ -14,6 +14,7 @@
 
 import os
 import sys
+from celery.schedules import crontab
 from pathlib import Path
 
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -118,7 +119,12 @@ CELERY_BROKER_TRANSPORT_OPTIONS = {
 CELERY_ACCEPT_CONTENT = ['json', 'yaml']
 CELERY_TASK_SERIALIZER = 'json'
 CELERY_BEAT_SCHEDULE_FILENAME = os.path.join(DATA_DIR, 'celerybeat-schedule')
-CELERY_BEAT_SCHEDULE = {}
+CELERY_BEAT_SCHEDULE = {
+    'check_ota_complete': {
+        'task': 'conductor.core.tasks.check_ota_completed',
+        'schedule': crontab(minute='*/10'),
+    },
+}
 
 CELERY_TASK_DEFAULT_QUEUE = 'celery'
 #CELERY_RESULT_BACKEND = 'django-db'

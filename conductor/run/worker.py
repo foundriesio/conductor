@@ -24,6 +24,7 @@ def main():
         # default celery args:
         '-A', 'conductor',
         'worker',
+        '-B',
         '--queues=' + ','.join(queues),
         '--max-tasks-per-child=5000',
         '--max-memory-per-child=1500000',

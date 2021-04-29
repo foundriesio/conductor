@@ -265,6 +265,7 @@ def process_testjob_notification(event_data):
                 event_data.get("state") == "Running" and \
                 lava_db_device:
             lava_db_device.request_maintenance()
+            lava_db_device.remove_from_factory()
         if lava_job.job_type == LAVAJob.JOB_OTA and \
                 event_data.get("state") == "Finished" and \
                 lava_db_device:
@@ -299,7 +300,7 @@ def check_ota_completed():
         current_target = device.get_current_target()
         # determine whether current target is correct
         last_build = device.project.build_set.first()
-        last_run = build.run_set.get(run_name=device.device_type.name)
+        last_run = last_build.run_set.get(run_name=device.device_type.name)
         if current_target.get('ostree-hash') == last_run.ostree_hash:
             # update successful
             logger.info(f"Device {device.name} successfully updated to {last_build.build_id}")
@@ -310,4 +311,3 @@ def check_ota_completed():
         device.request_online()
         device.controlled_by = LAVADevice.CONTROL_LAVA
         device.save()
-

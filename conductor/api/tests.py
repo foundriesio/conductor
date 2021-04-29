@@ -34,9 +34,10 @@ class ApiViewTest(TestCase):
 
         self.client = Client()
 
+    @patch("conductor.core.tasks.update_build_commit_id.delay", return_value="git_sha_1")
     @patch("conductor.core.models.Project.submit_lava_job", return_value=[123])
     @patch("conductor.core.tasks._get_os_tree_hash", return_value="ostreehash")
-    def test_jobserv_webhook(self, requests_mock, submit_lava_job_mock):
+    def test_jobserv_webhook(self, requests_mock, submit_lava_job_mock, update_commit_mock):
         request_body_dict = {
             "status": "PASSED",
             "build_id": 1,
@@ -59,6 +60,7 @@ class ApiViewTest(TestCase):
         self.assertEqual(build.build_id, 1)
         self.assertEqual(build.run_set.all().count(), 1)
         requests_mock.assert_called()
+        update_commit_mock.assert_called()
 
     def test_jobserv_webhook_missing_header(self):
         request_body_dict = {

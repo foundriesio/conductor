@@ -196,9 +196,21 @@ class LAVADevice(models.Model):
         }
         if self.auto_register_name:
             url = f"https://api.foundries.io/ota/devices/{self.auto_register_name}/"
-            device_details_request = requests.get(urljoin(url, "other/ostree.sha.txt"), headers=authentication)
+            device_details_request = requests.get(url, headers=authentication)
             if device_details_request.status_code == 200:
                 return device_details_request.json()
+        return {}
+
+    def remove_from_factory(self):
+        token = getattr(settings, "FIO_API_TOKEN", None)
+        authentication = {
+            "OSF-TOKEN": token,
+        }
+        if self.auto_register_name:
+            url = f"https://api.foundries.io/ota/devices/{self.auto_register_name}/"
+            device_remove_request = requests.delete(url, headers=authentication)
+            if device_remove_request.status_code == 200:
+                return device_remove_request.json()
         return {}
 
 
