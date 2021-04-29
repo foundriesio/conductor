@@ -447,14 +447,15 @@ class LAVADeviceTest(TestCase):
         put_mock.return_value = response_mock
 
         self.lava_device1.request_maintenance()
-        self.lava_device.refresh_from_db()
-        self.assertIsNotNone(self.lava_device.ota_started)
+        self.lava_device1.refresh_from_db()
+        self.assertIsNotNone(self.lava_device1.ota_started)
+        self.assertEqual(self.lava_device1.controlled_by, LAVADevice.CONTROL_PDU)
         get_mock.assert_called()
         put_mock.assert_called()
 
     @patch("requests.put")
     @patch("requests.get")
-    def test_request_maintenance(self, get_mock, put_mock):
+    def test_request_online(self, get_mock, put_mock):
         response_mock = MagicMock()
         response_mock.status_code = 200
         response_mock.text = DEVICE_DICT
@@ -463,7 +464,9 @@ class LAVADeviceTest(TestCase):
         put_response_mock.status_code = 200
         put_mock.return_value = response_mock
 
-        self.lava_device1.request_maintenance()
+        self.lava_device1.request_online()
+        self.lava_device1.refresh_from_db()
+        self.assertEqual(self.lava_device1.controlled_by, LAVADevice.CONTROL_LAVA)
         get_mock.assert_called()
         put_mock.assert_called()
 

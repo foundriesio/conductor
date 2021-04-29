@@ -173,21 +173,26 @@ class LAVADevice(models.Model):
             device_put_request = requests.put(device_url, json=device_json, headers=auth)
             if device_put_request.status_code == 200:
                 logger.info(f"Requested state: {state} for device: {self.name}")
+                return True
             else:
                 logger.warning("LAVA API request rejected")
                 logger.warning(device_put_request.status_code)
                 logger.warning(device_put_request.text)
+        return False
 
     def request_maintenance(self):
         # send request to LAVA server to change device state to Maintenance
         # this prevents from scheduling more LAVA jobs while the device
         # runs OTA update and tests
-        self.__request_state("Maintenance")
-        self.ota_started = timezone.now()
-        self.save()
+        if self.__request_state("Maintenance"):
+            self.ota_started = timezone.now()
+            self.controlled_by = LAVADevice.CONTROL_PDU
+            self.save()
 
     def request_online(self):
-        self.__request_state("Good")
+        if self.__request_state("Good"):
+            self.controlled_by = LAVADevice.CONTROL_LAVA
+            self.save()
 
     def get_current_target(self):
         # checks the current target reported by FIO API
