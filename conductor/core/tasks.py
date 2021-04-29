@@ -299,7 +299,7 @@ def check_ota_completed():
     for device in devices:
         current_target = device.get_current_target()
         # determine whether current target is correct
-        last_build = device.project.build_set.first()
+        last_build = device.project.build_set.last()
         last_run = last_build.run_set.get(run_name=device.device_type.name)
         if current_target.get('ostree-hash') == last_run.ostree_hash:
             # update successful
