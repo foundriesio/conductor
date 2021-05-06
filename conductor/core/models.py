@@ -205,6 +205,9 @@ class LAVADevice(models.Model):
             device_details_request = requests.get(url, headers=authentication)
             if device_details_request.status_code == 200:
                 return device_details_request.json()
+            else:
+                logger.error(f"Could not get current target for device {self.pk}")
+                logger.error(device_details_request.text)
         return {}
 
     def remove_from_factory(self):

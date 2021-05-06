@@ -27,7 +27,14 @@ from django.utils import timezone
 from urllib.parse import urljoin
 
 logger = get_task_logger(__name__)
+DEFAULT_TIMEOUT = 30
 
+translate_result = {
+    "pass": "PASSED",
+    "fail": "FAILED",
+    "skip": "SKIPPED",
+    "unknown": "SKIPPED"
+}
 
 def _get_os_tree_hash(url, project):
     logger.debug("Retrieving ostree hash with base url: %s" % url)
@@ -247,6 +254,107 @@ def device_pdu_action(device_id, power_on=True):
             lava_device.pduagent.save()
 
 
+def __get_testjob_results__(device, job_id):
+    logger.debug(f"Retrieving result summary for job: {job_id}")
+    current_target = device.get_current_target()
+    target_name = current_target.get('target-name')
+    lava_job_results = {}
+    authentication = {
+        "Authorization": "Token %s" % device.project.lava_api_token,
+    }
+    # get job definition
+    definition_resp = requests.get(
+        urljoin(device.project.lava_url, f"jobs/{job_id}/"),
+        headers=authentication,
+        timeout=DEFAULT_TIMEOUT
+    )
+    job_definition = None
+    expected_test_list = []
+    if definition_resp.status_code == 200:
+        job_json = definition_resp.json()
+        job_definition = yaml.load(job_json["definition"], Loader=yaml.SafeLoader)
+        # todo: check if tests exist and they come with definitions
+        # this is only correct for some test jobs
+        for action in job_definition['actions']:
+            if 'test' in action.keys():
+                for expected_test in action['test']['definitions']:
+                    expected_test_list.append(expected_test['name'])
+
+    # compare job definition with results (any missing)?
+    suites_resp = requests.get(
+        urljoin(device.project.lava_url, f"jobs/{job_id}/suites/"),
+        headers=authentication,
+        timeout=DEFAULT_TIMEOUT
+    )
+    while suites_resp.status_code == 200:
+        suites_content = suites_resp.json()
+        for suite in suites_content['results']:
+            if suite['name'] != 'lava':
+                index, suite_name = suite['name'].split("_", 1)
+                try:
+                    expected_test_list.remove(suite_name)
+                except ValueError:
+                    logger.error(f"Suite {suite_name} not found in expected list")
+                lava_job_results[suite_name] = {
+                    "name": suite_name,
+                    "status": "PASSED",
+                    "target-name": target_name,
+                    "tests": []
+                }
+                tests_resp = requests.get(
+                    urljoin(device.project.lava_url, f"jobs/{job_id}/suites/{suite['id']}/tests"),
+                    headers=authentication,
+                    timeout=DEFAULT_TIMEOUT
+                )
+                while tests_resp.status_code == 200:
+                    tests_content = tests_resp.json()
+                    for test_result in tests_content['results']:
+                        #metadata = yaml.load(test_result['metadata'], Loader=yaml.SafeLoader)
+                        lava_job_results[suite_name]['tests'].append(
+                            {
+                                "name": test_result['name'],
+                                "status": translate_result[test_result['result']],
+                                "local_ts": 0
+                            }
+                        )
+
+                    #lava_job_results[suite_name]['tests'] = lava_job_results[suite_name]['tests'] + tests_content['results']
+                    if tests_content['next']:
+                        tests_resp = requests.get(
+                            tests_content['next'],
+                            headers=authentication,
+                            timeout=DEFAULT_TIMEOUT
+                        )
+                    else:
+                        break
+        if suites_content['next']:
+            suites_resp = requests.get(
+                suites_content['next'],
+                headers=authentication,
+                timeout=DEFAULT_TIMEOUT
+            )
+        else:
+            break
+
+    return lava_job_results
+
+
+def test_res(device, job_id):
+    return __get_testjob_results__(device, job_id)
+
+@celery.task
+def retrieve_lava_results(device_id, job_id):
+    lava_db_device = None
+    try:
+        lava_db_device = LAVADevice.objects.get(pk=device_id)
+    except LAVADevice.DoesNotExist:
+        logger.debug(f"Device with ID {device_id} not found")
+        return
+    lava_results = __get_testjob_results__(lava_db_device, job_id)
+    for suite_name, result in lava_results.items():
+        __report_test_result(lava_db_device, result)
+
+
 @celery.task
 def process_testjob_notification(event_data):
     job_id = event_data.get("job")
@@ -265,11 +373,16 @@ def process_testjob_notification(event_data):
                 event_data.get("state") == "Running" and \
                 lava_db_device:
             lava_db_device.request_maintenance()
-            lava_db_device.remove_from_factory()
         if lava_job.job_type == LAVAJob.JOB_OTA and \
                 event_data.get("state") == "Finished" and \
                 lava_db_device:
+            # remove device from factory at the latest possible moment
+            lava_db_device.remove_from_factory()
             device_pdu_action(lava_db_device.id, power_on=True)
+        if lava_job.job_type == LAVAJob.JOB_LAVA and \
+                event_data.get("state") == "Finished" and \
+                lava_db_device:
+            retrieve_lava_results(lava_db_device.id, job_id)
 
     except LAVAJob.DoesNotExist:
         logger.debug(f"Job {job_id} not found")
@@ -282,6 +395,46 @@ def process_testjob_notification(event_data):
 @celery.task
 def process_device_notification(event_data):
     pass
+
+
+def __report_test_result(device, result):
+    token = getattr(settings, "FIO_API_TOKEN", None)
+    authentication = {
+        "OSF-TOKEN": token,
+    }
+
+    url = f"https://api.foundries.io/ota/devices/{device.auto_register_name}/tests/"
+    test_dict = result.copy()
+    test_dict.pop("status")
+    new_test_request = requests.post(url, json=test_dict, headers=authentication)
+    if new_test_request.status_code == 201:
+        test_details = new_test_request.json()
+        result.update(test_details)
+        details_url = f"{url}{test_details['test-id']}/"
+        update_details_request = requests.put(details_url, json=result, headers=authentication)
+
+
+@celery.task
+def report_test_results(lava_device_id, target_name, ota_update_result=None, ota_update_from=None, result_dict=None):
+    device = None
+    try:
+        device = LAVADevice.objects.get(pk=lava_device_id)
+    except LAVADevice.DoesNotExist:
+        logger.error(f"Device with ID: {lava_device_id} not found!")
+        return
+    if ota_update_result != None:
+        test_name = f"ota_update_from_{ota_update_from}"
+        test_result = "PASSED"
+        if not ota_update_result:
+            test_result = "FAILED"
+        result = {
+            "name": test_name,
+            "status": test_result,
+            "target-name": target_name
+        }
+        __report_test_result(device, result)
+    elif result_dict != None:
+        __report_test_result(device, result_dict)
 
 
 @celery.task
@@ -300,14 +453,25 @@ def check_ota_completed():
         current_target = device.get_current_target()
         # determine whether current target is correct
         last_build = device.project.build_set.last()
-        last_run = last_build.run_set.get(run_name=device.device_type.name)
-        if current_target.get('ostree-hash') == last_run.ostree_hash:
-            # update successful
-            logger.info(f"Device {device.name} successfully updated to {last_build.build_id}")
-        else:
-            logger.info(f"Device {device.name} NOT updated to {last_build.build_id}")
+        previous_builds = last_build.project.build_set.filter(build_id__lt=last_build.build_id).order_by('-build_id')
+        previous_build = None
+        if previous_builds:
+            previous_build = previous_builds[0]
+        try:
+            last_run = last_build.run_set.get(run_name=device.device_type.name)
+            target_name = current_target.get('target-name')
+            if current_target.get('ostree-hash') == last_run.ostree_hash:
+                # update successful
+                logger.info(f"Device {device.name} successfully updated to {last_build.build_id}")
+                report_test_results(device.id, target_name, ota_update_result=True, ota_update_from=previous_build.build_id)
+            else:
+                logger.info(f"Device {device.name} NOT updated to {last_build.build_id}")
+                report_test_results(device.id, target_name, ota_update_result=False, ota_update_from=previous_build.build_id)
 
-        # switch the device to LAVA control
-        device.request_online()
-        device.controlled_by = LAVADevice.CONTROL_LAVA
-        device.save()
+            # switch the device to LAVA control
+            device.request_online()
+            device.controlled_by = LAVADevice.CONTROL_LAVA
+            device.save()
+            device_pdu_action(device.id, power_on=False)
+        except Run.DoesNotExist:
+            logger.error(f"Run {device.device_type.name} for build {last_build.id} does not exist")

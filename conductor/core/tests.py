@@ -519,6 +519,13 @@ class TaskTest(TestCase):
             project=self.project,
             build_id="2"
         )
+        self.build_run = Run.objects.create(
+            build=self.build,
+            device_type="device-type-1",
+            ostree_hash="currentHash",
+            run_name="device-type-1"
+        )
+
         self.device_type1 = LAVADeviceType.objects.create(
             name="device-type-1",
             net_interface="eth0",
@@ -588,9 +595,16 @@ class TaskTest(TestCase):
         device_pdu_action(self.lava_device1.pk, power_on=False)
         save_mock.assert_called()
 
+    @patch("conductor.core.tasks.report_test_results")
+    @patch("conductor.core.tasks.device_pdu_action")
     @patch("conductor.core.models.LAVADevice.get_current_target", return_value=TARGET_DICT)
     @patch("conductor.core.models.LAVADevice.request_online")
-    def test_check_ota_completed(self, request_online_mock, get_current_target_mock):
+    def test_check_ota_completed(
+            self,
+            request_online_mock,
+            get_current_target_mock,
+            device_pdu_action_mock,
+            report_test_results_mock):
         self.lava_device1.controlled_by = LAVADevice.CONTROL_PDU
         ota_started_datetime = datetime.now() - timedelta(minutes=31)
         self.lava_device1.ota_started = ota_started_datetime
@@ -599,3 +613,5 @@ class TaskTest(TestCase):
         self.lava_device1.refresh_from_db()
         self.assertEqual(self.lava_device1.controlled_by, LAVADevice.CONTROL_LAVA)
         request_online_mock.assert_called()
+        device_pdu_action_mock.assert_called()
+        report_test_results_mock.assert_called()
