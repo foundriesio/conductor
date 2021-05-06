@@ -339,8 +339,8 @@ def __get_testjob_results__(device, job_id):
     return lava_job_results
 
 
-def test_res(device, job_id):
-    return __get_testjob_results__(device, job_id)
+#def test_res(device, job_id):
+#    return __get_testjob_results__(device, job_id)
 
 @celery.task
 def retrieve_lava_results(device_id, job_id):
@@ -407,11 +407,16 @@ def __report_test_result(device, result):
     test_dict = result.copy()
     test_dict.pop("status")
     new_test_request = requests.post(url, json=test_dict, headers=authentication)
+    logger.info(f"Reporting test {result['name']} for {device.name}")
     if new_test_request.status_code == 201:
         test_details = new_test_request.json()
         result.update(test_details)
         details_url = f"{url}{test_details['test-id']}/"
         update_details_request = requests.put(details_url, json=result, headers=authentication)
+        if update_details_request.status_code == 200:
+            logger.debug(f"Successfully reported details for {test_details['test-id']}")
+        else:
+            logger.warning(f"Failed to report details for {test_details['test-id']}")
 
 
 @celery.task
