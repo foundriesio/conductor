@@ -411,7 +411,7 @@ def __report_test_result(device, result):
     if new_test_request.status_code == 201:
         test_details = new_test_request.json()
         result.update(test_details)
-        details_url = f"{url}{test_details['test-id']}/"
+        details_url = f"{url}{test_details['test-id']}"
         update_details_request = requests.put(details_url, json=result, headers=authentication)
         if update_details_request.status_code == 200:
             logger.debug(f"Successfully reported details for {test_details['test-id']}")
