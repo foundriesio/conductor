@@ -299,7 +299,7 @@ def __get_testjob_results__(device, job_id):
                     "name": suite_name,
                     "status": "PASSED",
                     "target-name": target_name,
-                    "tests": []
+                    "results": []
                 }
                 tests_resp = requests.get(
                     urljoin(device.project.lava_url, f"jobs/{job_id}/suites/{suite['id']}/tests"),
@@ -310,7 +310,7 @@ def __get_testjob_results__(device, job_id):
                     tests_content = tests_resp.json()
                     for test_result in tests_content['results']:
                         #metadata = yaml.load(test_result['metadata'], Loader=yaml.SafeLoader)
-                        lava_job_results[suite_name]['tests'].append(
+                        lava_job_results[suite_name]['results'].append(
                             {
                                 "name": test_result['name'],
                                 "status": translate_result[test_result['result']],
