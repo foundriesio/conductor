@@ -32,6 +32,10 @@ actions:
         url: {{ BOOTLOADER_URL }}
         headers:
           OSF-TOKEN: OSF-TOKEN
+      sitimg:
+        url: {{ SITIMG_URL }}
+        headers:
+          OSF-TOKEN: OSF-TOKEN
 {% endif %}
 {% if device_type == "imx6ullevk" %}
       splimage:
@@ -42,10 +46,6 @@ actions:
 {% if device_type == "imx8mmevk" %}
       uboot:
         url: {{ UBOOT_URL }}
-        headers:
-          OSF-TOKEN: OSF-TOKEN
-      sitimg:
-        url: {{ SITIMG_URL }}
         headers:
           OSF-TOKEN: OSF-TOKEN
 {% endif %}
