@@ -376,9 +376,20 @@ def process_testjob_notification(event_data):
         if lava_job.job_type == LAVAJob.JOB_OTA and \
                 event_data.get("state") == "Finished" and \
                 lava_db_device:
-            # remove device from factory at the latest possible moment
+            if event_data.get("health") == "Completed":
+                # remove device from factory at the latest possible moment
+                lava_db_device.remove_from_factory()
+                device_pdu_action(lava_db_device.id, power_on=True)
+            else:
+                # report OTA failure?
+                lava_db_device.request_online()
+                logger.error("OTA flashing job failed!")
+        if lava_job.job_type == LAVAJob.JOB_LAVA and \
+                event_data.get("state") == "Running" and \
+                lava_db_device:
+            # remove device from factory so it can autoregister
+            # and update it's target ID
             lava_db_device.remove_from_factory()
-            device_pdu_action(lava_db_device.id, power_on=True)
         if lava_job.job_type == LAVAJob.JOB_LAVA and \
                 event_data.get("state") == "Finished" and \
                 lava_db_device:
@@ -403,7 +414,7 @@ def __report_test_result(device, result):
         "OSF-TOKEN": token,
     }
 
-    url = f"https://api.foundries.io/ota/devices/{device.auto_register_name}/tests/"
+    url = f"https://api.foundries.io/ota/devices/{device.project.name}-{device.name}/tests/"
     test_dict = result.copy()
     test_dict.pop("status")
     new_test_request = requests.post(url, json=test_dict, headers=authentication)
@@ -417,6 +428,9 @@ def __report_test_result(device, result):
             logger.debug(f"Successfully reported details for {test_details['test-id']}")
         else:
             logger.warning(f"Failed to report details for {test_details['test-id']}")
+    else:
+        logger.warning(f"Failed to create test result for {device.project.name}-{device.name}")
+        logger.warning(new_test_request.text)
 
 
 @celery.task
