@@ -376,7 +376,7 @@ def process_testjob_notification(event_data):
         if lava_job.job_type == LAVAJob.JOB_OTA and \
                 event_data.get("state") == "Finished" and \
                 lava_db_device:
-            if event_data.get("health") == "Completed":
+            if event_data.get("health") == "Complete":
                 # remove device from factory at the latest possible moment
                 lava_db_device.remove_from_factory()
                 device_pdu_action(lava_db_device.id, power_on=True)
