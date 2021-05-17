@@ -123,7 +123,7 @@ class LAVADeviceType(models.Model):
     device_type_settings = models.TextField(blank=True, null=True, validators=[yaml_validator])
 
     def __str__(self):
-        return self.name
+        return f"{self.name} ({self.project.name})"
 
     __settings__ = None
 
@@ -156,7 +156,7 @@ class LAVADevice(models.Model):
     )
 
     def __str__(self):
-        return self.name
+        return f"{self.name} ({self.project.name})"
 
     def __request_state(self, state):
         auth = {
