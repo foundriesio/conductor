@@ -77,7 +77,7 @@ class Build(models.Model):
     is_release = models.BooleanField(default=False)
 
     def __str__(self):
-        return str(self.build_id)
+        return f"{self.build_id} ({self.project.name})"
 
 
 class Run(models.Model):
@@ -243,5 +243,5 @@ class LAVAJob(models.Model):
     )
 
     def __str__(self):
-        return self.job_id
+        return f"{self.job_id} ({self.device})"
 

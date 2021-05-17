@@ -52,15 +52,15 @@ def _get_os_tree_hash(url, project):
 @celery.task
 def create_build_run(build_id, run_url, run_name, lava_job_type=LAVAJob.JOB_LAVA):
     logger.debug("Received task for build: %s" % build_id)
-    device_type = None
-    try:
-        device_type = LAVADeviceType.objects.get(name=run_name)
-    except LAVADeviceType.DoesNotExist:
-        return None
     build = None
     try:
         build = Build.objects.get(pk=build_id)
     except Build.DoesNotExist:
+        return None
+    device_type = None
+    try:
+        device_type = LAVADeviceType.objects.get(name=run_name, project=build.project)
+    except LAVADeviceType.DoesNotExist:
         return None
     # compose LAVA job definitions for each device
     run, _ = Run.objects.get_or_create(
@@ -365,7 +365,7 @@ def process_testjob_notification(event_data):
         logger.debug(f"Processing job: {job_id}")
         logger.debug(f"LAVA device name: {device_name}")
         if device_name:
-            lava_db_device = LAVADevice.objects.get(name=device_name)
+            lava_db_device = LAVADevice.objects.get(name=device_name, project=lava_job.project)
             lava_job.device = lava_db_device
             lava_job.save()
             logger.debug(f"LAVA device is: {lava_db_device.id}")
