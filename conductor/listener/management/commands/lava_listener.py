@@ -26,26 +26,26 @@ from django.core.management.base import BaseCommand
 from django.db.models import Field
 from django.db.utils import OperationalError
 
-from conductor.core.models import Project
+from conductor.core.models import LAVABackend
 from conductor.core.tasks import process_testjob_notification, process_device_notification
 
 
 logger = logging.getLogger()
 
 
-async def listener_main(project):
+async def listener_main(backend):
 
     event = asyncio.Event()
     await asyncio.gather(
-        listen_for_events(event, project)
+        listen_for_events(event, backend)
     )
 
-async def listen_for_events(event: asyncio.Event, project) -> None:
+async def listen_for_events(event: asyncio.Event, backend) -> None:
     logger.info("Starting event listener")
     while True:
         with contextlib.suppress(aiohttp.ClientError):
             async with aiohttp.ClientSession() as session:
-                async with session.ws_connect(project.websocket_url) as ws:
+                async with session.ws_connect(backend.websocket_url) as ws:
                     logger.info("Session connected")
                     async for msg in ws:
                         if msg.type != aiohttp.WSMsgType.TEXT:
@@ -69,27 +69,27 @@ async def listen_for_events(event: asyncio.Event, project) -> None:
 
 class Listener(object):
 
-    def __init__(self, project):
-        self.project = project
+    def __init__(self, backend):
+        self.backend = backend
 
     def run(self):
-        project = self.project
-        if not project.websocket_url:
+        backend = self.backend
+        if not backend.websocket_url:
             logger.info("Websocket URL missing. Exiting")
             sys.exit()
 
-        logger.info("Backend %s starting" % project.name)
+        logger.info("Backend %s starting" % backend.name)
         signal.signal(signal.SIGINT, self.stop)
         signal.signal(signal.SIGTERM, self.stop)
         loop = asyncio.new_event_loop()
         asyncio.set_event_loop(loop)
 
-        loop.run_until_complete(listener_main(project))
+        loop.run_until_complete(listener_main(backend))
         loop.close()
-        logger.info("Backend %s exited on its own" % project.name)
+        logger.info("Backend %s exited on its own" % backend.name)
 
     def stop(self, signal, stack_frame):
-        logger.info("Backend %s finishing ..." % self.project.name)
+        logger.info("Backend %s finishing ..." % self.backend.name)
         sys.exit()
 
 
@@ -112,7 +112,7 @@ class ListenerManager(object):
         n = 0
         while n < 24:  # wait up to 2 min
             try:
-                Project.objects.count()
+                LAVABackend.objects.count()
                 logger.info("listener manager started")
                 return
             except OperationalError:
@@ -125,21 +125,21 @@ class ListenerManager(object):
     def keep_listeners_running(self):
         ids = list(self.__processes__.keys())
 
-        for project in Project.objects.all():
-            process = self.__processes__.get(project.id)
+        for backend in LAVABackend.objects.all():
+            process = self.__processes__.get(backend.id)
             if not process:
-                self.start(project)
-            if project.id in ids:
-                ids.remove(project.id)
+                self.start(backend)
+            if backend.id in ids:
+                ids.remove(backend.id)
 
-        # remaining projects were removed from the database, stop them
-        for project_id in ids:
-            self.stop(project_id)
+        # remaining backends were removed from the database, stop them
+        for backend_id in ids:
+            self.stop(backend_id)
 
-    def start(self, project):
-        argv = [sys.executable, '-m', 'conductor.manage', 'lava_listener', project.name]
+    def start(self, backend):
+        argv = [sys.executable, '-m', 'conductor.manage', 'lava_listener', backend.name]
         listener = subprocess.Popen(argv)
-        self.__processes__[project.id] = listener
+        self.__processes__[backend.id] = listener
 
     def loop(self):
         try:
@@ -154,25 +154,25 @@ class ListenerManager(object):
             pass  # cleanup() will terminate sub-processes
 
     def cleanup(self):
-        for project_id in list(self.__processes__.keys()):
-            self.stop(project_id)
+        for backend_id in list(self.__processes__.keys()):
+            self.stop(backend_id)
 
-    def stop(self, project_id):
-        process = self.__processes__[project_id]
+    def stop(self, backend_id):
+        process = self.__processes__[backend_id]
         if not process.poll():
             process.terminate()
             process.wait()
-        self.__processes__.pop(project_id)
+        self.__processes__.pop(backend_id)
 
 class Command(BaseCommand):
     help = "Listen to LAVA websocket events"
 
     def add_arguments(self, parser):
         parser.add_argument(
-            'PROJECT',
+            'BACKEND',
             nargs='?',
             type=str,
-            help='Project name to listen to. If ommited, start the master process.',
+            help='LAVA Backend name to listen to. If ommited, start the master process.',
         )
 
     def handle(self, *args, **options):
@@ -185,10 +185,10 @@ class Command(BaseCommand):
             handler.setLevel(logging.INFO)
         logger.addHandler(handler)
         logger.info("Starting lava_listener command")
-        project_name = options.get("PROJECT")
-        if project_name:
-            project = Project.objects.get(name=project_name)
-            Listener(project).run()
+        backend_name = options.get("BACKEND")
+        if backend_name:
+            backend = LAVABackend.objects.get(name=backend_name)
+            Listener(backend).run()
         else:
             ListenerManager().run()
 

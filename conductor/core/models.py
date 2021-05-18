@@ -58,29 +58,24 @@ class LAVABackend(models.Model):
             return response.json()['job_ids']
         return []
 
+    def __str__(self):
+        return self.name
+
 
 class Project(models.Model):
     name = models.CharField(max_length=32)
     # secret stored in a factory and passed in webhook
     # request POST header
     secret = models.CharField(max_length=128)
-    lava_url = models.URLField()
-    websocket_url = models.URLField(blank=True, null=True)
-    lava_api_token = models.CharField(max_length=128)
+    lava_backend = models.ForeignKey(
+        LAVABackend,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True)
 
     def submit_lava_job(self, definition):
-        # authentication headers
-        authentication = {
-            "Authorization": "Token %s" % self.lava_api_token,
-        }
-        response = requests.post(
-            urljoin(self.lava_url, "jobs/"),
-            headers=authentication,
-            data={"definition": definition},
-            timeout=DEFAULT_TIMEOUT
-        )
-        if response.status_code == 201:
-            return response.json()['job_ids']
+        if self.lava_backend:
+            return self.lava_backend.submit_lava_job(definition)
         return []
 
     def __str__(self):
@@ -182,9 +177,9 @@ class LAVADevice(models.Model):
 
     def __request_state(self, state):
         auth = {
-            "Authorization": f"Token {self.project.lava_api_token}"
+            "Authorization": f"Token {self.project.lava_backend.lava_api_token}"
         }
-        device_url = urljoin(self.project.lava_url, "/".join(["devices", self.name]))
+        device_url = urljoin(self.project.lava_backend.lava_url, "/".join(["devices", self.name]))
         if not device_url.endswith("/"):
             device_url = device_url + "/"
         device_request = requests.get(device_url, headers=auth)

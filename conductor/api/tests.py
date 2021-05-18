@@ -13,18 +13,22 @@
 # limitations under the License.
 
 from django.test import TestCase, Client
-from conductor.core.models import Project, LAVADeviceType
+from conductor.core.models import Project, LAVABackend, LAVADeviceType
 from conductor.celery import app as celeryapp
 from unittest.mock import MagicMock, patch
 
 
 class ApiViewTest(TestCase):
     def setUp(self):
+        self.lavabackend1 = LAVABackend.objects.create(
+            name="testLavaBackend1",
+            lava_url="http://lava.example.com/api/v0.2/",
+            lava_api_token="lavatoken",
+        )
         self.project = Project.objects.create(
             name="testProject1",
             secret="webhooksecret",
-            lava_url="http://lava.example.com/api/v0.2/",
-            lava_api_token="lavatoken",
+            lava_backend=self.lavabackend1
         )
         self.device_type = LAVADeviceType.objects.create(
             name="name1",

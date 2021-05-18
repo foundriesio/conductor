@@ -231,9 +231,9 @@ def device_pdu_action(device_id, power_on=True):
     except LAVADevice.DoesNotExist:
         return
     # get device dictionary
-    device_dict_url = urljoin(lava_device.project.lava_url, f"devices/{lava_device.name}/dictionary?render=true")
+    device_dict_url = urljoin(lava_device.project.lava_backend.lava_url, f"devices/{lava_device.name}/dictionary?render=true")
     auth = {
-        "Authorization": f"Token {lava_device.project.lava_api_token}"
+        "Authorization": f"Token {lava_device.project.lava_backend.lava_api_token}"
     }
     device_request = requests.get(device_dict_url, headers=auth)
     device_dict = None
@@ -260,7 +260,7 @@ def __get_testjob_results__(device, job_id):
     target_name = current_target.get('target-name')
     lava_job_results = {}
     authentication = {
-        "Authorization": "Token %s" % device.project.lava_api_token,
+        "Authorization": "Token %s" % device.project.lava_backend.lava_api_token,
     }
     # get job definition
     definition_resp = requests.get(

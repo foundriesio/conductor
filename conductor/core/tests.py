@@ -16,7 +16,7 @@ from datetime import datetime, timedelta
 from django.test import TestCase
 from unittest.mock import patch, MagicMock, PropertyMock
 
-from conductor.core.models import Project, Build, Run, LAVADeviceType, LAVADevice, LAVAJob, PDUAgent
+from conductor.core.models import Project, Build, Run, LAVABackend, LAVADeviceType, LAVADevice, LAVAJob, PDUAgent
 from conductor.core.tasks import create_build_run, create_ota_job, device_pdu_action, check_ota_completed
 
 
@@ -388,11 +388,15 @@ TARGET_DICT={"aktualizr-toml": "[logger]\nloglevel = 2\n\n[p11]\nmodule = \"\"\n
 
 class ProjectTest(TestCase):
     def setUp(self):
+        self.lavabackend1 = LAVABackend.objects.create(
+            name="testLavaBackend1",
+            lava_url="http://lava.example.com/api/v0.2/",
+            lava_api_token="lavatoken",
+        )
         self.project = Project.objects.create(
             name="testProject1",
             secret="webhooksecret",
-            lava_url="http://lava.example.com/api/v0.2/",
-            lava_api_token="lavatoken",
+            lava_backend=self.lavabackend1
         )
 
     @patch('requests.post')
@@ -410,11 +414,15 @@ class ProjectTest(TestCase):
 
 class LAVADeviceTest(TestCase):
     def setUp(self):
+        self.lavabackend1 = LAVABackend.objects.create(
+            name="testLavaBackend1",
+            lava_url="http://lava.example.com/api/v0.2/",
+            lava_api_token="lavatoken",
+        )
         self.project = Project.objects.create(
             name="testProject1",
             secret="webhooksecret",
-            lava_url="http://lava.example.com/api/v0.2/",
-            lava_api_token="lavatoken",
+            lava_backend=self.lavabackend1
         )
         self.pduagent1 = PDUAgent.objects.create(
             name="pduagent1",
@@ -491,11 +499,15 @@ class LAVADeviceTest(TestCase):
 
 class TaskTest(TestCase):
     def setUp(self):
+        self.lavabackend1 = LAVABackend.objects.create(
+            name="testLavaBackend1",
+            lava_url="http://lava.example.com/api/v0.2/",
+            lava_api_token="lavatoken",
+        )
         self.project = Project.objects.create(
             name="testProject1",
             secret="webhooksecret",
-            lava_url="http://lava.example.com/api/v0.2/",
-            lava_api_token="lavatoken",
+            lava_backend=self.lavabackend1
         )
         self.previous_build = Build.objects.create(
             url="https://example.com/build/1/",
