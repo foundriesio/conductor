@@ -264,7 +264,7 @@ def __get_testjob_results__(device, job_id):
     }
     # get job definition
     definition_resp = requests.get(
-        urljoin(device.project.lava_url, f"jobs/{job_id}/"),
+        urljoin(device.project.lava_backend.lava_url, f"jobs/{job_id}/"),
         headers=authentication,
         timeout=DEFAULT_TIMEOUT
     )
@@ -282,7 +282,7 @@ def __get_testjob_results__(device, job_id):
 
     # compare job definition with results (any missing)?
     suites_resp = requests.get(
-        urljoin(device.project.lava_url, f"jobs/{job_id}/suites/"),
+        urljoin(device.project.lava_backend.lava_url, f"jobs/{job_id}/suites/"),
         headers=authentication,
         timeout=DEFAULT_TIMEOUT
     )
@@ -302,7 +302,7 @@ def __get_testjob_results__(device, job_id):
                     "results": []
                 }
                 tests_resp = requests.get(
-                    urljoin(device.project.lava_url, f"jobs/{job_id}/suites/{suite['id']}/tests"),
+                    urljoin(device.project.lava_backend.lava_url, f"jobs/{job_id}/suites/{suite['id']}/tests"),
                     headers=authentication,
                     timeout=DEFAULT_TIMEOUT
                 )
