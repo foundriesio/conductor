@@ -124,7 +124,12 @@ def create_ota_job(build_id, run_url, run_name):
     if previous_builds:
         previous_build = previous_builds[0]
         try:
-            run = previous_build.run_set.get(run_name=run_name)
+            run = None
+            runs = previous_build.run_set.filter(run_name=run_name)
+            if runs:
+                run = runs[0]
+            else:
+                return None
             run_url = f"{previous_build.url}runs/{run.run_name}/"
             create_build_run(previous_build.id, run_url, run.run_name, lava_job_type=LAVAJob.JOB_OTA)
         except Run.DoesNotExist:
