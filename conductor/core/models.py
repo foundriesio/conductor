@@ -37,6 +37,28 @@ def yaml_validator(value):
         raise ValidationError(e)
 
 
+class LAVABackend(models.Model):
+    name = models.CharField(max_length=32)
+    lava_url = models.URLField()
+    websocket_url = models.URLField(blank=True, null=True)
+    lava_api_token = models.CharField(max_length=128)
+
+    def submit_lava_job(self, definition):
+        # authentication headers
+        authentication = {
+            "Authorization": "Token %s" % self.lava_api_token,
+        }
+        response = requests.post(
+            urljoin(self.lava_url, "jobs/"),
+            headers=authentication,
+            data={"definition": definition},
+            timeout=DEFAULT_TIMEOUT
+        )
+        if response.status_code == 201:
+            return response.json()['job_ids']
+        return []
+
+
 class Project(models.Model):
     name = models.CharField(max_length=32)
     # secret stored in a factory and passed in webhook
