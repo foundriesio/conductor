@@ -94,6 +94,10 @@ actions:
         IMAGE: "hello-world"
     - repository: http://github.com/mwasilew/test-definitions.git
       from: git
+      path: automated/linux/docker/docker-networking.yaml
+      name: docker-networking
+    - repository: http://github.com/mwasilew/test-definitions.git
+      from: git
       path: automated/linux/kernel-config-checker/kernel-config-checker.yaml
       name: kernel-config-checker
       params:
