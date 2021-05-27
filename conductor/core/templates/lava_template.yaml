@@ -94,7 +94,7 @@ actions:
         IMAGE: "hello-world"
     - repository: http://github.com/mwasilew/test-definitions.git
       from: git
-      path: automated/linux/docker/docker-networking.yaml
+      path: automated/linux/docker-networking/docker-networking.yaml
       name: docker-networking
     - repository: http://github.com/mwasilew/test-definitions.git
       from: git
