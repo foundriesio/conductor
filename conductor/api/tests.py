@@ -13,7 +13,7 @@
 # limitations under the License.
 
 from django.test import TestCase, Client
-from conductor.core.models import Project, LAVABackend, LAVADeviceType
+from conductor.core.models import Project, LAVABackend, LAVADeviceType, LAVADevice
 from conductor.celery import app as celeryapp
 from unittest.mock import MagicMock, patch
 
@@ -36,7 +36,12 @@ class ApiViewTest(TestCase):
             net_interface="eth0",
             project=self.project
         )
-
+        self.device = LAVADevice.objects.create(
+            device_type=self.device_type,
+            name="device1",
+            auto_register_name="device_auto_reg_1",
+            project=self.project
+        )
         self.client = Client()
 
     @patch("conductor.core.tasks.update_build_commit_id.delay", return_value="git_sha_1")
@@ -81,7 +86,7 @@ class ApiViewTest(TestCase):
             "/api/jobserv/",
             request_body_dict,
             content_type="application/json",
-            **{"HTTP_X_JobServ_Sig":f"Token: foo"}
+            **{"HTTP_X_JobServ_Sig": "Token: foo"}
         )
         self.assertEqual(response.status_code, 403)
 
@@ -216,3 +221,76 @@ class ApiViewTest(TestCase):
         )
         self.assertEqual(response.status_code, 405)
 
+    @patch("conductor.core.tasks.check_device_ota_completed.delay")
+    def test_device_webhook(self, check_device_ota_completed_mock):
+        request_body_dict = {
+            "name": self.device.auto_register_name,
+            "project": self.project.name,
+        }
+        response = self.client.post(
+            "/api/device/",
+            request_body_dict,
+            content_type="application/json",
+            **{"HTTP_X_DeviceOta_Sig":f"Token: {self.project_secret}"}
+        )
+        self.assertEqual(response.status_code, 200)
+        check_device_ota_completed_mock.assert_called()
+
+    @patch("conductor.core.tasks.check_device_ota_completed.delay")
+    def test_device_webhook_wrong_token(self, check_device_ota_completed_mock):
+        request_body_dict = {
+            "name": self.device.auto_register_name,
+            "project": self.project.name,
+        }
+        response = self.client.post(
+            "/api/device/",
+            request_body_dict,
+            content_type="application/json",
+            **{"HTTP_X_DeviceOta_Sig":"Token: foo"}
+        )
+        self.assertEqual(response.status_code, 403)
+        check_device_ota_completed_mock.assert_not_called()
+
+    @patch("conductor.core.tasks.check_device_ota_completed.delay")
+    def test_device_webhook_missing_token(self, check_device_ota_completed_mock):
+        request_body_dict = {
+            "name": self.device.auto_register_name,
+            "project": self.project.name,
+        }
+        response = self.client.post(
+            "/api/device/",
+            request_body_dict,
+            content_type="application/json",
+        )
+        self.assertEqual(response.status_code, 403)
+        check_device_ota_completed_mock.assert_not_called()
+
+    @patch("conductor.core.tasks.check_device_ota_completed.delay")
+    def test_device_webhook_wrong_project(self, check_device_ota_completed_mock):
+        request_body_dict = {
+            "name": self.device.auto_register_name,
+            "project": "foo",
+        }
+        response = self.client.post(
+            "/api/device/",
+            request_body_dict,
+            content_type="application/json",
+            **{"HTTP_X_DeviceOta_Sig":f"Token: {self.project_secret}"}
+        )
+        self.assertEqual(response.status_code, 404)
+        check_device_ota_completed_mock.assert_not_called()
+
+    @patch("conductor.core.tasks.check_device_ota_completed.delay")
+    def test_device_webhook_missing_device(self, check_device_ota_completed_mock):
+        request_body_dict = {
+            "name": "foo",
+            "project": self.project.name,
+        }
+        response = self.client.post(
+            "/api/device/",
+            request_body_dict,
+            content_type="application/json",
+            **{"HTTP_X_DeviceOta_Sig":f"Token: {self.project_secret}"}
+        )
+        self.assertEqual(response.status_code, 404)
+        check_device_ota_completed_mock.assert_not_called()

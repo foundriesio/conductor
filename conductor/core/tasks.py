@@ -461,6 +461,43 @@ def report_test_results(lava_device_id, target_name, ota_update_result=None, ota
         __report_test_result(device, result_dict)
 
 
+def __check_ota_status(device):
+    current_target = device.get_current_target()
+    # determine whether current target is correct
+    last_build = device.project.build_set.last()
+    previous_builds = last_build.project.build_set.filter(build_id__lt=last_build.build_id).order_by('-build_id')
+    previous_build = None
+    if previous_builds:
+        previous_build = previous_builds[0]
+    try:
+        last_run = last_build.run_set.get(run_name=device.device_type.name)
+        target_name = current_target.get('target-name')
+        if current_target.get('ostree-hash') == last_run.ostree_hash:
+            # update successful
+            logger.info(f"Device {device.name} successfully updated to {last_build.build_id}")
+            report_test_results(device.id, target_name, ota_update_result=True, ota_update_from=previous_build.build_id)
+        else:
+            logger.info(f"Device {device.name} NOT updated to {last_build.build_id}")
+            report_test_results(device.id, target_name, ota_update_result=False, ota_update_from=previous_build.build_id)
+
+        # switch the device to LAVA control
+        device.request_online()
+        device.controlled_by = LAVADevice.CONTROL_LAVA
+        device.save()
+        device_pdu_action(device.id, power_on=False)
+    except Run.DoesNotExist:
+        logger.error(f"Run {device.device_type.name} for build {last_build.id} does not exist")
+
+
+@celery.task
+def check_device_ota_completed(device_name, project_name):
+    try:
+        device = LAVADevice.objects.get(auto_register_name=device_name, project__name=project_name)
+        __check_ota_status(device)
+    except LAVADevice.DoesNotExist:
+        logger.error(f"Device with name {device_name} not found in project {project_name}")
+
+
 @celery.task
 def check_ota_completed():
     # This is a periodic task which checks all devices which are in
@@ -474,28 +511,4 @@ def check_ota_completed():
         ota_started__lt=deadline
     )
     for device in devices:
-        current_target = device.get_current_target()
-        # determine whether current target is correct
-        last_build = device.project.build_set.last()
-        previous_builds = last_build.project.build_set.filter(build_id__lt=last_build.build_id).order_by('-build_id')
-        previous_build = None
-        if previous_builds:
-            previous_build = previous_builds[0]
-        try:
-            last_run = last_build.run_set.get(run_name=device.device_type.name)
-            target_name = current_target.get('target-name')
-            if current_target.get('ostree-hash') == last_run.ostree_hash:
-                # update successful
-                logger.info(f"Device {device.name} successfully updated to {last_build.build_id}")
-                report_test_results(device.id, target_name, ota_update_result=True, ota_update_from=previous_build.build_id)
-            else:
-                logger.info(f"Device {device.name} NOT updated to {last_build.build_id}")
-                report_test_results(device.id, target_name, ota_update_result=False, ota_update_from=previous_build.build_id)
-
-            # switch the device to LAVA control
-            device.request_online()
-            device.controlled_by = LAVADevice.CONTROL_LAVA
-            device.save()
-            device_pdu_action(device.id, power_on=False)
-        except Run.DoesNotExist:
-            logger.error(f"Run {device.device_type.name} for build {last_build.id} does not exist")
+        __check_ota_status(device)
