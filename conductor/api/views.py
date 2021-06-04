@@ -34,12 +34,12 @@ def __verify_jobserv(request):
         header_token = request.headers.get("X-JobServ-Sig", None)
         if not header_token:
             return HttpResponseForbidden()
-        # ToDo: match the token with local settings
         try:
             request_body_json = json.loads(request.body)
         except json.decoder.JSONDecodeError:
             return HttpResponseBadRequest()
         header_token_sha256 = header_token.split(":", 1)[1].strip()
+        request_body_json.update({"header": header_token_sha256})
         # get request body
         if request_body_json.get("status") != "PASSED":
             # nothing to do with failed build
@@ -72,6 +72,10 @@ def process_jobserv_webhook(request):
         # do nothing for container builds
         return HttpResponse("OK")
     project = get_object_or_404(Project, name=project_name)
+    if not project.secret == request_body_json.get("header"):
+        # check if secret in the request matches one
+        # stored in the project settings
+        return HttpResponseForbidden()
     # create new Build
     build, _ = Build.objects.get_or_create(url=build_url, project=project, build_id=build_id)
     run_url = None

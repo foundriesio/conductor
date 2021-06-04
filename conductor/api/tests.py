@@ -25,9 +25,10 @@ class ApiViewTest(TestCase):
             lava_url="http://lava.example.com/api/v0.2/",
             lava_api_token="lavatoken",
         )
+        self.project_secret = "webhooksecret"
         self.project = Project.objects.create(
             name="testProject1",
-            secret="webhooksecret",
+            secret=self.project_secret,
             lava_backend=self.lavabackend1
         )
         self.device_type = LAVADeviceType.objects.create(
@@ -55,7 +56,7 @@ class ApiViewTest(TestCase):
             "/api/jobserv/",
             request_body_dict,
             content_type="application/json",
-            **{"HTTP_X_JobServ_Sig":"Token: blah"}
+            **{"HTTP_X_JobServ_Sig":f"Token: {self.project_secret}"}
         )
         self.assertEqual(response.status_code, 201)
         # check if build was created
@@ -65,6 +66,24 @@ class ApiViewTest(TestCase):
         self.assertEqual(build.run_set.all().count(), 1)
         requests_mock.assert_called()
         update_commit_mock.assert_called()
+
+    def test_jobserv_webhook_incorrect_header(self):
+        request_body_dict = {
+            "status": "PASSED",
+            "build_id": 1,
+            "url": "https://api.foundries.io/projects/testProject1/lmp/builds/73/",
+            "trigger_name": "platform-master",
+            "runs": [
+                {"url": "example.com", "name": "name1"}
+            ]
+        }
+        response = self.client.post(
+            "/api/jobserv/",
+            request_body_dict,
+            content_type="application/json",
+            **{"HTTP_X_JobServ_Sig":f"Token: foo"}
+        )
+        self.assertEqual(response.status_code, 403)
 
     def test_jobserv_webhook_missing_header(self):
         request_body_dict = {
@@ -97,7 +116,7 @@ class ApiViewTest(TestCase):
             "/api/jobserv/",
             request_body_dict,
             content_type="application/json",
-            **{"HTTP_X_JobServ_Sig":"Token: blah"}
+            **{"HTTP_X_JobServ_Sig":f"Token: {self.project_secret}"}
         )
         self.assertEqual(response.status_code, 200)
 
@@ -115,7 +134,7 @@ class ApiViewTest(TestCase):
             "/api/jobserv/",
             request_body_dict,
             content_type="application/json",
-            **{"HTTP_X_Jobserv_Sig":"Token: blah"}
+            **{"HTTP_X_JobServ_Sig":f"Token: {self.project_secret}"}
         )
         self.assertEqual(response.status_code, 404)
 
@@ -124,7 +143,7 @@ class ApiViewTest(TestCase):
             "/api/jobserv/",
             "wrong request body:",
             content_type="application/json",
-            **{"HTTP_X_Jobserv_Sig":"Token: blah"}
+            **{"HTTP_X_Jobserv_Sig":"Token: "}
         )
         self.assertEqual(response.status_code, 400)
 
@@ -141,7 +160,7 @@ class ApiViewTest(TestCase):
             "/api/jobserv/",
             request_body_dict,
             content_type="application/json",
-            **{"HTTP_X_JobServ_Sig":"Token: blah"}
+            **{"HTTP_X_JobServ_Sig":f"Token: {self.project_secret}"}
         )
         self.assertEqual(response.status_code, 400)
 
@@ -158,14 +177,14 @@ class ApiViewTest(TestCase):
             "/api/jobserv/",
             request_body_dict,
             content_type="application/json",
-            **{"HTTP_X_JobServ_Sig":"Token: blah"}
+            **{"HTTP_X_JobServ_Sig":f"Token: {self.project_secret}"}
         )
         self.assertEqual(response.status_code, 400)
 
     def test_jobserv_webhook_get(self):
         response = self.client.get(
             "/api/jobserv/",
-            **{"HTTP_X_JobServ_Sig":"Token: blah"}
+            **{"HTTP_X_JobServ_Sig":f"Token: {self.project_secret}"}
         )
         self.assertEqual(response.status_code, 405)
 
@@ -184,7 +203,7 @@ class ApiViewTest(TestCase):
             "/api/lmp/",
             request_body_dict,
             content_type="application/json",
-            **{"HTTP_X_JobServ_Sig":"Token: blah"}
+            **{"HTTP_X_JobServ_Sig":f"Token: {self.project_secret}"}
         )
         self.assertEqual(response.status_code, 200)
         # check if build was created
@@ -193,7 +212,7 @@ class ApiViewTest(TestCase):
     def test_jobserv_lmp_get(self):
         response = self.client.get(
             "/api/lmp/",
-            **{"HTTP_X_JobServ_Sig":"Token: blah"}
+            **{"HTTP_X_JobServ_Sig":f"Token: {self.project_secret}"}
         )
         self.assertEqual(response.status_code, 405)
 
