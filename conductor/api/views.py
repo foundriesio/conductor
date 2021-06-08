@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import hmac
 import json
 import logging
 from django.shortcuts import render
@@ -21,6 +22,7 @@ from django.views.decorators.csrf import csrf_exempt
 
 from conductor.core.models import Project, Build, LAVADevice
 from conductor.core.tasks import create_build_run, merge_lmp_manifest, update_build_commit_id, check_device_ota_completed
+from conductor.core.utils import ISO8601_JSONEncoder
 
 
 logger = logging.getLogger()
@@ -64,7 +66,11 @@ def process_device_webhook(request):
     project_name = request_body_json.get("project")
     device_name = request_body_json.get("name")
     project = get_object_or_404(Project, name=project_name)
-    if not project.secret == request_body_json.get("header"):
+    sha256_digest = request_body_json.pop("header")
+    data = json.dumps(request_body_json, cls=ISO8601_JSONEncoder)
+    #data = json.dumps(request_body_json, cls=json.JSONEncoder)
+    sig = hmac.new(project.secret.encode(), msg=data.encode(), digestmod="sha256")
+    if not hmac.compare_digest(sig.hexdigest(), sha256_digest):
         logger.warning(f"Incorrect device secret for project: {project.name}, device: {device_name}")
         # check if secret in the request matches one
         # stored in the project settings
@@ -103,7 +109,11 @@ def process_jobserv_webhook(request):
         # do nothing for container builds
         return HttpResponse("OK")
     project = get_object_or_404(Project, name=project_name)
-    if not project.secret == request_body_json.get("header"):
+    sha256_digest = request_body_json.pop("header")
+    data = json.dumps(request_body_json, cls=ISO8601_JSONEncoder)
+    #data = json.dumps(request_body_json, cls=json.JSONEncoder)
+    sig = hmac.new(project.secret.encode(), msg=data.encode(), digestmod="sha256")
+    if not hmac.compare_digest(sig.hexdigest(), sha256_digest):
         logger.warning(f"Incorrect jobserv secret for project: {project.name}")
         # check if secret in the request matches one
         # stored in the project settings

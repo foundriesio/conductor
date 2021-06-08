@@ -12,8 +12,11 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import hmac
+import json
 from django.test import TestCase, Client
 from conductor.core.models import Project, LAVABackend, LAVADeviceType, LAVADevice
+from conductor.core.utils import ISO8601_JSONEncoder
 from conductor.celery import app as celeryapp
 from unittest.mock import MagicMock, patch
 
@@ -57,11 +60,13 @@ class ApiViewTest(TestCase):
                 {"url": "example.com", "name": "name1"}
             ]
         }
+        data = json.dumps(request_body_dict, cls=ISO8601_JSONEncoder)
+        sig = hmac.new(self.project.secret.encode(), msg=data.encode(), digestmod="sha256")
         response = self.client.post(
             "/api/jobserv/",
             request_body_dict,
             content_type="application/json",
-            **{"HTTP_X_JobServ_Sig":f"Token: {self.project_secret}"}
+            **{"HTTP_X_JobServ_Sig":f"sha256: {sig.hexdigest()}"}
         )
         self.assertEqual(response.status_code, 201)
         # check if build was created
@@ -86,7 +91,7 @@ class ApiViewTest(TestCase):
             "/api/jobserv/",
             request_body_dict,
             content_type="application/json",
-            **{"HTTP_X_JobServ_Sig": "Token: foo"}
+            **{"HTTP_X_JobServ_Sig": "sha256: foo"}
         )
         self.assertEqual(response.status_code, 403)
 
@@ -117,11 +122,13 @@ class ApiViewTest(TestCase):
                 {"url": "example.com", "name": "name1"}
             ]
         }
+        data = json.dumps(request_body_dict, cls=ISO8601_JSONEncoder)
+        sig = hmac.new(self.project.secret.encode(), msg=data.encode(), digestmod="sha256")
         response = self.client.post(
             "/api/jobserv/",
             request_body_dict,
             content_type="application/json",
-            **{"HTTP_X_JobServ_Sig":f"Token: {self.project_secret}"}
+            **{"HTTP_X_JobServ_Sig":f"sha256: {sig.hexdigest()}"}
         )
         self.assertEqual(response.status_code, 200)
 
@@ -135,11 +142,13 @@ class ApiViewTest(TestCase):
                 {"url": "example.com", "name": "name1"}
             ]
         }
+        data = json.dumps(request_body_dict, cls=ISO8601_JSONEncoder)
+        sig = hmac.new(self.project.secret.encode(), msg=data.encode(), digestmod="sha256")
         response = self.client.post(
             "/api/jobserv/",
             request_body_dict,
             content_type="application/json",
-            **{"HTTP_X_JobServ_Sig":f"Token: {self.project_secret}"}
+            **{"HTTP_X_JobServ_Sig":f"sha256: {sig.hexdigest()}"}
         )
         self.assertEqual(response.status_code, 404)
 
@@ -161,11 +170,13 @@ class ApiViewTest(TestCase):
                 {"url": "example.com", "name": "name1"}
             ]
         }
+        data = json.dumps(request_body_dict, cls=ISO8601_JSONEncoder)
+        sig = hmac.new(self.project.secret.encode(), msg=data.encode(), digestmod="sha256")
         response = self.client.post(
             "/api/jobserv/",
             request_body_dict,
             content_type="application/json",
-            **{"HTTP_X_JobServ_Sig":f"Token: {self.project_secret}"}
+            **{"HTTP_X_JobServ_Sig":f"sha256: {sig.hexdigest()}"}
         )
         self.assertEqual(response.status_code, 400)
 
@@ -178,11 +189,13 @@ class ApiViewTest(TestCase):
                 {"url": "example.com", "name": "name1"}
             ]
         }
+        data = json.dumps(request_body_dict, cls=ISO8601_JSONEncoder)
+        sig = hmac.new(self.project.secret.encode(), msg=data.encode(), digestmod="sha256")
         response = self.client.post(
             "/api/jobserv/",
             request_body_dict,
             content_type="application/json",
-            **{"HTTP_X_JobServ_Sig":f"Token: {self.project_secret}"}
+            **{"HTTP_X_JobServ_Sig":f"sha256: {sig.hexdigest()}"}
         )
         self.assertEqual(response.status_code, 400)
 
@@ -204,11 +217,13 @@ class ApiViewTest(TestCase):
                 {"url": "example.com", "name": "name1"}
             ]
         }
+        data = json.dumps(request_body_dict, cls=ISO8601_JSONEncoder)
+        sig = hmac.new(self.project.secret.encode(), msg=data.encode(), digestmod="sha256")
         response = self.client.post(
             "/api/lmp/",
             request_body_dict,
             content_type="application/json",
-            **{"HTTP_X_JobServ_Sig":f"Token: {self.project_secret}"}
+            **{"HTTP_X_JobServ_Sig":f"sha256: {sig.hexdigest()}"}
         )
         self.assertEqual(response.status_code, 200)
         # check if build was created
@@ -227,11 +242,13 @@ class ApiViewTest(TestCase):
             "name": self.device.auto_register_name,
             "project": self.project.name,
         }
+        data = json.dumps(request_body_dict, cls=ISO8601_JSONEncoder)
+        sig = hmac.new(self.project.secret.encode(), msg=data.encode(), digestmod="sha256")
         response = self.client.post(
             "/api/device/",
             request_body_dict,
             content_type="application/json",
-            **{"HTTP_X_DeviceOta_Sig":f"Token: {self.project_secret}"}
+            **{"HTTP_X_DeviceOta_Sig":f"sha256: {sig.hexdigest()}"}
         )
         self.assertEqual(response.status_code, 200)
         check_device_ota_completed_mock.assert_called()
@@ -246,7 +263,7 @@ class ApiViewTest(TestCase):
             "/api/device/",
             request_body_dict,
             content_type="application/json",
-            **{"HTTP_X_DeviceOta_Sig":"Token: foo"}
+            **{"HTTP_X_DeviceOta_Sig":f"Token: {self.project_secret}"}
         )
         self.assertEqual(response.status_code, 403)
         check_device_ota_completed_mock.assert_not_called()
@@ -271,11 +288,13 @@ class ApiViewTest(TestCase):
             "name": self.device.auto_register_name,
             "project": "foo",
         }
+        data = json.dumps(request_body_dict, cls=ISO8601_JSONEncoder)
+        sig = hmac.new(self.project.secret.encode(), msg=data.encode(), digestmod="sha256")
         response = self.client.post(
             "/api/device/",
             request_body_dict,
             content_type="application/json",
-            **{"HTTP_X_DeviceOta_Sig":f"Token: {self.project_secret}"}
+            **{"HTTP_X_DeviceOta_Sig":f"sha256: {sig.hexdigest()}"}
         )
         self.assertEqual(response.status_code, 404)
         check_device_ota_completed_mock.assert_not_called()
@@ -286,11 +305,13 @@ class ApiViewTest(TestCase):
             "name": "foo",
             "project": self.project.name,
         }
+        data = json.dumps(request_body_dict, cls=ISO8601_JSONEncoder)
+        sig = hmac.new(self.project.secret.encode(), msg=data.encode(), digestmod="sha256")
         response = self.client.post(
             "/api/device/",
             request_body_dict,
             content_type="application/json",
-            **{"HTTP_X_DeviceOta_Sig":f"Token: {self.project_secret}"}
+            **{"HTTP_X_DeviceOta_Sig":f"sha256: {sig.hexdigest()}"}
         )
         self.assertEqual(response.status_code, 404)
         check_device_ota_completed_mock.assert_not_called()

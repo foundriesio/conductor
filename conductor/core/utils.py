@@ -12,4 +12,12 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-__version__ = '1.13.2'
+import datetime
+import json
+
+
+class ISO8601_JSONEncoder(json.JSONEncoder):
+    def default(self, obj):
+        if isinstance(obj, datetime.datetime):
+            return obj.isoformat() + '+00:00'
+        return super().default(obj)
