@@ -105,9 +105,6 @@ def process_jobserv_webhook(request):
         return HttpResponseBadRequest()
 
     trigger_name = request_body_json.get("trigger_name")
-    if "platform" not in trigger_name:
-        # do nothing for container builds
-        return HttpResponse("OK")
     project = get_object_or_404(Project, name=project_name)
     sha256_digest = request_body_json.pop("header")
     data = json.dumps(request_body_json, cls=ISO8601_JSONEncoder)
@@ -118,6 +115,9 @@ def process_jobserv_webhook(request):
         # check if secret in the request matches one
         # stored in the project settings
         return HttpResponseForbidden()
+    if "platform" not in trigger_name:
+        # do nothing for container builds
+        return HttpResponse("OK")
     # create new Build
     build, _ = Build.objects.get_or_create(url=build_url, project=project, build_id=build_id)
     run_url = None
