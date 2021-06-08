@@ -42,10 +42,27 @@ def __verify_header_auth(request, header_name="X-JobServ-Sig"):
             return HttpResponseForbidden()
         try:
             request_body_json = json.loads(request.body)
+            build_url = request_body_json.get("url")
+            if not build_url:
+                return HttpResponseBadRequest()
+            #"url": "https://api.foundries.io/projects/milosz-rpi3/lmp/builds/73/",
+            project_name = None
+            try:
+                project_name = build_url.split("/")[4]
+            except IndexError:
+                return HttpResponseBadRequest()
+            project = get_object_or_404(Project, name=project_name)
+            sha256_digest = header_token.split(":", 1)[1].strip()
+            data = json.dumps(request_body_json, cls=ISO8601_JSONEncoder)
+            #data = json.dumps(request_body_json, cls=json.JSONEncoder)
+            sig = hmac.new(project.secret.encode(), msg=request.body, digestmod="sha256")
+            if not hmac.compare_digest(sig.hexdigest(), sha256_digest):
+                logger.warning(f"Incorrect jobserv secret for project: {project.name}")
+                # check if secret in the request matches one
+                # stored in the project settings
+                return HttpResponseForbidden()
         except json.decoder.JSONDecodeError:
             return HttpResponseBadRequest()
-        header_token_sha256 = header_token.split(":", 1)[1].strip()
-        request_body_json.update({"header": header_token_sha256})
     else:
         return HttpResponseNotAllowed(["POST"])
     return request_body_json
@@ -66,15 +83,15 @@ def process_device_webhook(request):
     project_name = request_body_json.get("project")
     device_name = request_body_json.get("name")
     project = get_object_or_404(Project, name=project_name)
-    sha256_digest = request_body_json.pop("header")
-    data = json.dumps(request_body_json, cls=ISO8601_JSONEncoder)
-    #data = json.dumps(request_body_json, cls=json.JSONEncoder)
-    sig = hmac.new(project.secret.encode(), msg=data.encode(), digestmod="sha256")
-    if not hmac.compare_digest(sig.hexdigest(), sha256_digest):
-        logger.warning(f"Incorrect device secret for project: {project.name}, device: {device_name}")
-        # check if secret in the request matches one
-        # stored in the project settings
-        return HttpResponseForbidden()
+#    sha256_digest = request_body_json.pop("header")
+#    data = json.dumps(request_body_json, cls=ISO8601_JSONEncoder)
+#    #data = json.dumps(request_body_json, cls=json.JSONEncoder)
+#    sig = hmac.new(project.secret.encode(), msg=data.encode(), digestmod="sha256")
+#    if not hmac.compare_digest(sig.hexdigest(), sha256_digest):
+#        logger.warning(f"Incorrect device secret for project: {project.name}, device: {device_name}")
+#        # check if secret in the request matches one
+#        # stored in the project settings
+#        return HttpResponseForbidden()
     try:
         device = project.lavadevice_set.get(auto_register_name=device_name)
         check_device_ota_completed.delay(device)
@@ -106,15 +123,15 @@ def process_jobserv_webhook(request):
 
     trigger_name = request_body_json.get("trigger_name")
     project = get_object_or_404(Project, name=project_name)
-    sha256_digest = request_body_json.pop("header")
-    data = json.dumps(request_body_json, cls=ISO8601_JSONEncoder)
-    #data = json.dumps(request_body_json, cls=json.JSONEncoder)
-    sig = hmac.new(project.secret.encode(), msg=data.encode(), digestmod="sha256")
-    if not hmac.compare_digest(sig.hexdigest(), sha256_digest):
-        logger.warning(f"Incorrect jobserv secret for project: {project.name}")
-        # check if secret in the request matches one
-        # stored in the project settings
-        return HttpResponseForbidden()
+#    sha256_digest = request_body_json.pop("header")
+#    data = json.dumps(request_body_json, cls=ISO8601_JSONEncoder)
+#    #data = json.dumps(request_body_json, cls=json.JSONEncoder)
+#    sig = hmac.new(project.secret.encode(), msg=data.encode(), digestmod="sha256")
+#    if not hmac.compare_digest(sig.hexdigest(), sha256_digest):
+#        logger.warning(f"Incorrect jobserv secret for project: {project.name}")
+#        # check if secret in the request matches one
+#        # stored in the project settings
+#        return HttpResponseForbidden()
     if "platform" not in trigger_name:
         # do nothing for container builds
         return HttpResponse("OK")
