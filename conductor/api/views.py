@@ -13,6 +13,7 @@
 # limitations under the License.
 
 import json
+import logging
 from django.shortcuts import render
 from django.shortcuts import get_object_or_404
 from django.http import HttpResponse, HttpResponseNotAllowed, HttpResponseForbidden, HttpResponseBadRequest, HttpResponseNotFound
@@ -20,6 +21,9 @@ from django.views.decorators.csrf import csrf_exempt
 
 from conductor.core.models import Project, Build, LAVADevice
 from conductor.core.tasks import create_build_run, merge_lmp_manifest, update_build_commit_id, check_device_ota_completed
+
+
+logger = logging.getLogger()
 
 
 def process_lava_notification(request, job_id, job_status):
@@ -61,6 +65,7 @@ def process_device_webhook(request):
     device_name = request_body_json.get("name")
     project = get_object_or_404(Project, name=project_name)
     if not project.secret == request_body_json.get("header"):
+        logger.warning(f"Incorrect device secret for project: {project.name}, device: {device_name}")
         # check if secret in the request matches one
         # stored in the project settings
         return HttpResponseForbidden()
@@ -99,6 +104,7 @@ def process_jobserv_webhook(request):
         return HttpResponse("OK")
     project = get_object_or_404(Project, name=project_name)
     if not project.secret == request_body_json.get("header"):
+        logger.warning(f"Incorrect jobserv secret for project: {project.name}")
         # check if secret in the request matches one
         # stored in the project settings
         return HttpResponseForbidden()
