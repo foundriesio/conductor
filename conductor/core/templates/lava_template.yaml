@@ -55,7 +55,7 @@ actions:
      - "{{ prompt }}"
     {% endfor %}
     timeout:
-      minutes: 8
+      minutes: 10
     auto_login:
       login_prompt: 'login:'
       username: fio
