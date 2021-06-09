@@ -43,7 +43,7 @@ def __verify_header_auth(request, header_name="X-JobServ-Sig"):
         try:
             request_body_json = json.loads(request.body)
             build_url = request_body_json.get("url")
-            if not build_url:
+            if not build_url and not request_body_json.get("project"):
                 return HttpResponseBadRequest()
             #"url": "https://api.foundries.io/projects/milosz-rpi3/lmp/builds/73/",
             project_name = None
@@ -51,6 +51,10 @@ def __verify_header_auth(request, header_name="X-JobServ-Sig"):
                 project_name = build_url.split("/")[4]
             except IndexError:
                 return HttpResponseBadRequest()
+            except AttributeError:
+                project_name = request_body_json.get("project")
+                if project_name is None:
+                    return HttpResponseBadRequest()
             project = get_object_or_404(Project, name=project_name)
             sha256_digest = header_token.split(":", 1)[1].strip()
             data = json.dumps(request_body_json, cls=ISO8601_JSONEncoder)
