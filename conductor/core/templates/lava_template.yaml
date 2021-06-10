@@ -4,7 +4,7 @@ timeouts:
   connection:
     minutes: 2
   action:
-    minutes: 2
+    minutes: 4
 context:
   test_character_delay: 10
   lava_test_results_dir: "/home/fio/lava-%s"
