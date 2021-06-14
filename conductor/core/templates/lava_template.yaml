@@ -2,7 +2,7 @@ timeouts:
   job:
     minutes: 20
   connection:
-    minutes: 2
+    minutes: 5
   action:
     minutes: 4
 context:
