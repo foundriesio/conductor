@@ -115,10 +115,12 @@ actions:
       name: aklite
       params:
         TARGET: {{ target }}
+{% if device_type == "imx8mmevk" or device_type == 'raspberrypi4-64'%}
     - repository: http://github.com/mwasilew/test-definitions.git
       from: git
       path: automated/linux/wlan-smoke/wlan-smoke.yaml
       name: wlan-smoke
+{% endif %}
     - repository: http://github.com/mwasilew/test-definitions.git
       from: git
       path: automated/linux/ima/ima.yaml
@@ -127,7 +129,7 @@ actions:
     - repository: http://github.com/mwasilew/test-definitions.git
       from: git
       path: automated/linux/hci-smoke/hci-smoke.yaml
-      name: aklite
+      name: hci-smoke
       params:
         MODE: "both"
 {% endif %}
