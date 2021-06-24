@@ -493,7 +493,10 @@ def __check_ota_status(device):
 def check_device_ota_completed(device_name, project_name):
     try:
         device = LAVADevice.objects.get(auto_register_name=device_name, project__name=project_name)
-        __check_ota_status(device)
+        if device.controlled_by == LAVADevice.CONTROL_PDU:
+            # only call __check_ota_status when the device is
+            # in the upgrade mode
+            __check_ota_status(device)
     except LAVADevice.DoesNotExist:
         logger.error(f"Device with name {device_name} not found in project {project_name}")
 
