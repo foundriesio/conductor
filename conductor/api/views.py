@@ -98,7 +98,7 @@ def process_device_webhook(request):
 #        return HttpResponseForbidden()
     try:
         device = project.lavadevice_set.get(auto_register_name=device_name)
-        check_device_ota_completed.delay(device)
+        check_device_ota_completed.delay(device_name, project_name)
     except LAVADevice.DoesNotExist:
         return HttpResponseNotFound()
     return HttpResponse("OK")
