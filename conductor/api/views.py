@@ -86,7 +86,7 @@ def process_device_webhook(request):
         return request_body_json
     project_name = request_body_json.get("project")
     device_name = request_body_json.get("name")
-    logger.debug(f"Checking device: {device_name} from {project_name}")
+    logger.info(f"Checking device: {device_name} from {project_name}")
     project = get_object_or_404(Project, name=project_name)
 #    sha256_digest = request_body_json.pop("header")
 #    data = json.dumps(request_body_json, cls=ISO8601_JSONEncoder)
@@ -101,7 +101,7 @@ def process_device_webhook(request):
         device = project.lavadevice_set.get(auto_register_name=device_name)
         check_device_ota_completed.delay(device_name, project_name)
     except LAVADevice.DoesNotExist:
-        logger.debug(f"Device {device_name} not found in project {project_name}")
+        logger.warning(f"Device {device_name} not found in project {project_name}")
         return HttpResponseNotFound()
     return HttpResponse("OK")
 
