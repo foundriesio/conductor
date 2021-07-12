@@ -88,12 +88,6 @@ actions:
         DHCLIENT: "udhcpc -i"
     - repository: http://github.com/mwasilew/test-definitions.git
       from: git
-      path: automated/linux/network-manager/network-manager.yaml
-      name: network-manager
-      params:
-        INTERFACE: "{{ net_interface }}"
-    - repository: http://github.com/mwasilew/test-definitions.git
-      from: git
       path: automated/linux/docker/docker.yaml
       name: docker
       params:
@@ -145,3 +139,9 @@ actions:
       path: automated/linux/optee/optee-xtest.yaml
       name: optee-xtest
 {% endif %}
+    - repository: http://github.com/mwasilew/test-definitions.git
+      from: git
+      path: automated/linux/network-manager/network-manager.yaml
+      name: network-manager
+      params:
+        INTERFACE: "{{ net_interface }}"
