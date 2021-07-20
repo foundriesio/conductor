@@ -92,22 +92,25 @@ def create_build_run(build_id, run_url, run_name, lava_job_type=LAVAJob.JOB_LAVA
         except AttributeError:
             # ignore values that are not strings
             pass
-    template = get_template("lava_template.yaml")
+    templates = []
+    if lava_job_type == LAVAJob.JOB_LAVA:
+        templates.append(get_template("lava_template.yaml"))
     if lava_job_type == LAVAJob.JOB_OTA:
-        template = get_template("lava_deploy_template.yaml")
-    lava_job_definition = template.render(context)
-    job_ids = build.project.submit_lava_job(lava_job_definition)
-    logger.debug(job_ids)
-    for job in job_ids:
-        LAVAJob.objects.create(
-            job_id=job,
-            definition=lava_job_definition,
-            project=build.project,
-            job_type=lava_job_type,
-        )
-        if lava_job_type != LAVAJob.JOB_OTA:
-            # only create OTA jobs for each 'regular' job
-            create_ota_job(build_id, run_url, run_name)
+        templates.append(get_template("lava_deploy_template.yaml"))
+    for template in templates:
+        lava_job_definition = template.render(context)
+        job_ids = build.project.submit_lava_job(lava_job_definition)
+        logger.debug(job_ids)
+        for job in job_ids:
+            LAVAJob.objects.create(
+                job_id=job,
+                definition=lava_job_definition,
+                project=build.project,
+                job_type=lava_job_type,
+            )
+            if lava_job_type != LAVAJob.JOB_OTA:
+                # only create OTA jobs for each 'regular' job
+                create_ota_job(build_id, run_url, run_name)
 
 
 @celery.task
