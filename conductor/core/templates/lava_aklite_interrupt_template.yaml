@@ -9,7 +9,7 @@ context:
   test_character_delay: 10
   lava_test_results_dir: "/home/fio/lava-%s"
 device_type: {{ device_type }}
-job_name: basic tests - {{ target }}
+job_name: aklite interrupt tests - {{ target }}
 priority: 50
 visibility: public
 metadata:
