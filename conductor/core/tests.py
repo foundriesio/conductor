@@ -558,7 +558,8 @@ class TaskTest(TestCase):
         run_name = "device-type-1"
         run_url = f"{self.build.url}runs/{run_name}/"
         create_build_run(self.build.id, run_url, run_name)
-        submit_lava_job_mock.assert_called_once()
+        submit_lava_job_mock.assert_called()
+        assert 2 == submit_lava_job_mock.call_count
         get_hash_mock.assert_called_once()
         ota_job_mock.assert_called_once()
 

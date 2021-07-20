@@ -95,6 +95,7 @@ def create_build_run(build_id, run_url, run_name, lava_job_type=LAVAJob.JOB_LAVA
     templates = []
     if lava_job_type == LAVAJob.JOB_LAVA:
         templates.append(get_template("lava_template.yaml"))
+        templates.append(get_template("lava_aklite_interrupt_template.yaml"))
     if lava_job_type == LAVAJob.JOB_OTA:
         templates.append(get_template("lava_deploy_template.yaml"))
     for template in templates:
@@ -108,9 +109,9 @@ def create_build_run(build_id, run_url, run_name, lava_job_type=LAVAJob.JOB_LAVA
                 project=build.project,
                 job_type=lava_job_type,
             )
-            if lava_job_type != LAVAJob.JOB_OTA:
-                # only create OTA jobs for each 'regular' job
-                create_ota_job(build_id, run_url, run_name)
+    if lava_job_type != LAVAJob.JOB_OTA:
+        # only create OTA jobs for each 'regular' job
+        create_ota_job(build_id, run_url, run_name)
 
 
 @celery.task

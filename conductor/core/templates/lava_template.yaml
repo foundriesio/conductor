@@ -66,6 +66,8 @@ actions:
       login_commands:
       - sudo su
       - fio
+      - systemctl enable lmp-device-auto-register
+      - sync
     method: minimal
     transfer_overlay:
       download_command: cd /home ; wget
