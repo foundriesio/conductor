@@ -68,7 +68,7 @@ def _get_os_tree_hash(url, project):
     }
     session = requests.Session()
     session.headers.update(authentication)
-    os_tree_hash_request = request_retry_session(session=session).get(urljoin(url, "other/ostree.sha.txt"))
+    os_tree_hash_request = requests_retry_session(session=session).get(urljoin(url, "other/ostree.sha.txt"))
     if os_tree_hash_request.status_code == 200:
         return os_tree_hash_request.text.strip()
     return None
