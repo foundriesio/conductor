@@ -75,60 +75,76 @@ def _get_os_tree_hash(url, project):
 
 
 @celery.task
-def create_build_run(build_id, run_url, run_name, lava_job_type=LAVAJob.JOB_LAVA):
+def create_build_run(build_id, run_name):
     logger.debug("Received task for build: %s" % build_id)
     build = None
     try:
         build = Build.objects.get(pk=build_id)
     except Build.DoesNotExist:
         return None
+    previous_builds = build.project.build_set.filter(build_id__lt=build.build_id).order_by('-build_id')
+    previous_build = None
+    if previous_builds:
+        previous_build = previous_builds[0]
     device_type = None
     try:
         device_type = LAVADeviceType.objects.get(name=run_name, project=build.project)
     except LAVADeviceType.DoesNotExist:
         return None
-    # compose LAVA job definitions for each device
-    ostree_hash=_get_os_tree_hash(run_url, build.project)
-    if not ostree_hash:
-        logger.error("OSTree hash missing")
-        return
-    run, _ = Run.objects.get_or_create(
-        build=build,
-        device_type=device_type,
-        ostree_hash=ostree_hash,
-        run_name=run_name
-    )
-    context = {
-        "device_type": run_name,
-        "build_url": build.url,
-        "build_id": build.build_id,
 
-        "IMAGE_URL": "%slmp-factory-image-%s.wic.gz" % (run_url, run_name),
-        "BOOTLOADER_URL": "%simx-boot-%s" % (run_url, run_name),
-        "SPLIMG_URL": "%sSPL-%s" % (run_url, run_name),
-        "prompts": ["fio@%s" % run_name, "Password:", "root@%s" % run_name],
-        "net_interface": device_type.net_interface,
-        "os_tree_hash": run.ostree_hash,
-        "target": build.build_id,
-    }
-    dt_settings = device_type.get_settings()
-    for key, value in dt_settings.items():
-        try:
-            context.update({key: value.format(run_url=run_url, run_name=run_name)})
-        except KeyError:
-            # ignore KeyError in case of misformatted string
-            pass
-        except AttributeError:
-            # ignore values that are not strings
-            pass
-    templates = []
-    if lava_job_type == LAVAJob.JOB_LAVA:
-        templates.append(get_template("lava_template.yaml"))
-        templates.append(get_template("lava_aklite_interrupt_template.yaml"))
-    if lava_job_type == LAVAJob.JOB_OTA:
-        templates.append(get_template("lava_deploy_template.yaml"))
+    templates = [
+        {"name": "lava_template.yaml",
+         "job_type": LAVAJob.JOB_LAVA,
+         "build": build},
+        {"name": "lava_aklite_interrupt_template.yaml",
+         "job_type": LAVAJob.JOB_LAVA,
+         "build": previous_build},
+        {"name": "lava_deploy_template.yaml",
+         "job_type": LAVAJob.JOB_OTA,
+         "build": previous_build},
+    ]
     for template in templates:
-        lava_job_definition = template.render(context)
+        lcl_build = template.get("build")
+        if not lcl_build:
+            continue
+        run_url = f"{lcl_build.url}runs/{run_name}/"
+        ostree_hash=_get_os_tree_hash(run_url, build.project)
+        if not ostree_hash:
+            logger.error("OSTree hash missing")
+            continue
+
+        run, _ = Run.objects.get_or_create(
+            build=lcl_build,
+            device_type=device_type,
+            ostree_hash=ostree_hash,
+            run_name=run_name
+        )
+
+        context = {
+            "device_type": run_name,
+            "build_url": lcl_build.url,
+            "build_id": lcl_build.build_id,
+
+            "IMAGE_URL": "%slmp-factory-image-%s.wic.gz" % (run_url, run_name),
+            "BOOTLOADER_URL": "%simx-boot-%s" % (run_url, run_name),
+            "SPLIMG_URL": "%sSPL-%s" % (run_url, run_name),
+            "prompts": ["fio@%s" % run_name, "Password:", "root@%s" % run_name],
+            "net_interface": device_type.net_interface,
+            "os_tree_hash": run.ostree_hash,
+            "target": lcl_build.build_id,
+        }
+        dt_settings = device_type.get_settings()
+        for key, value in dt_settings.items():
+            try:
+                context.update({key: value.format(run_url=run_url, run_name=run_name)})
+            except KeyError:
+                # ignore KeyError in case of misformatted string
+                pass
+            except AttributeError:
+                # ignore values that are not strings
+                pass
+
+        lava_job_definition = get_template(template["name"]).render(context)
         job_ids = build.project.submit_lava_job(lava_job_definition)
         logger.debug(job_ids)
         for job in job_ids:
@@ -136,37 +152,8 @@ def create_build_run(build_id, run_url, run_name, lava_job_type=LAVAJob.JOB_LAVA
                 job_id=job,
                 definition=lava_job_definition,
                 project=build.project,
-                job_type=lava_job_type,
+                job_type=template.get("job_type"),
             )
-    if lava_job_type != LAVAJob.JOB_OTA:
-        # only create OTA jobs for each 'regular' job
-        create_ota_job(build_id, run_url, run_name)
-
-
-@celery.task
-def create_ota_job(build_id, run_url, run_name):
-    # only do OTA from previous platform build
-    # this is current limitation
-    build = None
-    try:
-        build = Build.objects.get(pk=build_id)
-    except Build.DoesNotExist:
-        return None
-    # find previous platform build
-    previous_builds = build.project.build_set.filter(build_id__lt=build.build_id).order_by('-build_id')
-    if previous_builds:
-        previous_build = previous_builds[0]
-        try:
-            run = None
-            runs = previous_build.run_set.filter(run_name=run_name)
-            if runs:
-                run = runs[0]
-            else:
-                return None
-            run_url = f"{previous_build.url}runs/{run.run_name}/"
-            create_build_run(previous_build.id, run_url, run.run_name, lava_job_type=LAVAJob.JOB_OTA)
-        except Run.DoesNotExist:
-            return None
 
 
 @celery.task

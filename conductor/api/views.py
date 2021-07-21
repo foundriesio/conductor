@@ -147,7 +147,7 @@ def process_jobserv_webhook(request):
     for run in request_body_json.get("runs"):
         run_url = run.get("url")
         run_name = run.get("name")
-        create_build_run.delay(build.pk, run_url, run_name)
+        create_build_run.delay(build.pk, run_name)
     if run_url is not None:
         # only call update_build_commit_id once as
         # all runs should contain identical GIT_SHA

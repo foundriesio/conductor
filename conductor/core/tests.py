@@ -17,7 +17,7 @@ from django.test import TestCase
 from unittest.mock import patch, MagicMock, PropertyMock
 
 from conductor.core.models import Project, Build, Run, LAVABackend, LAVADeviceType, LAVADevice, LAVAJob, PDUAgent
-from conductor.core.tasks import create_build_run, create_ota_job, device_pdu_action, check_ota_completed
+from conductor.core.tasks import create_build_run, device_pdu_action, check_ota_completed
 
 
 DEVICE_DETAILS = """
@@ -553,50 +553,22 @@ class TaskTest(TestCase):
 
     @patch('conductor.core.tasks._get_os_tree_hash', return_value="someHash1")
     @patch('conductor.core.models.Project.submit_lava_job', return_value=[123])
-    @patch('conductor.core.tasks.create_ota_job')
-    def test_create_build_run(self, ota_job_mock, submit_lava_job_mock, get_hash_mock):
+    def test_create_build_run(self, submit_lava_job_mock, get_hash_mock):
         run_name = "device-type-1"
-        run_url = f"{self.build.url}runs/{run_name}/"
-        create_build_run(self.build.id, run_url, run_name)
+        create_build_run(self.build.id, run_name)
         submit_lava_job_mock.assert_called()
-        assert 2 == submit_lava_job_mock.call_count
-        get_hash_mock.assert_called_once()
-        ota_job_mock.assert_called_once()
+        assert 3 == submit_lava_job_mock.call_count
+        get_hash_mock.assert_called()
+        assert 3 == get_hash_mock.call_count
 
     @patch('conductor.core.tasks._get_os_tree_hash', return_value=None)
     @patch('conductor.core.models.Project.submit_lava_job', return_value=[123])
-    @patch('conductor.core.tasks.create_ota_job')
-    def test_create_build_run_os_tree_hash_none(self, ota_job_mock, submit_lava_job_mock, get_hash_mock):
+    def test_create_build_run_os_tree_hash_none(self, submit_lava_job_mock, get_hash_mock):
         run_name = "device-type-1"
-        run_url = f"{self.build.url}runs/{run_name}/"
-        create_build_run(self.build.id, run_url, run_name)
+        create_build_run(self.build.id, run_name)
         submit_lava_job_mock.assert_not_called()
-        get_hash_mock.assert_called_once()
-        ota_job_mock.assert_not_called()
-
-    @patch('conductor.core.tasks._get_os_tree_hash', return_value="someHash1")
-    @patch('conductor.core.models.Project.submit_lava_job', return_value=[123])
-    @patch('conductor.core.tasks.create_ota_job')
-    def test_create_build_run_ota(self, ota_job_mock, submit_lava_job_mock, get_hash_mock):
-        run_name = "device-type-1"
-        run_url = f"{self.build.url}runs/{run_name}/"
-        create_build_run(self.build.id, run_url, run_name, LAVAJob.JOB_OTA)
-        submit_lava_job_mock.assert_called_once()
-        get_hash_mock.assert_called_once()
-        ota_job_mock.assert_not_called()
-
-    @patch('conductor.core.tasks.create_build_run')
-    def test_create_ota_job(self, create_build_run_mock):
-        run_name = "device-type-1"
-        previous_run_url = f"{self.previous_build.url}runs/{run_name}/"
-        run_url = f"{self.build.url}runs/{run_name}/"
-        create_ota_job(self.build.id, run_url, run_name)
-        create_build_run_mock.assert_called_with(
-            self.previous_build.id,
-            previous_run_url,
-            run_name,
-            lava_job_type=LAVAJob.JOB_OTA
-        )
+        get_hash_mock.assert_called()
+        assert 3 == get_hash_mock.call_count
 
     #def test_update_build_commit_id(self):
     @patch("requests.get")
