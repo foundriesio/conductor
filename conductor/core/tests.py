@@ -563,6 +563,17 @@ class TaskTest(TestCase):
         get_hash_mock.assert_called_once()
         ota_job_mock.assert_called_once()
 
+    @patch('conductor.core.tasks._get_os_tree_hash', return_value=None)
+    @patch('conductor.core.models.Project.submit_lava_job', return_value=[123])
+    @patch('conductor.core.tasks.create_ota_job')
+    def test_create_build_run_os_tree_hash_none(self, ota_job_mock, submit_lava_job_mock, get_hash_mock):
+        run_name = "device-type-1"
+        run_url = f"{self.build.url}runs/{run_name}/"
+        create_build_run(self.build.id, run_url, run_name)
+        submit_lava_job_mock.assert_not_called()
+        get_hash_mock.assert_called_once()
+        ota_job_mock.assert_not_called()
+
     @patch('conductor.core.tasks._get_os_tree_hash', return_value="someHash1")
     @patch('conductor.core.models.Project.submit_lava_job', return_value=[123])
     @patch('conductor.core.tasks.create_ota_job')

@@ -24,7 +24,10 @@ from django.conf import settings
 from django.db import transaction
 from django.template.loader import get_template
 from django.utils import timezone
+from requests.adapters import HTTPAdapter
+from requests.packages.urllib3.util.retry import Retry
 from urllib.parse import urljoin
+
 
 logger = get_task_logger(__name__)
 DEFAULT_TIMEOUT = 30
@@ -36,6 +39,26 @@ translate_result = {
     "unknown": "SKIPPED"
 }
 
+def requests_retry_session(
+    retries=3,
+    backoff_factor=1.0,
+    status_forcelist=(500, ),
+    session=None,
+):
+    session = session or requests.Session()
+    retry = Retry(
+        total=retries,
+        read=retries,
+        connect=retries,
+        backoff_factor=backoff_factor,
+        status_forcelist=status_forcelist,
+    )
+    adapter = HTTPAdapter(max_retries=retry)
+    session.mount('http://', adapter)
+    session.mount('https://', adapter)
+    return session
+
+
 def _get_os_tree_hash(url, project):
     logger.debug("Retrieving ostree hash with base url: %s" % url)
     # ToDo: add headers for authentication
@@ -43,7 +66,9 @@ def _get_os_tree_hash(url, project):
     authentication = {
         "OSF-TOKEN": token,
     }
-    os_tree_hash_request = requests.get(urljoin(url, "other/ostree.sha.txt"), headers=authentication)
+    session = requests.Session()
+    session.headers.update(authentication)
+    os_tree_hash_request = request_retry_session(session=session).get(urljoin(url, "other/ostree.sha.txt"))
     if os_tree_hash_request.status_code == 200:
         return os_tree_hash_request.text.strip()
     return None
@@ -63,10 +88,14 @@ def create_build_run(build_id, run_url, run_name, lava_job_type=LAVAJob.JOB_LAVA
     except LAVADeviceType.DoesNotExist:
         return None
     # compose LAVA job definitions for each device
+    ostree_hash=_get_os_tree_hash(run_url, build.project)
+    if not ostree_hash:
+        logger.error("OSTree hash missing")
+        return
     run, _ = Run.objects.get_or_create(
         build=build,
         device_type=device_type,
-        ostree_hash=_get_os_tree_hash(run_url, build.project),
+        ostree_hash=ostree_hash,
         run_name=run_name
     )
     context = {
