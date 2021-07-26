@@ -223,8 +223,10 @@ def create_project_repository(project_id):
 
 @celery.task
 def merge_lmp_manifest():
-    # merge LmP manifest into all project manifst repositories
-    projects = Project.objects.all()
+    # merge LmP manifest into all project manifest repositories
+    # don't touch LmP manifest itself. Project named 'lmp' is
+    # a fake project that only keeps the API password.
+    projects = Project.objects.all().exclude(name="lmp")
     for project in projects:
         repository_path = os.path.join(settings.FIO_REPOSITORY_HOME, project.name)
         if not __project_repository_exists(project):
