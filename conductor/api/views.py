@@ -162,6 +162,11 @@ def process_lmp_build(request):
     if isinstance(request_body_json, HttpResponse):
         return request_body_json
     else:
-        # assume this call means successful LmP build
+        # check if the build has trigger_name "build-release"
+        if not request_body_json.get("trigger_name") == "build-release":
+            return HttpResponse("OK")
+        # check if build is successful
+        if not request_body_json.get("status") == "PASSED":
+            return HttpResponse("OK")
         merge_lmp_manifest.delay()
     return HttpResponse("OK")
