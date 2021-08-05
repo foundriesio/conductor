@@ -169,9 +169,11 @@ def process_lmp_build(request):
     else:
         # check if the build has trigger_name "build-release"
         if not request_body_json.get("trigger_name") == "build-release":
+            logger.warning("trigger_name not set to build-release")
             return HttpResponse("OK")
         # check if build is successful
         if not request_body_json.get("status") == "PASSED":
+            logger.warning("status not set to PASSED")
             return HttpResponse("OK")
         merge_lmp_manifest.delay()
-    return HttpResponse("OK")
+    return HttpResponse("Created", status=201)
