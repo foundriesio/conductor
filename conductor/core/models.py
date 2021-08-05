@@ -92,6 +92,8 @@ class Build(models.Model):
     # set to True when commit is accompanied with a tag
     # this is filled by task run on regular interval
     is_release = models.BooleanField(default=False)
+    # keeps track of build branch/tag
+    tag = models.CharField(max_length=40, blank=True, null=True)
 
     def __str__(self):
         return f"{self.build_id} ({self.project.name})"

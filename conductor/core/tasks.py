@@ -82,7 +82,7 @@ def create_build_run(build_id, run_name):
         build = Build.objects.get(pk=build_id)
     except Build.DoesNotExist:
         return None
-    previous_builds = build.project.build_set.filter(build_id__lt=build.build_id).order_by('-build_id')
+    previous_builds = build.project.build_set.filter(build_id__lt=build.build_id, tag=build.tag).order_by('-build_id')
     previous_build = None
     if previous_builds:
         previous_build = previous_builds[0]
@@ -96,13 +96,16 @@ def create_build_run(build_id, run_name):
         {"name": "lava_template.yaml",
          "job_type": LAVAJob.JOB_LAVA,
          "build": build},
-        {"name": "lava_aklite_interrupt_template.yaml",
-         "job_type": LAVAJob.JOB_LAVA,
-         "build": previous_build},
-        {"name": "lava_deploy_template.yaml",
-         "job_type": LAVAJob.JOB_OTA,
-         "build": previous_build},
     ]
+    if previous_build:
+        templates = templates + [
+            {"name": "lava_aklite_interrupt_template.yaml",
+             "job_type": LAVAJob.JOB_LAVA,
+             "build": previous_build},
+            {"name": "lava_deploy_template.yaml",
+             "job_type": LAVAJob.JOB_OTA,
+             "build": previous_build},
+        ]
     for template in templates:
         lcl_build = template.get("build")
         if not lcl_build:

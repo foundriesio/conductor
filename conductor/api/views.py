@@ -142,7 +142,12 @@ def process_jobserv_webhook(request):
         # do nothing for container builds
         return HttpResponse("OK")
     # create new Build
-    build, _ = Build.objects.get_or_create(url=build_url, project=project, build_id=build_id)
+    build_branch = trigger_name.split("-")[1]
+    build, _ = Build.objects.get_or_create(
+        url=build_url,
+        project=project,
+        build_id=build_id,
+        tag=build_branch)
     run_url = None
     for run in request_body_json.get("runs"):
         run_url = run.get("url")
