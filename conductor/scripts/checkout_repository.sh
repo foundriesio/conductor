@@ -34,6 +34,8 @@ done
 cd "${REPOSITORY_DIR}"
 git init
 git config http.https://source.foundries.io.extraheader "Authorization: basic $(echo -n $REPOSITORY_TOKEN | openssl base64)"
+git config user.email "testbot@foundries.io"
+git config user.name "Testbot"
 git remote add "${REPOSITORY_REMOTE}" "${REPOSITORY_URL}"
 git pull "${REPOSITORY_REMOTE}" master
 git remote add "${REPOSITORY_LMP_REMOTE}" "${REPOSITORY_LMP_URL}"
