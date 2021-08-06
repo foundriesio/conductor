@@ -88,15 +88,6 @@ def process_device_webhook(request):
     device_name = request_body_json.get("name")
     logger.info(f"Checking device: {device_name} from {project_name}")
     project = get_object_or_404(Project, name=project_name)
-#    sha256_digest = request_body_json.pop("header")
-#    data = json.dumps(request_body_json, cls=ISO8601_JSONEncoder)
-#    #data = json.dumps(request_body_json, cls=json.JSONEncoder)
-#    sig = hmac.new(project.secret.encode(), msg=data.encode(), digestmod="sha256")
-#    if not hmac.compare_digest(sig.hexdigest(), sha256_digest):
-#        logger.warning(f"Incorrect device secret for project: {project.name}, device: {device_name}")
-#        # check if secret in the request matches one
-#        # stored in the project settings
-#        return HttpResponseForbidden()
     try:
         device = project.lavadevice_set.get(auto_register_name=device_name)
         check_device_ota_completed.delay(device_name, project_name)
@@ -129,15 +120,6 @@ def process_jobserv_webhook(request):
 
     trigger_name = request_body_json.get("trigger_name")
     project = get_object_or_404(Project, name=project_name)
-#    sha256_digest = request_body_json.pop("header")
-#    data = json.dumps(request_body_json, cls=ISO8601_JSONEncoder)
-#    #data = json.dumps(request_body_json, cls=json.JSONEncoder)
-#    sig = hmac.new(project.secret.encode(), msg=data.encode(), digestmod="sha256")
-#    if not hmac.compare_digest(sig.hexdigest(), sha256_digest):
-#        logger.warning(f"Incorrect jobserv secret for project: {project.name}")
-#        # check if secret in the request matches one
-#        # stored in the project settings
-#        return HttpResponseForbidden()
     if "platform" not in trigger_name:
         # do nothing for container builds
         return HttpResponse("OK")
