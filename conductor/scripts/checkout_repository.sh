@@ -32,6 +32,13 @@ while getopts "d:r:l:u:w:t:" o; do
 done
 
 cd "${REPOSITORY_DIR}"
+# check if the repository is initiated already with proper settings
+REMOTE_ORIGIN=$(git remote get-url "${REPOSITORY_REMOTE}")
+REMOTE_LMP=$(git remote get-url "${REPOSITORY_LMP_REMOTE}")
+if [ "${REMOTE_ORIGIN}" = "${REPOSITORY_URL}" ] && [ "${REMOTE_LMP}" = "${REPOSITORY_LMP_URL}" ]; then
+    # exit the script, nothing to do
+    exit 0
+fi
 git init
 git config http.https://source.foundries.io.extraheader "Authorization: basic $(echo -n $REPOSITORY_TOKEN | openssl base64)"
 git config user.email "testbot@foundries.io"
