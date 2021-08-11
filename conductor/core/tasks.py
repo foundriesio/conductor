@@ -90,10 +90,6 @@ def create_build_run(self, build_id, run_name):
         # retry the same task in 1 minute
         raise self.retry(countdown=60)
 
-    if not build.schedule_tests:
-        # don't schedule any tests for upgrade/rollback builds
-        logger.info(f"Not scheduling tests for build {build}")
-        return
     previous_builds = build.project.build_set.filter(build_id__lt=build.build_id, tag=build.tag).order_by('-build_id')
     previous_build = None
     if previous_builds:
@@ -104,20 +100,35 @@ def create_build_run(self, build_id, run_name):
     except LAVADeviceType.DoesNotExist:
         return None
 
-    templates = [
-        {"name": "lava_template.yaml",
-         "job_type": LAVAJob.JOB_LAVA,
-         "build": build},
-    ]
-    if previous_build:
-        templates = templates + [
-            {"name": "lava_aklite_interrupt_template.yaml",
+    templates = []
+    if build.build_reason and build.schedule_tests:
+        # only schedule tests when build_reason is present
+        # at this point is should be filled in
+        templates.append(
+            {"name": "lava_template.yaml",
              "job_type": LAVAJob.JOB_LAVA,
-             "build": previous_build},
-            {"name": "lava_deploy_template.yaml",
-             "job_type": LAVAJob.JOB_OTA,
-             "build": previous_build},
-        ]
+             "build": build},
+        )
+        if previous_build:
+            templates = templates + [
+                {"name": "lava_deploy_template.yaml",
+                 "job_type": LAVAJob.JOB_OTA,
+                 "build": previous_build},
+            ]
+    if build.build_reason and not build.schedule_tests:
+        # for automatically triggered "upgrade builds"
+        # in this case previous build refers to the actual
+        # changes that need to be tested
+        if previous_build:
+            templates = templates + [
+                {"name": "lava_aklite_interrupt_template.yaml",
+                 "job_type": LAVAJob.JOB_LAVA,
+                 "build": previous_build},
+                {"name": "lava_deploy_template.yaml",
+                 "job_type": LAVAJob.JOB_OTA,
+                 "build": previous_build},
+            ]
+
     for template in templates:
         lcl_build = template.get("build")
         if not lcl_build:

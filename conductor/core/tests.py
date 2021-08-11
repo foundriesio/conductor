@@ -14,6 +14,7 @@
 
 import celery
 from datetime import datetime, timedelta
+from django.conf import settings
 from django.test import TestCase
 from unittest.mock import patch, MagicMock, PropertyMock
 
@@ -563,9 +564,24 @@ class TaskTest(TestCase):
         create_build_run(self.build.id, run_name)
         update_build_reason_mock.assert_not_called()
         submit_lava_job_mock.assert_called()
-        assert 3 == submit_lava_job_mock.call_count
+        assert 2 == submit_lava_job_mock.call_count
         get_hash_mock.assert_called()
-        assert 3 == get_hash_mock.call_count
+        assert 2 == get_hash_mock.call_count
+
+    @patch('conductor.core.tasks._get_os_tree_hash', return_value="someHash1")
+    @patch('conductor.core.models.Project.submit_lava_job', return_value=[123])
+    @patch('conductor.core.tasks.update_build_reason')
+    def test_create_build_run_upgrade_build(self, update_build_reason_mock, submit_lava_job_mock, get_hash_mock):
+        run_name = "device-type-1"
+        self.build.build_reason = settings.FIO_UPGRADE_ROLLBACK_MESSAGE
+        self.build.schedule_tests = False
+        self.build.save()
+        create_build_run(self.build.id, run_name)
+        update_build_reason_mock.assert_not_called()
+        submit_lava_job_mock.assert_called()
+        assert 2 == submit_lava_job_mock.call_count
+        get_hash_mock.assert_called()
+        assert 2 == get_hash_mock.call_count
 
     @patch('conductor.core.tasks._get_os_tree_hash', return_value="someHash1")
     @patch('conductor.core.models.Project.submit_lava_job', return_value=[123])
@@ -587,7 +603,7 @@ class TaskTest(TestCase):
         create_build_run(self.build.id, run_name)
         submit_lava_job_mock.assert_not_called()
         get_hash_mock.assert_called()
-        assert 3 == get_hash_mock.call_count
+        assert 2 == get_hash_mock.call_count
 
     #def test_update_build_commit_id(self):
     @patch("requests.get")
