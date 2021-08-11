@@ -141,6 +141,7 @@ FIO_REPOSITORY_HOME = "%s/repositories/" % BASE_DIR
 FIO_REPOSITORY_REMOTE_NAME = "origin"
 FIO_BASE_MANIFEST = "https://github.com/foundriesio/lmp-manifest"
 FIO_BASE_REMOTE_NAME = "lmp"
+FIO_UPGRADE_ROLLBACK_MESSAGE = "upgrade/rollback testing"
 
 LOGGING = {
     'version': 1,

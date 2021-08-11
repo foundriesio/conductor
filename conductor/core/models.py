@@ -94,6 +94,11 @@ class Build(models.Model):
     is_release = models.BooleanField(default=False)
     # keeps track of build branch/tag
     tag = models.CharField(max_length=40, blank=True, null=True)
+    # beginning of the commit message subject
+    build_reason = models.CharField(max_length=128, blank=True, null=True)
+    # for some builds tests don't need to be scheduled
+    # these are builds that are used for update/rollback testing
+    schedule_tests = models.BooleanField(default=True)
 
     def __str__(self):
         return f"{self.build_id} ({self.project.name})"

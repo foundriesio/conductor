@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import gitdb
 import os
 import requests
 import subprocess
@@ -24,6 +25,7 @@ from django.conf import settings
 from django.db import transaction
 from django.template.loader import get_template
 from django.utils import timezone
+from git import Repo
 from requests.adapters import HTTPAdapter
 from requests.packages.urllib3.util.retry import Retry
 from urllib.parse import urljoin
@@ -74,14 +76,24 @@ def _get_os_tree_hash(url, project):
     return None
 
 
-@celery.task
-def create_build_run(build_id, run_name):
+@celery.task(bind=True)
+def create_build_run(self, build_id, run_name):
     logger.debug("Received task for build: %s" % build_id)
     build = None
     try:
         build = Build.objects.get(pk=build_id)
     except Build.DoesNotExist:
         return None
+
+    if not build.build_reason:
+        update_build_reason.delay(build.id)
+        # retry the same task in 1 minute
+        raise self.retry(countdown=60)
+
+    if not build.schedule_tests:
+        # don't schedule any tests for upgrade/rollback builds
+        logger.info(f"Not scheduling tests for build {build}")
+        return
     previous_builds = build.project.build_set.filter(build_id__lt=build.build_id, tag=build.tag).order_by('-build_id')
     previous_build = None
     if previous_builds:
@@ -159,6 +171,28 @@ def create_build_run(build_id, run_name):
             )
 
 
+def _update_build_reason(build):
+    if build.build_reason:
+        return None
+    repository_path = os.path.join(settings.FIO_REPOSITORY_HOME, build.project.name)
+    repository = Repo(repository_path)
+    try:
+        remote = repository.remote(name=settings.FIO_REPOSITORY_REMOTE_NAME)
+        remote.pull(refspec="master")
+        if build.commit_id:
+            commit = repository.commit(rev=build.commit_id)
+            logger.debug(f"Commit: {build.commit_id}")
+            logger.debug(f"Commit message: {commit.message}")
+            build.build_reason = commit.message[:127]
+            if settings.FIO_UPGRADE_ROLLBACK_MESSAGE in commit.message:
+                build.schedule_tests = False
+
+            build.save()
+    except gitdb.exc.BadName:
+        logger.warning(f"Commit {build.commit_id} not found in {build.project.name}")
+        logger.info("fetching remote objects")
+
+
 @celery.task
 def update_build_commit_id(build_id, run_url):
     token = getattr(settings, "FIO_API_TOKEN", None)
@@ -178,6 +212,18 @@ def update_build_commit_id(build_id, run_url):
             commit_id = run_json['env']['GIT_SHA']
             build.commit_id = commit_id
             build.save()
+            _update_build_reason(build)
+
+
+@celery.task
+def update_build_reason(build_id):
+    build = None
+    try:
+        build = Build.objects.get(pk=build_id)
+    except Build.DoesNotExist:
+        return None
+
+    _update_build_reason(build)
 
 
 class ProjectMisconfiguredError(Exception):
