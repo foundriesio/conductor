@@ -224,6 +224,7 @@ def update_build_commit_id(build_id, run_url):
             build.commit_id = commit_id
             build.save()
             _update_build_reason(build)
+            create_upgrade_commit.delay(build_id)
 
 
 @celery.task
@@ -251,6 +252,32 @@ def __project_repository_exists(project):
             # raise exception, there should not be a file with this name
             raise ProjectMisconfiguredError()
     return False
+
+@celery.task
+def create_upgrade_commit(build_id):
+    project = None
+    build = None
+    try:
+        build = Build.objects.get(pk=build_id)
+        project = build.project
+    except Build.DoesNotExist:
+        # do nothing if build is not found
+        return
+    # check if repository DIR already exists
+    repository_path = os.path.join(settings.FIO_REPOSITORY_HOME, project.name)
+    if not __project_repository_exists(project):
+        logger.error(f"Repository for {project} missing!")
+        return
+    # call shell script create empty commit
+    cmd = [os.path.join(settings.FIO_REPOSITORY_SCRIPT_PATH_PREFIX, "upgrade_commit.sh"),
+           "-d", repository_path,
+           "-r", settings.FIO_REPOSITORY_REMOTE_NAME,
+           "-m", settings.FIO_UPGRADE_ROLLBACK_MESSAGE]
+    print(cmd)
+    try:
+        subprocess.run(cmd, check=True)
+    except subprocess.CalledProcessError:
+        pass
 
 
 @celery.task
