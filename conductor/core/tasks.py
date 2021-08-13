@@ -128,6 +128,16 @@ def create_build_run(self, build_id, run_name):
                  "job_type": LAVAJob.JOB_OTA,
                  "build": previous_build},
             ]
+        # also create Run objects for checking the OTA status
+        run_url = f"{build.url}runs/{run_name}/"
+        ostree_hash=_get_os_tree_hash(run_url, build.project)
+        if ostree_hash:
+            run, _ = Run.objects.get_or_create(
+                build=build,
+                device_type=device_type,
+                ostree_hash=ostree_hash,
+                run_name=run_name
+            )
 
     for template in templates:
         lcl_build = template.get("build")
