@@ -35,7 +35,9 @@ setup(
             'conductor-listener=conductor.run.listener:main',
         ]
     },
-    scripts=["conductor/scripts/checkout_repository.sh", "conductor/scripts/merge_manifest.sh"],
+    scripts=["conductor/scripts/checkout_repository.sh",
+        "conductor/scripts/merge_manifest.sh",
+        "conductor/scripts/upgrade_commit.sh"],
     install_requires=requirements,
     extras_require=extras_require,
     license='Apache License 2.0',
