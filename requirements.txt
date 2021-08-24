@@ -4,7 +4,7 @@ asgiref
 celery
 contextlib2
 Django
-django-celery-reults
+django-celery-results
 GitPython
 pyzmq
 PyYAML
