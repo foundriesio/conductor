@@ -34,6 +34,7 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
+    'django_celery_results',
     'conductor.core',
     'conductor.api',
     'conductor.pduserver',
@@ -109,7 +110,9 @@ STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
 DEFAULT_AUTO_FIELD = 'django.db.models.AutoField'
 
 CELERY_BROKER_URL = os.getenv('CONDUCTOR_CELERY_BROKER_URL')
+CELERY_RESULT_BACKEND = 'django-cache'
 CELERY_TASK_ALWAYS_EAGER = CELERY_BROKER_URL is None
+CELERY_TASK_STORE_EAGER_RESULTS = CELERY_TASK_ALWAYS_EAGER
 CELERY_BROKER_CONNECTION_MAX_RETRIES = os.getenv('CONDUCTOR_CELERY_BROKER_CONNECTION_MAX_RETRIES', 5)
 CELERY_BROKER_TRANSPORT_OPTIONS = {
     'max_retries': CELERY_BROKER_CONNECTION_MAX_RETRIES,

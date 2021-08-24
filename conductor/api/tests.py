@@ -17,7 +17,6 @@ import json
 from django.test import TestCase, Client
 from conductor.core.models import Project, LAVABackend, LAVADeviceType, LAVADevice
 from conductor.core.utils import ISO8601_JSONEncoder
-from conductor.celery import app as celeryapp
 from unittest.mock import MagicMock, patch
 
 
@@ -47,9 +46,9 @@ class ApiViewTest(TestCase):
         )
         self.client = Client()
 
-    @patch("conductor.core.tasks.update_build_commit_id.delay", return_value="git_sha_1")
-    @patch("conductor.core.tasks.create_build_run.delay")
-    def test_jobserv_webhook(self, create_build_run_mock, update_commit_mock):
+    @patch("conductor.core.tasks.create_build_run.si")
+    @patch("conductor.core.tasks.update_build_commit_id.si")
+    def test_jobserv_webhook(self, ubci_mock, cbr_mock):
         request_body_dict = {
             "status": "PASSED",
             "build_id": 1,
@@ -72,8 +71,8 @@ class ApiViewTest(TestCase):
         build = self.project.build_set.first()
         self.assertIsNotNone(build)
         self.assertEqual(build.build_id, 1)
-        create_build_run_mock.assert_called()
-        update_commit_mock.assert_called()
+        cbr_mock.assert_called()
+        ubci_mock.assert_called()
 
     def test_jobserv_webhook_incorrect_header(self):
         request_body_dict = {

@@ -15,6 +15,7 @@
 import hmac
 import json
 import logging
+from celery import chain, group
 from django.shortcuts import render
 from django.shortcuts import get_object_or_404
 from django.http import HttpResponse, HttpResponseNotAllowed, HttpResponseForbidden, HttpResponseBadRequest, HttpResponseNotFound
@@ -131,14 +132,16 @@ def process_jobserv_webhook(request):
         build_id=build_id,
         tag=build_branch)
     run_url = None
+    build_run_list = []
     for run in request_body_json.get("runs"):
         run_url = run.get("url")
         run_name = run.get("name")
-        create_build_run.delay(build.pk, run_name)
+        build_run_list.append(create_build_run.si(build.pk, run_name))
     if run_url is not None:
         # only call update_build_commit_id once as
         # all runs should contain identical GIT_SHA
-        update_build_commit_id.delay(build.pk, run_url)
+        workflow = (update_build_commit_id.si(build.pk, run_url) | group(build_run_list))
+        workflow.delay()
 
     return HttpResponse("Created", status=201)
 
