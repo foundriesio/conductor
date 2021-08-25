@@ -234,7 +234,9 @@ def update_build_commit_id(build_id, run_url):
             build.commit_id = commit_id
             build.save()
             _update_build_reason(build)
-            create_upgrade_commit.delay(build_id)
+            build.refresh_from_db()
+            if settings.FIO_UPGRADE_ROLLBACK_MESSAGE not in build.build_reason:
+                create_upgrade_commit.delay(build_id)
 
 
 @celery.task
