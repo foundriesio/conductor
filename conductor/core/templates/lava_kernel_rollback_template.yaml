@@ -1,0 +1,186 @@
+timeouts:
+  job:
+    minutes: 20
+  connection:
+    minutes: 2
+  action:
+    minutes: 2
+context:
+  test_character_delay: 10
+  lava_test_results_dir: "/home/fio/lava-%s"
+device_type: {{ device_type }}
+job_name: OTA kernel rollback from {{ target }}
+priority: 50
+visibility: public
+metadata:
+  build-url: '{{ build_url }}'
+  build-id: '{{ build_id }}'
+  trigger: '{{ trigger }}'
+actions:
+- deploy:
+    namespace: before
+    timeout:
+      minutes: 10
+    to: flasher
+    images:
+      image:
+        url: {{ IMAGE_URL }}
+        compression: gz
+        headers:
+          OSF-TOKEN: OSF-TOKEN
+{% if device_type == "imx8mmevk" or device_type == "imx6ullevk" %}
+      bootloader:
+        url: {{ BOOTLOADER_URL }}
+        headers:
+          OSF-TOKEN: OSF-TOKEN
+      sitimg:
+        url: {{ SITIMG_URL }}
+        headers:
+          OSF-TOKEN: OSF-TOKEN
+{% endif %}
+{% if device_type == "imx6ullevk" %}
+      splimage:
+        url: {{ SPLIMG_URL }}
+        headers:
+          OSF-TOKEN: OSF-TOKEN
+{% endif %}
+{% if device_type == "imx8mmevk" %}
+      uboot:
+        url: {{ UBOOT_URL }}
+        headers:
+          OSF-TOKEN: OSF-TOKEN
+{% endif %}
+- command:
+    namespace: before
+    name: network_turn_on
+- boot:
+    namespace: before
+    prompts:
+    {% for prompt in prompts %}
+     - "{{ prompt }}"
+    {% endfor %}
+    timeout:
+      minutes: 10
+    auto_login:
+      login_prompt: 'login:'
+      username: fio
+      password_prompt: "Password:"
+      password: "fio"
+      login_commands:
+      - sudo su
+      - fio
+      - systemctl enable lmp-device-auto-register
+      - sync
+    method: minimal
+    transfer_overlay:
+      download_command: cd /home ; wget
+      unpack_command: tar -C / -xzf
+- test:
+    namespace: before
+    timeout:
+      minutes: 10
+    definitions:
+    - repository: http://github.com/mwasilew/test-definitions.git
+      from: git
+      path: automated/linux/ota-rollback/download-update.yaml
+      name: prepare-upgrade
+- test:
+    namespace: before
+    timeout:
+      minutes: 1
+    interactive:
+    - name: poweroff
+      prompts: []
+      script:
+      - command: poweroff
+        name: poweroff
+        wait_for_prompt: False
+        successes:
+        - message: "reboot: Power down"
+- deploy:
+    namespace: after
+    connection-namespace: before
+    timeout:
+      minutes: 10
+    to: download
+    images:
+      bootloader:
+        url: {{ BOOTLOADER_URL }}
+        headers:
+          OSF-TOKEN: OSF-TOKEN
+- boot:
+    namespace: after
+    connection-namespace: before
+    prompts:
+    {% for prompt in prompts %}
+     - "{{ prompt }}"
+    {% endfor %}
+    timeout:
+      minutes: 10
+    auto_login:
+      login_prompt: 'login:'
+      username: fio
+      password_prompt: "Password:"
+      password: "fio"
+      login_commands:
+      - sudo su
+      - fio
+    method: minimal
+    transfer_overlay:
+      download_command: cd /home ; wget
+      unpack_command: tar -C / -xzf
+- test:
+    namespace: after
+    connection-namespace: before
+    timeout:
+      minutes: 5
+    definitions:
+    - repository: http://github.com/mwasilew/test-definitions.git
+      from: git
+      path: automated/linux/ota-rollback/verify-rollback.yaml
+      name: verify-rollback
+- test:
+    namespace: after
+    connection-namespace: before
+    timeout:
+      minutes: 1
+    interactive:
+    - name: poweroff-after
+      prompts: []
+      script:
+      - command: poweroff
+        name: poweroff-after
+        wait_for_prompt: False
+        successes:
+        - message: "reboot: Power down"
+- boot:
+    namespace: after
+    connection-namespace: before
+    prompts:
+    {% for prompt in prompts %}
+     - "{{ prompt }}"
+    {% endfor %}
+    timeout:
+      minutes: 10
+    auto_login:
+      login_prompt: 'login:'
+      username: fio
+      password_prompt: "Password:"
+      password: "fio"
+      login_commands:
+      - sudo su
+      - fio
+    method: minimal
+    transfer_overlay:
+      download_command: cd /home ; wget
+      unpack_command: tar -C / -xzf
+- test:
+    namespace: after
+    connection-namespace: before
+    timeout:
+      minutes: 5
+    definitions:
+    - repository: http://github.com/mwasilew/test-definitions.git
+      from: git
+      path: automated/linux/ota-rollback/verify-reboot.yaml
+      name: verify-reboot
