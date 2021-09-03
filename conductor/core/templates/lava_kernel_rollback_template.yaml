@@ -102,7 +102,7 @@ actions:
     connection-namespace: before
     timeout:
       minutes: 10
-    to: download
+    to: downloads
     images:
       bootloader:
         url: {{ BOOTLOADER_URL }}
