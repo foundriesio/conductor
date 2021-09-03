@@ -87,7 +87,7 @@ actions:
       params:
         INTERFACE: "{{ net_interface }}"
         SKIP_INSTALL: true
-        CURL: wget
+        CURL: "wget -O"
         DHCLIENT: "udhcpc -i"
     - repository: http://github.com/mwasilew/test-definitions.git
       from: git
