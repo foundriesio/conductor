@@ -634,9 +634,9 @@ class TaskTest(TestCase):
         create_build_run(self.build.id, run_name)
         update_build_reason_mock.assert_not_called()
         submit_lava_job_mock.assert_called()
-        assert 2 == submit_lava_job_mock.call_count
+        assert 4 == submit_lava_job_mock.call_count
         get_hash_mock.assert_called()
-        assert 3 == get_hash_mock.call_count
+        assert 5 == get_hash_mock.call_count
 
     @patch('conductor.core.tasks._get_os_tree_hash', return_value="someHash1")
     @patch('conductor.core.models.Project.submit_lava_job', return_value=[123])
