@@ -9,7 +9,7 @@ context:
   test_character_delay: 10
   lava_test_results_dir: "/home/fio/lava-%s"
 device_type: {{ device_type }}
-job_name: OTA kernel rollback from {{ target }}
+job_name: OTA uboot rollback from {{ target }}
 priority: 50
 visibility: public
 metadata:
@@ -82,6 +82,8 @@ actions:
       from: git
       path: automated/linux/ota-rollback/download-update.yaml
       name: prepare-upgrade
+      parameters:
+          TYPE: uboot
 - test:
     namespace: before
     timeout:
@@ -137,6 +139,8 @@ actions:
       from: git
       path: automated/linux/ota-rollback/verify-rollback.yaml
       name: verify-rollback
+      parameters:
+          TYPE: uboot
 - test:
     namespace: after
     connection-namespace: before
@@ -182,3 +186,5 @@ actions:
       from: git
       path: automated/linux/ota-rollback/verify-reboot.yaml
       name: verify-reboot
+      parameters:
+          TYPE: uboot

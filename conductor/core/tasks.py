@@ -134,6 +134,12 @@ def create_build_run(self, build_id, run_name):
                  "job_type": LAVAJob.JOB_OTA,
                  "build": previous_build},
             ]
+            if run_name in ["imx8mmevk", "imx6ullevk"]:
+                templates.append(
+                    {"name": "lava_uboot_rollback_template.yaml",
+                     "job_type": LAVAJob.JOB_LAVA,
+                     "build": previous_build}
+                )
         # also create Run objects for checking the OTA status
         run_url = f"{build.url}runs/{run_name}/"
         ostree_hash=_get_os_tree_hash(run_url, build.project)
