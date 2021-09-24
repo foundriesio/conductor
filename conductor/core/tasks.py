@@ -120,6 +120,7 @@ def create_build_run(self, build_id, run_name):
         # in this case previous build refers to the actual
         # changes that need to be tested
         if previous_build:
+            logger.info(f"Scheduling test jobs for run: {run_name}")
             templates = templates + [
                 {"name": "lava_aklite_interrupt_template.yaml",
                  "job_type": LAVAJob.JOB_LAVA,
