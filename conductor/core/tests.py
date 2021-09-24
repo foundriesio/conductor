@@ -579,10 +579,17 @@ class TaskTest(TestCase):
         )
         self.previous_build_run_1 = Run.objects.create(
             build=self.previous_build,
-            device_type="device-type-1",
+            device_type="imx8mmevk",
             ostree_hash="previousHash",
-            run_name="device-type-1"
+            run_name="imx8mmevk"
         )
+        self.previous_build_run_2 = Run.objects.create(
+            build=self.previous_build,
+            device_type="raspberrypi4-64",
+            ostree_hash="previousHash",
+            run_name="raspberrypi4-64"
+        )
+
         self.build = Build.objects.create(
             url="https://example.com/build/2/",
             project=self.project,
@@ -590,19 +597,38 @@ class TaskTest(TestCase):
         )
         self.build_run = Run.objects.create(
             build=self.build,
-            device_type="device-type-1",
+            device_type="imx8mmevk",
             ostree_hash="currentHash",
-            run_name="device-type-1"
+            run_name="imx8mmevk"
+        )
+        self.build_run_2 = Run.objects.create(
+            build=self.build,
+            device_type="raspberrypi4-64",
+            ostree_hash="currentHash",
+            run_name="raspberrypi4-64"
         )
 
         self.device_type1 = LAVADeviceType.objects.create(
-            name="device-type-1",
+            name="imx8mmevk",
             net_interface="eth0",
             project=self.project,
         )
+        self.device_type2 = LAVADeviceType.objects.create(
+            name="raspberrypi4-64",
+            net_interface="eth0",
+            project=self.project,
+        )
+
         self.lava_device1 = LAVADevice.objects.create(
             device_type = self.device_type1,
-            name = "device-type-1-1",
+            name = "imx8mmevk-1",
+            auto_register_name = "ota_device_1",
+            project = self.project,
+            pduagent=self.pduagent1
+        )
+        self.lava_device2 = LAVADevice.objects.create(
+            device_type = self.device_type2,
+            name = "raspberrypi4-64-1",
             auto_register_name = "ota_device_1",
             project = self.project,
             pduagent=self.pduagent1
@@ -612,7 +638,22 @@ class TaskTest(TestCase):
     @patch('conductor.core.models.Project.submit_lava_job', return_value=[123])
     @patch('conductor.core.tasks.update_build_reason')
     def test_create_build_run(self, update_build_reason_mock, submit_lava_job_mock, get_hash_mock):
-        run_name = "device-type-1"
+        run_name = "imx8mmevk"
+        self.build.build_reason = "Hello world"
+        self.build.schedule_tests = True
+        self.build.save()
+        create_build_run(self.build.id, run_name)
+        update_build_reason_mock.assert_not_called()
+        submit_lava_job_mock.assert_called()
+        assert 2 == submit_lava_job_mock.call_count
+        get_hash_mock.assert_called()
+        assert 2 == get_hash_mock.call_count
+
+    @patch('conductor.core.tasks._get_os_tree_hash', return_value="someHash1")
+    @patch('conductor.core.models.Project.submit_lava_job', return_value=[123])
+    @patch('conductor.core.tasks.update_build_reason')
+    def test_create_build_run_rpi(self, update_build_reason_mock, submit_lava_job_mock, get_hash_mock):
+        run_name = "raspberrypi4-64"
         self.build.build_reason = "Hello world"
         self.build.schedule_tests = True
         self.build.save()
@@ -627,7 +668,22 @@ class TaskTest(TestCase):
     @patch('conductor.core.models.Project.submit_lava_job', return_value=[123])
     @patch('conductor.core.tasks.update_build_reason')
     def test_create_build_run_upgrade_build(self, update_build_reason_mock, submit_lava_job_mock, get_hash_mock):
-        run_name = "device-type-1"
+        run_name = "imx8mmevk"
+        self.build.build_reason = settings.FIO_UPGRADE_ROLLBACK_MESSAGE
+        self.build.schedule_tests = False
+        self.build.save()
+        create_build_run(self.build.id, run_name)
+        update_build_reason_mock.assert_not_called()
+        submit_lava_job_mock.assert_called()
+        assert 5 == submit_lava_job_mock.call_count
+        get_hash_mock.assert_called()
+        assert 6 == get_hash_mock.call_count
+
+    @patch('conductor.core.tasks._get_os_tree_hash', return_value="someHash1")
+    @patch('conductor.core.models.Project.submit_lava_job', return_value=[123])
+    @patch('conductor.core.tasks.update_build_reason')
+    def test_create_build_run_upgrade_build_rpi(self, update_build_reason_mock, submit_lava_job_mock, get_hash_mock):
+        run_name = "raspberrypi4-64"
         self.build.build_reason = settings.FIO_UPGRADE_ROLLBACK_MESSAGE
         self.build.schedule_tests = False
         self.build.save()
@@ -642,7 +698,7 @@ class TaskTest(TestCase):
     @patch('conductor.core.models.Project.submit_lava_job', return_value=[123])
     @patch('conductor.core.tasks.update_build_reason')
     def test_create_build_run_no_reason(self, update_build_reason_mock, submit_lava_job_mock, get_hash_mock):
-        run_name = "device-type-1"
+        run_name = "imx8mmevk"
         with self.assertRaises(celery.exceptions.Retry) as context:
             create_build_run(self.build.id, run_name)
             update_build_reason_mock.assert_called()
@@ -651,7 +707,7 @@ class TaskTest(TestCase):
     @patch('conductor.core.tasks._get_os_tree_hash', return_value=None)
     @patch('conductor.core.models.Project.submit_lava_job', return_value=[123])
     def test_create_build_run_os_tree_hash_none(self, submit_lava_job_mock, get_hash_mock):
-        run_name = "device-type-1"
+        run_name = "imx8mmevk"
         self.build.build_reason = "Hello world"
         self.build.schedule_tests = True
         self.build.save()
