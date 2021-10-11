@@ -351,6 +351,8 @@ def merge_lmp_manifest():
                "-d", repository_path,
                "-r", settings.FIO_REPOSITORY_REMOTE_NAME,
                "-l", settings.FIO_BASE_REMOTE_NAME]
+        logger.info("Calling merge_manifest.sh script")
+        logger.info(" ".join(cmd))
         try:
             subprocess.run(cmd, check=True)
         except subprocess.CalledProcessError:
