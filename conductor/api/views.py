@@ -18,10 +18,17 @@ import logging
 from celery import chain, group
 from django.shortcuts import render
 from django.shortcuts import get_object_or_404
-from django.http import HttpResponse, HttpResponseNotAllowed, HttpResponseForbidden, HttpResponseBadRequest, HttpResponseNotFound
+from django.http import (
+    HttpResponse,
+    HttpResponseNotAllowed,
+    HttpResponseForbidden,
+    HttpResponseBadRequest,
+    HttpResponseNotFound,
+    JsonResponse
+)
 from django.views.decorators.csrf import csrf_exempt
 
-from conductor.core.models import Project, Build, LAVADevice
+from conductor.core.models import Project, Build, LAVADevice, Run
 from conductor.core.tasks import create_build_run, merge_lmp_manifest, update_build_commit_id, check_device_ota_completed
 from conductor.core.utils import ISO8601_JSONEncoder
 
@@ -162,3 +169,14 @@ def process_lmp_build(request):
             return HttpResponse("OK")
         merge_lmp_manifest.delay()
     return HttpResponse("Created", status=201)
+
+
+@csrf_exempt
+def generate_context(request, project_name, build_version, device_type_name):
+    project = get_object_or_404(Project, name=project_name)
+    build = get_object_or_404(Build, project=project, build_id=build_version)
+    try:
+        context = build.generate_context(device_type_name)
+        return JsonResponse(context)
+    except Run.DoesNotExist:
+        return HttpResponseNotFound()

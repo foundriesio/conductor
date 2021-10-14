@@ -103,6 +103,17 @@ class Build(models.Model):
     def __str__(self):
         return f"{self.build_id} ({self.project.name})"
 
+    def generate_context(self, device_type_name):
+        # returns testing context for the build.
+        run = Run.objects.get(build=self, run_name=device_type_name)
+        device_type = self.project.lavadevicetype_set.get(name=device_type_name)
+        return {
+            "INTERFACE": device_type.net_interface,
+            "CONFIG_VALUES": "CONFIG_CGROUPS",
+            "OSTREE_HASH": run.ostree_hash,
+            "TARGET": self.build_id,
+        }
+
 
 class Run(models.Model):
     build = models.ForeignKey(Build, on_delete=models.CASCADE)

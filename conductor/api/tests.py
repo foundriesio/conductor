@@ -15,7 +15,7 @@
 import hmac
 import json
 from django.test import TestCase, Client
-from conductor.core.models import Project, LAVABackend, LAVADeviceType, LAVADevice
+from conductor.core.models import Project, LAVABackend, LAVADeviceType, LAVADevice, Build, Run
 from conductor.core.utils import ISO8601_JSONEncoder
 from unittest.mock import MagicMock, patch
 
@@ -44,6 +44,21 @@ class ApiViewTest(TestCase):
             auto_register_name="device_auto_reg_1",
             project=self.project
         )
+        self.build = Build.objects.create(
+            url="https://example.com/",
+            build_id=123,
+            project=self.project,
+            commit_id="abcdef123456",
+            is_release=False,
+            tag="master",
+            build_reason="test build #1"
+        )
+        self.run = Run.objects.create(
+            build=self.build,
+            device_type=self.device_type.name,
+            ostree_hash="123456abcdef",
+            run_name=self.device_type.name
+        )
         self.client = Client()
 
     @patch("conductor.core.tasks.create_build_run.si")
@@ -68,7 +83,7 @@ class ApiViewTest(TestCase):
         )
         self.assertEqual(response.status_code, 201)
         # check if build was created
-        build = self.project.build_set.first()
+        build = self.project.build_set.last()
         self.assertIsNotNone(build)
         self.assertEqual(build.build_id, 1)
         cbr_mock.assert_called()
@@ -358,3 +373,30 @@ class ApiViewTest(TestCase):
         )
         self.assertEqual(response.status_code, 404)
         check_device_ota_completed_mock.assert_not_called()
+
+    def test_fiotest_context(self):
+        response = self.client.get(
+            f"/api/context/{self.project.name}/{self.build.build_id}/{self.device_type.name}/"
+        )
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.json()["INTERFACE"], self.device_type.net_interface)
+        self.assertEqual(response.json()["TARGET"], self.build.build_id)
+        self.assertEqual(response.json()["OSTREE_HASH"], self.run.ostree_hash)
+
+    def test_fiotest_context_bad_project(self):
+        response = self.client.get(
+            f"/api/context/foo/{self.build.build_id}/{self.device_type.name}/"
+        )
+        self.assertEqual(response.status_code, 404)
+
+    def test_fiotest_context_bad_build(self):
+        response = self.client.get(
+            f"/api/context/{self.project.name}/111/{self.device_type.name}/"
+        )
+        self.assertEqual(response.status_code, 404)
+
+    def test_fiotest_context_bad_device(self):
+        response = self.client.get(
+            f"/api/context/{self.project.name}/{self.build.build_id}/foo/"
+        )
+        self.assertEqual(response.status_code, 404)
