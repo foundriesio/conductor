@@ -111,7 +111,7 @@ class Build(models.Model):
             "INTERFACE": device_type.net_interface,
             "CONFIG_VALUES": "CONFIG_CGROUPS",
             "OSTREE_HASH": run.ostree_hash,
-            "TARGET": self.build_id,
+            "TARGET": f"{self.build_id}",
         }
 
 

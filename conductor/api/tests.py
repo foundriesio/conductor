@@ -380,7 +380,7 @@ class ApiViewTest(TestCase):
         )
         self.assertEqual(response.status_code, 200)
         self.assertEqual(response.json()["INTERFACE"], self.device_type.net_interface)
-        self.assertEqual(response.json()["TARGET"], self.build.build_id)
+        self.assertEqual(response.json()["TARGET"], f"{self.build.build_id}")
         self.assertEqual(response.json()["OSTREE_HASH"], self.run.ostree_hash)
 
     def test_fiotest_context_bad_project(self):
