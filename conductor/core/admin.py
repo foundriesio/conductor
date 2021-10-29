@@ -19,6 +19,10 @@ class LAVABackendAdmin(admin.ModelAdmin):
     models = models.LAVABackend
 
 
+class SQUADBackendAdmin(admin.ModelAdmin):
+    models = models.SQUADBackend
+
+
 class ProjectAdmin(admin.ModelAdmin):
     models = models.Project
 
@@ -48,6 +52,7 @@ class PDUAgentAdmin(admin.ModelAdmin):
     list_display = ['__str__', 'state']
 
 admin.site.register(models.LAVABackend, LAVABackendAdmin)
+admin.site.register(models.SQUADBackend, SQUADBackendAdmin)
 admin.site.register(models.Project, ProjectAdmin)
 admin.site.register(models.Build, BuildAdmin)
 admin.site.register(models.Run, RunAdmin)
