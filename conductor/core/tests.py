@@ -20,7 +20,18 @@ from django.test import TestCase
 from git import Repo
 from unittest.mock import patch, MagicMock, PropertyMock
 
-from conductor.core.models import Project, Build, Run, LAVABackend, LAVADeviceType, LAVADevice, LAVAJob, PDUAgent
+from conductor.core.models import (
+    Project,
+    Build,
+    Run,
+    LAVABackend,
+    SQUADBackend,
+    LAVADeviceType,
+    LAVADevice,
+    LAVAJob,
+    PDUAgent,
+    DEFAULT_TIMEOUT
+)
 from conductor.core.tasks import (
     create_build_run,
     device_pdu_action,
@@ -450,10 +461,22 @@ class ProjectTest(TestCase):
             lava_url="http://lava.example.com/api/v0.2/",
             lava_api_token="lavatoken",
         )
+        self.squadbackend1 = SQUADBackend.objects.create(
+            name="testSquadBackend1",
+            squad_url="https://squad.example.com/",
+            squad_token="squadtoken"
+        )
         self.project = Project.objects.create(
             name="testProject1",
             secret="webhooksecret",
-            lava_backend=self.lavabackend1
+            lava_backend=self.lavabackend1,
+            squad_backend=self.squadbackend1,
+            squad_group="squadgroup"
+        )
+        self.build = Build.objects.create(
+            url="https://example.com/build/1/",
+            project=self.project,
+            build_id="1"
         )
 
     @patch('requests.post')
@@ -467,6 +490,24 @@ class ProjectTest(TestCase):
         ret_list = self.project.submit_lava_job(definition)
         post_mock.assert_called()
         self.assertEqual(ret_list, ['123'])
+
+    @patch('requests.post')
+    def test_squad_watch_job(self, post_mock):
+        test_job_id = "123"
+        environment = "environment"
+        response_mock = MagicMock()
+        response_mock.status_code = 201
+        response_mock.text = "321"
+        post_mock.return_value = response_mock
+
+        squad_job_id = self.project.watch_qa_reports_job(self.build, environment, test_job_id)
+        self.assertEqual(squad_job_id, "321")
+        post_mock.assert_called_with(
+            f"{self.squadbackend1.squad_url}api/watchjob/{self.project.squad_group}/{self.project.name}/{self.build.build_id}/{environment}",
+            headers={'Auth-Token': self.squadbackend1.squad_token},
+            data={'testjob_id': test_job_id, 'backend': self.squadbackend1.name},
+            timeout=DEFAULT_TIMEOUT
+        )
 
 
 class LAVADeviceTest(TestCase):
@@ -561,10 +602,17 @@ class TaskTest(TestCase):
             lava_url="http://lava.example.com/api/v0.2/",
             lava_api_token="lavatoken",
         )
+        self.squadbackend1 = SQUADBackend.objects.create(
+            name="testSquadBackend1",
+            squad_url="https://squad.example.com/",
+            squad_token="squadtoken"
+        )
         self.project = Project.objects.create(
             name="testProject1",
             secret="webhooksecret",
-            lava_backend=self.lavabackend1
+            lava_backend=self.lavabackend1,
+            squad_backend=self.squadbackend1,
+            squad_group="squadgroup"
         )
         self.previous_build = Build.objects.create(
             url="https://example.com/build/1/",
@@ -635,9 +683,10 @@ class TaskTest(TestCase):
         )
 
     @patch('conductor.core.tasks._get_os_tree_hash', return_value="someHash1")
+    @patch('conductor.core.models.Project.watch_qa_reports_job', return_value="321")
     @patch('conductor.core.models.Project.submit_lava_job', return_value=[123])
     @patch('conductor.core.tasks.update_build_reason')
-    def test_create_build_run(self, update_build_reason_mock, submit_lava_job_mock, get_hash_mock):
+    def test_create_build_run(self, update_build_reason_mock, submit_lava_job_mock, watch_qa_reports_mock, get_hash_mock):
         run_name = "imx8mmevk"
         self.build.build_reason = "Hello world"
         self.build.schedule_tests = True
@@ -645,14 +694,35 @@ class TaskTest(TestCase):
         create_build_run(self.build.id, run_name)
         update_build_reason_mock.assert_not_called()
         submit_lava_job_mock.assert_called()
+        watch_qa_reports_mock.assert_called()
         assert 2 == submit_lava_job_mock.call_count
         get_hash_mock.assert_called()
         assert 2 == get_hash_mock.call_count
 
     @patch('conductor.core.tasks._get_os_tree_hash', return_value="someHash1")
+    @patch('conductor.core.models.SQUADBackend.watch_lava_job', return_value="321")
     @patch('conductor.core.models.Project.submit_lava_job', return_value=[123])
     @patch('conductor.core.tasks.update_build_reason')
-    def test_create_build_run_rpi(self, update_build_reason_mock, submit_lava_job_mock, get_hash_mock):
+    def test_create_build_run_no_qareports(self, update_build_reason_mock, submit_lava_job_mock, watch_lava_job_mock, get_hash_mock):
+        self.project.squad_backend = None
+        self.project.save()
+        run_name = "imx8mmevk"
+        self.build.build_reason = "Hello world"
+        self.build.schedule_tests = True
+        self.build.save()
+        create_build_run(self.build.id, run_name)
+        update_build_reason_mock.assert_not_called()
+        submit_lava_job_mock.assert_called()
+        watch_lava_job_mock.assert_not_called()
+        assert 2 == submit_lava_job_mock.call_count
+        get_hash_mock.assert_called()
+        assert 2 == get_hash_mock.call_count
+
+    @patch('conductor.core.tasks._get_os_tree_hash', return_value="someHash1")
+    @patch('conductor.core.models.Project.watch_qa_reports_job', return_value="321")
+    @patch('conductor.core.models.Project.submit_lava_job', return_value=[123])
+    @patch('conductor.core.tasks.update_build_reason')
+    def test_create_build_run_rpi(self, update_build_reason_mock, submit_lava_job_mock, watch_qa_reports_mock, get_hash_mock):
         run_name = "raspberrypi4-64"
         self.build.build_reason = "Hello world"
         self.build.schedule_tests = True
@@ -660,14 +730,16 @@ class TaskTest(TestCase):
         create_build_run(self.build.id, run_name)
         update_build_reason_mock.assert_not_called()
         submit_lava_job_mock.assert_called()
+        watch_qa_reports_mock.assert_called()
         assert 2 == submit_lava_job_mock.call_count
         get_hash_mock.assert_called()
         assert 2 == get_hash_mock.call_count
 
     @patch('conductor.core.tasks._get_os_tree_hash', return_value="someHash1")
+    @patch('conductor.core.models.Project.watch_qa_reports_job', return_value="321")
     @patch('conductor.core.models.Project.submit_lava_job', return_value=[123])
     @patch('conductor.core.tasks.update_build_reason')
-    def test_create_build_run_upgrade_build(self, update_build_reason_mock, submit_lava_job_mock, get_hash_mock):
+    def test_create_build_run_upgrade_build(self, update_build_reason_mock, submit_lava_job_mock, watch_qa_reports_mock, get_hash_mock):
         run_name = "imx8mmevk"
         self.build.build_reason = settings.FIO_UPGRADE_ROLLBACK_MESSAGE
         self.build.schedule_tests = False
@@ -675,14 +747,16 @@ class TaskTest(TestCase):
         create_build_run(self.build.id, run_name)
         update_build_reason_mock.assert_not_called()
         submit_lava_job_mock.assert_called()
+        watch_qa_reports_mock.assert_called()
         assert 5 == submit_lava_job_mock.call_count
         get_hash_mock.assert_called()
         assert 6 == get_hash_mock.call_count
 
     @patch('conductor.core.tasks._get_os_tree_hash', return_value="someHash1")
+    @patch('conductor.core.models.Project.watch_qa_reports_job', return_value="321")
     @patch('conductor.core.models.Project.submit_lava_job', return_value=[123])
     @patch('conductor.core.tasks.update_build_reason')
-    def test_create_build_run_upgrade_build_rpi(self, update_build_reason_mock, submit_lava_job_mock, get_hash_mock):
+    def test_create_build_run_upgrade_build_rpi(self, update_build_reason_mock, submit_lava_job_mock, watch_qa_reports_mock, get_hash_mock):
         run_name = "raspberrypi4-64"
         self.build.build_reason = settings.FIO_UPGRADE_ROLLBACK_MESSAGE
         self.build.schedule_tests = False
@@ -690,29 +764,34 @@ class TaskTest(TestCase):
         create_build_run(self.build.id, run_name)
         update_build_reason_mock.assert_not_called()
         submit_lava_job_mock.assert_called()
+        watch_qa_reports_mock.assert_called()
         assert 4 == submit_lava_job_mock.call_count
         get_hash_mock.assert_called()
         assert 5 == get_hash_mock.call_count
 
     @patch('conductor.core.tasks._get_os_tree_hash', return_value="someHash1")
+    @patch('conductor.core.models.Project.watch_qa_reports_job', return_value="321")
     @patch('conductor.core.models.Project.submit_lava_job', return_value=[123])
     @patch('conductor.core.tasks.update_build_reason')
-    def test_create_build_run_no_reason(self, update_build_reason_mock, submit_lava_job_mock, get_hash_mock):
+    def test_create_build_run_no_reason(self, update_build_reason_mock, submit_lava_job_mock, watch_qa_reports_mock, get_hash_mock):
         run_name = "imx8mmevk"
         with self.assertRaises(celery.exceptions.Retry) as context:
             create_build_run(self.build.id, run_name)
             update_build_reason_mock.assert_called()
             submit_lava_job_mock.assert_not_called()
+            watch_qa_reports_mock.assert_not_called()
 
     @patch('conductor.core.tasks._get_os_tree_hash', return_value=None)
+    @patch('conductor.core.models.Project.watch_qa_reports_job', return_value="321")
     @patch('conductor.core.models.Project.submit_lava_job', return_value=[123])
-    def test_create_build_run_os_tree_hash_none(self, submit_lava_job_mock, get_hash_mock):
+    def test_create_build_run_os_tree_hash_none(self, submit_lava_job_mock, watch_qa_reports_mock, get_hash_mock):
         run_name = "imx8mmevk"
         self.build.build_reason = "Hello world"
         self.build.schedule_tests = True
         self.build.save()
         create_build_run(self.build.id, run_name)
         submit_lava_job_mock.assert_not_called()
+        watch_qa_reports_mock.assert_not_called()
         get_hash_mock.assert_called()
         assert 2 == get_hash_mock.call_count
 

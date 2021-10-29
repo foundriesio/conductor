@@ -197,14 +197,17 @@ def create_build_run(self, build_id, run_name):
 
         lava_job_definition = get_template(template["name"]).render(context)
         job_ids = build.project.submit_lava_job(lava_job_definition)
+        job_type=template.get("job_type")
         logger.debug(job_ids)
         for job in job_ids:
             LAVAJob.objects.create(
                 job_id=job,
                 definition=lava_job_definition,
                 project=build.project,
-                job_type=template.get("job_type"),
+                job_type=job_type,
             )
+            if job_type == LAVAJob.JOB_LAVA:
+                build.project.watch_qa_reports_job(lcl_build, run_name, job)
 
 
 def _update_build_reason(build):

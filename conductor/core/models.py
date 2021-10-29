@@ -62,6 +62,33 @@ class LAVABackend(models.Model):
         return self.name
 
 
+class SQUADBackend(models.Model):
+    name = models.CharField(max_length=32)
+    squad_url = models.URLField()
+    squad_token = models.CharField(max_length=128)
+
+    def watch_lava_job(self, 
+            group,
+            project,
+            build,
+            environment,
+            job_id):
+        # authentication headers
+        authentication = {
+            "Auth-Token": self.squad_token,
+        }
+        response = requests.post(
+            urljoin(self.squad_url, f"api/watchjob/{group}/{project}/{build}/{environment}"),
+            headers=authentication,
+            data={"testjob_id": job_id,
+                  "backend": self.name},
+            timeout=DEFAULT_TIMEOUT
+        )
+        if response.status_code == 201:
+            return response.text
+        return None
+
+
 class Project(models.Model):
     name = models.CharField(max_length=32)
     # secret stored in a factory and passed in webhook
@@ -72,6 +99,22 @@ class Project(models.Model):
         on_delete=models.SET_NULL,
         null=True,
         blank=True)
+    squad_backend = models.ForeignKey(
+        SQUADBackend,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True)
+    squad_group = models.CharField(max_length=16, null=True, blank=True)
+
+    def watch_qa_reports_job(self, build, environment, job_id):
+        if self.squad_backend:
+            return self.squad_backend.watch_lava_job(
+                    self.squad_group,
+                    self.name,
+                    build.build_id,
+                    environment,
+                    job_id)
+        return None
 
     def submit_lava_job(self, definition):
         if self.lava_backend:
