@@ -717,7 +717,7 @@ class TaskTest(TestCase):
     @patch('conductor.core.tasks.update_build_reason')
     def test_create_build_run(self, update_build_reason_mock, submit_lava_job_mock, watch_qa_reports_mock, update_testjob_mock, get_hash_mock):
         response_mock = MagicMock()
-        response_mock.status_code = 200
+        response_mock.status_code = 201
         response_mock.text = "321"
         watch_qa_reports_mock.return_value = response_mock
         run_name = "imx8mmevk"
