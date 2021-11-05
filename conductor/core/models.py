@@ -77,15 +77,29 @@ class SQUADBackend(models.Model):
         authentication = {
             "Auth-Token": self.squad_token,
         }
-        response = requests.post(
+        return requests.post(
             urljoin(self.squad_url, f"api/watchjob/{group}/{project}/{build}/{environment}"),
             headers=authentication,
             data={"testjob_id": job_id,
                   "backend": self.name},
             timeout=DEFAULT_TIMEOUT
         )
-        if response.status_code == 201:
-            return response.text
+
+    def update_testjob(self, squad_job_id, name, job_definition):
+        headers = {
+            "Authorization": f"Token {self.squad_token}"
+        }
+        testjob_api_url = urljoin(self.squad_url, f"api/testjobs/{squad_job_id}")
+        job_details_request = requests.get(testjob_api_url, headers=headers)
+        if job_details_request.status_code == 200:
+            # prepare PUT to update definition
+            job_details = job_details_request.json()
+            job_details.update({"definition": job_definition, "name": name})
+            return requests.put(
+                testjob_api_url,
+                data=job_details,
+                headers=headers
+            )
         return None
 
 

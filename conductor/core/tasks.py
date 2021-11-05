@@ -207,7 +207,14 @@ def create_build_run(self, build_id, run_name):
                 job_type=job_type,
             )
             if job_type == LAVAJob.JOB_LAVA:
-                build.project.watch_qa_reports_job(lcl_build, run_name, job)
+                # returns HTTPResponse object or None
+                watch_response = build.project.watch_qa_reports_job(lcl_build, run_name, job)
+                if watch_response and watch_response.status_code == 200:
+                    # update the testjob object in SQUAD
+                    squad_job_id = watch_response.text
+                    job_definition_yaml = yaml.safe_load(lava_job_definition)
+                    job_name = job_definition_yaml.get('job_name')
+                    build.project.squad_backend.update_testjob(squad_job_id, job_name, lava_job_definition)
 
 
 def _update_build_reason(build):
