@@ -226,11 +226,16 @@ def _update_build_reason(build):
         remote = repository.remote(name=settings.FIO_REPOSITORY_REMOTE_NAME)
         remote.pull(refspec="master")
         if build.commit_id:
-            commit = repository.commit(rev=build.commit_id)
-            logger.debug(f"Commit: {build.commit_id}")
-            logger.debug(f"Commit message: {commit.message}")
-            build.build_reason = commit.message[:127]
-            if settings.FIO_UPGRADE_ROLLBACK_MESSAGE in commit.message:
+            try:
+                commit = repository.commit(rev=build.commit_id)
+                logger.debug(f"Commit: {build.commit_id}")
+                logger.debug(f"Commit message: {commit.message}")
+                build.build_reason = commit.message[:127]
+            except ValueError:
+                # commit was not found in the repository
+                # this usually means build was triggered from meta-sub
+                build.build_reason = "Trigerred from meta-sub"
+            if settings.FIO_UPGRADE_ROLLBACK_MESSAGE in build.build_reason:
                 build.schedule_tests = False
 
             build.save()
