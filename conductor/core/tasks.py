@@ -434,7 +434,7 @@ def __get_testjob_results__(device, job_id):
         # todo: check if tests exist and they come with definitions
         # this is only correct for some test jobs
         for action in job_definition['actions']:
-            if 'test' in action.keys():
+            if 'test' in action.keys() and 'definitions' in action['test'].keys():
                 for expected_test in action['test']['definitions']:
                     expected_test_list.append(expected_test['name'])
 
