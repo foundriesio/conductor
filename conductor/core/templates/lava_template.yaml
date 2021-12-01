@@ -128,6 +128,7 @@ actions:
       from: git
       path: automated/linux/wlan-smoke/wlan-smoke.yaml
       name: wlan-smoke
+
 {% endif %}
     - repository: http://github.com/mwasilew/test-definitions.git
       from: git
@@ -141,7 +142,20 @@ actions:
       params:
         MODE: "scan lescan"
 {% endif %}
-{% if device_type == "imx8mmevk" or device_type == 'imx6ullevk'%}
+{% if device_type == "raspberrypi4-64" or device_type == "stm32mp1-disco" or device_type == 'imx6ullevk' %}
+    - repository: http://github.com/mwasilew/test-definitions.git
+      from: git
+      path: automated/linux/wlan-download/wlan-download.yaml
+      name: wlan-download
+      params:
+        DEVICE: wlan0
+        ETHERNET_DEVICE: "{{ net_interface }}"
+        SSID_NAME: Foundriesio
+        SSID_PASSWORD: StrictlyComeDancing
+        FILE_URL: http://archive.ubuntu.com/ubuntu/dists/bionic/main/installer-amd64/current/images/netboot/mini.iso
+        FILE_CHECKSUM: "8388f7232b400bdc80279668847f90da"
+{% endif %}
+{% if device_type == "imx8mmevk" or device_type == 'imx6ullevk' %}
     - repository: http://github.com/mwasilew/test-definitions.git
       from: git
       path: automated/linux/optee/optee-xtest.yaml
