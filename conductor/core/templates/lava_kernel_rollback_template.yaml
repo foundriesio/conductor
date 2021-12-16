@@ -28,11 +28,13 @@ actions:
         compression: gz
         headers:
           OSF-TOKEN: OSF-TOKEN
-{% if device_type == "imx8mmevk" or device_type == "imx6ullevk" %}
+{% if device_type == "imx8mmevk" or device_type == "imx6ullevk" or device_type == "imx8mp-lpddr4-evk" %}
       bootloader:
         url: {{ BOOTLOADER_URL }}
         headers:
           OSF-TOKEN: OSF-TOKEN
+{% endif %}
+{% if device_type == "imx8mmevk" or device_type == "imx6ullevk" %}
       sitimg:
         url: {{ SITIMG_URL }}
         headers:
@@ -44,7 +46,7 @@ actions:
         headers:
           OSF-TOKEN: OSF-TOKEN
 {% endif %}
-{% if device_type == "imx8mmevk" %}
+{% if device_type == "imx8mmevk" or device_type == "imx8mp-lpddr4-evk" %}
       uboot:
         url: {{ UBOOT_URL }}
         headers:
