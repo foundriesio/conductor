@@ -56,6 +56,10 @@ actions:
       name: fs-resize
     - repository: http://github.com/mwasilew/test-definitions.git
       from: git
+      path: automated/linux/timesyncd/timesyncd.yaml
+      name: timesyncd
+    - repository: http://github.com/mwasilew/test-definitions.git
+      from: git
       path: automated/linux/network-basic/network-basic.yaml
       name: network-basic
       params:
