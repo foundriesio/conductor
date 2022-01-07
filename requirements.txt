@@ -9,6 +9,7 @@ GitPython
 pyzmq
 PyYAML
 requests
+tzdata
 whitenoise
 zmq
 
