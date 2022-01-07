@@ -115,7 +115,7 @@ actions:
       params:
         MODE: "scan lescan"
 {% endif %}
-{% if device_type == "raspberrypi4-64" or device_type == "stm32mp1-disco" or device_type == 'imx6ullevk' %}
+{% if device_type == "raspberrypi4-64" or device_type == "stm32mp1-disco" %}
     - repository: http://github.com/mwasilew/test-definitions.git
       from: git
       path: automated/linux/wlan-download/wlan-download.yaml
