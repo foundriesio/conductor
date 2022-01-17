@@ -18,6 +18,7 @@ metadata:
   trigger: '{{ trigger }}'
 actions:
 {% include "deploy.inc.yaml" %}
+    namespace: before
 - command:
     namespace: before
     name: network_turn_on
