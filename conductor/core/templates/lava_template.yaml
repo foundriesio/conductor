@@ -46,19 +46,19 @@ actions:
     definitions:
     # this is not a real test. It registers the device
     # and prevents aklite to force reboot
-    - repository: http://github.com/mwasilew/test-definitions.git
+    - repository: http://github.com/linaro/test-definitions.git
       from: git
       path: automated/linux/disable-aklite-reboot/disable-aklite-reboot.yaml
       name: disable-aklite-reboot
-    - repository: http://github.com/mwasilew/test-definitions.git
+    - repository: http://github.com/linaro/test-definitions.git
       from: git
       path: automated/linux/fs-resize/fs-resize.yaml
       name: fs-resize
-    - repository: http://github.com/mwasilew/test-definitions.git
+    - repository: http://github.com/linaro/test-definitions.git
       from: git
       path: automated/linux/timesyncd/timesyncd.yaml
       name: timesyncd
-    - repository: http://github.com/mwasilew/test-definitions.git
+    - repository: http://github.com/linaro/test-definitions.git
       from: git
       path: automated/linux/network-basic/network-basic.yaml
       name: network-basic
@@ -67,48 +67,48 @@ actions:
         SKIP_INSTALL: true
         CURL: "wget -O"
         DHCLIENT: "udhcpc -i"
-    - repository: http://github.com/mwasilew/test-definitions.git
+    - repository: http://github.com/linaro/test-definitions.git
       from: git
       path: automated/linux/docker/docker.yaml
       name: docker
       params:
         IMAGE: "hello-world"
-    - repository: http://github.com/mwasilew/test-definitions.git
+    - repository: http://github.com/linaro/test-definitions.git
       from: git
       path: automated/linux/docker-networking/docker-networking.yaml
       name: docker-networking
-    - repository: http://github.com/mwasilew/test-definitions.git
+    - repository: http://github.com/linaro/test-definitions.git
       from: git
       path: automated/linux/kernel-config-checker/kernel-config-checker.yaml
       name: kernel-config-checker
       params:
         # add more mandatory configs here
         CONFIG_VALUES: "CONFIG_CGROUPS"
-    - repository: http://github.com/mwasilew/test-definitions.git
+    - repository: http://github.com/linaro/test-definitions.git
       from: git
       path: automated/linux/ostree/ostree.yaml
       name: ostree
       params:
         OSTREE_HASH: "{{ os_tree_hash }}"
-    - repository: http://github.com/mwasilew/test-definitions.git
+    - repository: http://github.com/linaro/test-definitions.git
       from: git
       path: automated/linux/aklite/aklite.yaml
       name: aklite
       params:
         TARGET: {{ target }}
 {% if device_type == "imx8mmevk" or device_type == 'raspberrypi4-64'%}
-    - repository: http://github.com/mwasilew/test-definitions.git
+    - repository: http://github.com/linaro/test-definitions.git
       from: git
       path: automated/linux/wlan-smoke/wlan-smoke.yaml
       name: wlan-smoke
 
 {% endif %}
-    - repository: http://github.com/mwasilew/test-definitions.git
+    - repository: http://github.com/linaro/test-definitions.git
       from: git
       path: automated/linux/ima/ima.yaml
       name: ima-smoke
 {% if device_type == "raspberrypi4-64" %}
-    - repository: http://github.com/mwasilew/test-definitions.git
+    - repository: http://github.com/linaro/test-definitions.git
       from: git
       path: automated/linux/hci-smoke/hci-smoke.yaml
       name: hci-smoke
@@ -116,7 +116,7 @@ actions:
         MODE: "scan lescan"
 {% endif %}
 {% if device_type == "raspberrypi4-64" or device_type == "stm32mp1-disco" %}
-    - repository: http://github.com/mwasilew/test-definitions.git
+    - repository: http://github.com/linaro/test-definitions.git
       from: git
       path: automated/linux/wlan-download/wlan-download.yaml
       name: wlan-download
@@ -129,12 +129,12 @@ actions:
         FILE_CHECKSUM: "8388f7232b400bdc80279668847f90da"
 {% endif %}
 {% if device_type == "imx8mmevk" or device_type == 'imx6ullevk' %}
-    - repository: http://github.com/mwasilew/test-definitions.git
+    - repository: http://github.com/linaro/test-definitions.git
       from: git
       path: automated/linux/optee/optee-xtest.yaml
       name: optee-xtest
 {% endif %}
-    - repository: http://github.com/mwasilew/test-definitions.git
+    - repository: http://github.com/linaro/test-definitions.git
       from: git
       path: automated/linux/network-manager/network-manager.yaml
       name: network-manager

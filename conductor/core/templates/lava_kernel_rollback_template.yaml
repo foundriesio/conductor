@@ -47,7 +47,7 @@ actions:
     timeout:
       minutes: 10
     definitions:
-    - repository: http://github.com/mwasilew/test-definitions.git
+    - repository: http://github.com/linaro/test-definitions.git
       from: git
       path: automated/linux/ota-rollback/download-update.yaml
       name: prepare-upgrade
@@ -102,7 +102,7 @@ actions:
     timeout:
       minutes: 5
     definitions:
-    - repository: http://github.com/mwasilew/test-definitions.git
+    - repository: http://github.com/linaro/test-definitions.git
       from: git
       path: automated/linux/ota-rollback/verify-rollback.yaml
       name: verify-rollback
@@ -147,7 +147,7 @@ actions:
     timeout:
       minutes: 5
     definitions:
-    - repository: http://github.com/mwasilew/test-definitions.git
+    - repository: http://github.com/linaro/test-definitions.git
       from: git
       path: automated/linux/ota-rollback/verify-reboot.yaml
       name: verify-reboot

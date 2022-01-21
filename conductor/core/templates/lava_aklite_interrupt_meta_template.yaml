@@ -46,7 +46,7 @@ actions:
     timeout:
       minutes: 15
     definitions:
-    - repository: http://github.com/mwasilew/test-definitions.git
+    - repository: http://github.com/linaro/test-definitions.git
       from: git
       path: automated/linux/aklite-download-interrupt/aklite-download-interrupt.yaml
       name: aklite-download-interrupt
@@ -58,7 +58,7 @@ actions:
     timeout:
       minutes: 25
     definitions:
-    - repository: http://github.com/mwasilew/test-definitions.git
+    - repository: http://github.com/linaro/test-definitions.git
       from: git
       path: automated/linux/aklite-download-interrupt/aklite-download-resume.yaml
       name: aklite-download-resume
@@ -70,7 +70,7 @@ actions:
     timeout:
       minutes: 15
     definitions:
-    - repository: http://github.com/mwasilew/test-definitions.git
+    - repository: http://github.com/linaro/test-definitions.git
       from: git
       path: automated/linux/aklite-download-interrupt/aklite-download-confirm.yaml
       name: aklite-download-confirm
