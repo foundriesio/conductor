@@ -101,7 +101,10 @@ actions:
       from: git
       path: automated/linux/wlan-smoke/wlan-smoke.yaml
       name: wlan-smoke
-
+{% if device_type == "imx8mmevk" %}
+      params:
+        DEVICE: "mlan0"
+{% endif %}
 {% endif %}
     - repository: http://github.com/linaro/test-definitions.git
       from: git
@@ -115,13 +118,18 @@ actions:
       params:
         MODE: "scan lescan"
 {% endif %}
-{% if device_type == "raspberrypi4-64" or device_type == "stm32mp1-disco" %}
+{% if device_type == "raspberrypi4-64" or device_type == "stm32mp1-disco" or device_type == "imx8mmevk" %}
     - repository: http://github.com/linaro/test-definitions.git
       from: git
       path: automated/linux/wlan-download/wlan-download.yaml
       name: wlan-download
       params:
+{% if device_type == "imx8mmevk" %}
+        DEVICE: mlan0
+        TIME_DELAY: 120s
+{% else %}
         DEVICE: wlan0
+{% endif %}
         ETHERNET_DEVICE: "{{ net_interface }}"
         SSID_NAME: Foundriesio
         SSID_PASSWORD: StrictlyComeDancing
