@@ -1,0 +1,59 @@
+timeouts:
+  job:
+    minutes: 20
+  connection:
+    minutes: 5
+  action:
+    minutes: 4
+context:
+  test_character_delay: 10
+  lava_test_results_dir: "/home/fio/lava-%s"
+device_type: {{ device_type }}
+job_name: security - {{ target }}
+tags:
+    - se050
+priority: 50
+visibility: public
+metadata:
+  build-url: '{{ build_url }}'
+  build-id: '{{ build_id }}'
+  trigger: '{{ trigger }}'
+actions:
+{% include "deploy.inc.yaml" %}
+- command:
+    name: network_turn_on
+- boot:
+    prompts:
+    {% for prompt in prompts %}
+     - "{{ prompt }}"
+    {% endfor %}
+    timeout:
+      minutes: 10
+    auto_login:
+      login_prompt: 'login:'
+      username: fio
+      password_prompt: "Password:"
+      password: "fio"
+      login_commands:
+      - sudo su
+      - fio
+    method: minimal
+    transfer_overlay:
+      download_command: cd /home ; wget
+      unpack_command: tar -C / -xzf
+
+- test:
+    timeout:
+      minutes: 15
+    definitions:
+    # this is not a real test. It registers the device
+    # and prevents aklite to force reboot
+    - repository: http://github.com/linaro/test-definitions.git
+      from: git
+      path: automated/linux/disable-aklite-reboot/disable-aklite-reboot.yaml
+      name: disable-aklite-reboot
+    - repository: http://github.com/mwasilew/test-definitions.git
+      from: git
+      branch: se05x-tests
+      path: automated/linux/pkcs11/pkcs11.yaml
+      name: pkcs11

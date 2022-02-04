@@ -115,6 +115,12 @@ def create_build_run(self, build_id, run_name):
                  "job_type": LAVAJob.JOB_OTA,
                  "build": previous_build},
             ]
+        if run_name in ["imx8mmevk"]:
+            templates.append(
+                {"name": "lava_security_template.yaml",
+                 "job_type": LAVAJob.JOB_LAVA,
+                 "build": build},
+            )
     if build.build_reason and not build.schedule_tests:
         # for automatically triggered "upgrade builds"
         # in this case previous build refers to the actual
