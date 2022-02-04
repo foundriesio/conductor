@@ -191,7 +191,7 @@ def create_build_run(self, build_id, run_name):
         if run_name == "raspberrypi4-64":
             context["BOOTLOADER_URL"] = "%sother/u-boot-%s.bin" % (run_url, run_name)
         if run_name == "stm32mp1-disco":
-            context["BOOTLOADER_URL"] = "%sother/u-boot.itb" % (run_url)
+            context["BOOTLOADER_URL"] = "%sother/boot.itb" % (run_url)
         dt_settings = device_type.get_settings()
         for key, value in dt_settings.items():
             try:
