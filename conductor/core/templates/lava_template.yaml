@@ -1,6 +1,6 @@
 timeouts:
   job:
-    minutes: 20
+    minutes: 25
   connection:
     minutes: 5
   action:
@@ -42,7 +42,7 @@ actions:
 
 - test:
     timeout:
-      minutes: 15
+      minutes: 20
     definitions:
     # this is not a real test. It registers the device
     # and prevents aklite to force reboot
