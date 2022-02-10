@@ -1,6 +1,6 @@
 - deploy:
     timeout:
-      minutes: 10
+      minutes: 15
     to: flasher
     images:
       image:
