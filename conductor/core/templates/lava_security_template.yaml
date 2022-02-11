@@ -52,8 +52,7 @@ actions:
       from: git
       path: automated/linux/disable-aklite-reboot/disable-aklite-reboot.yaml
       name: disable-aklite-reboot
-    - repository: http://github.com/mwasilew/test-definitions.git
+    - repository: http://github.com/linaro/test-definitions.git
       from: git
-      branch: se05x-tests
       path: automated/linux/pkcs11/pkcs11.yaml
       name: pkcs11
