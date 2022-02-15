@@ -50,13 +50,13 @@ actions:
     - repository: http://github.com/linaro/test-definitions.git
       from: git
       path: automated/linux/ota-rollback/download-update.yaml
-      name: prepare-upgrade
+      name: prepare-kernel-upgrade
 - test:
     namespace: before
     timeout:
       minutes: 1
     interactive:
-    - name: poweroff
+    - name: kernel-poweroff
       prompts: []
       script:
       - command: poweroff
@@ -105,14 +105,14 @@ actions:
     - repository: http://github.com/linaro/test-definitions.git
       from: git
       path: automated/linux/ota-rollback/verify-rollback.yaml
-      name: verify-rollback
+      name: verify-kernel-rollback
 - test:
     namespace: after
     connection-namespace: before
     timeout:
       minutes: 1
     interactive:
-    - name: poweroff-after
+    - name: kernel-poweroff-after
       prompts: []
       script:
       - command: poweroff
@@ -150,4 +150,4 @@ actions:
     - repository: http://github.com/linaro/test-definitions.git
       from: git
       path: automated/linux/ota-rollback/verify-reboot.yaml
-      name: verify-reboot
+      name: verify-kernel-reboot

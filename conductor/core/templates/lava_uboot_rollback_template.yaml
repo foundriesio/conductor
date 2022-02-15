@@ -50,7 +50,7 @@ actions:
     - repository: http://github.com/linaro/test-definitions.git
       from: git
       path: automated/linux/ota-rollback/download-update.yaml
-      name: prepare-upgrade
+      name: prepare-uboot-upgrade
       parameters:
           TYPE: uboot
 - test:
@@ -58,7 +58,7 @@ actions:
     timeout:
       minutes: 1
     interactive:
-    - name: poweroff
+    - name: uboot-poweroff
       prompts: []
       script:
       - command: poweroff
@@ -107,7 +107,7 @@ actions:
     - repository: http://github.com/linaro/test-definitions.git
       from: git
       path: automated/linux/ota-rollback/verify-rollback.yaml
-      name: verify-rollback
+      name: verify-uboot-rollback
       parameters:
           TYPE: uboot
 - test:
@@ -116,7 +116,7 @@ actions:
     timeout:
       minutes: 1
     interactive:
-    - name: poweroff-after
+    - name: uboot-poweroff-after
       prompts: []
       script:
       - command: poweroff
@@ -154,6 +154,6 @@ actions:
     - repository: http://github.com/linaro/test-definitions.git
       from: git
       path: automated/linux/ota-rollback/verify-reboot.yaml
-      name: verify-reboot
+      name: verify-uboot-reboot
       parameters:
           TYPE: uboot
