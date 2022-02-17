@@ -26,7 +26,7 @@ SECRET_KEY = 'secret-key'
 DEBUG = True
 
 ALLOWED_HOSTS = []
-
+CSRF_TRUSTED_ORIGINS = ['https://conductor.infra.foundries.io']
 INSTALLED_APPS = [
     'django.contrib.admin',
     'django.contrib.auth',
