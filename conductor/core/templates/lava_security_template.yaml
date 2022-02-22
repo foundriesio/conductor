@@ -20,6 +20,7 @@ metadata:
   trigger: '{{ trigger }}'
 actions:
 {% include "deploy.inc.yaml" %}
+{% include "deploy2.inc.yaml" %}
 - command:
     name: network_turn_on
 - boot:

@@ -19,6 +19,8 @@ metadata:
 actions:
 {% include "deploy.inc.yaml" %}
     namespace: before
+{% include "deploy2.inc.yaml" %}
+    namespace: before
 - command:
     namespace: before
     name: network_turn_on
