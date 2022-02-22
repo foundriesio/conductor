@@ -183,6 +183,7 @@ def create_build_run(self, build_id, run_name):
             "IMAGE_URL": "%slmp-factory-image-%s.wic.gz" % (run_url, run_name),
             "BOOTLOADER_URL": "%simx-boot-%s" % (run_url, run_name),
             "SPLIMG_URL": "%sSPL-%s" % (run_url, run_name),
+            "MFGTOOL_URL": f"{lcl_build.url}runs/{run_name}-mfgtools/mfgtool-files.tar.gz",
             "prompts": ["fio@%s" % run_name, "Password:", "root@%s" % run_name],
             "net_interface": device_type.net_interface,
             "os_tree_hash": run.ostree_hash,
