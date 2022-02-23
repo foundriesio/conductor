@@ -44,18 +44,29 @@ class LAVABackend(models.Model):
     lava_api_token = models.CharField(max_length=128)
 
     def submit_lava_job(self, definition):
-        # authentication headers
-        authentication = {
-            "Authorization": "Token %s" % self.lava_api_token,
-        }
-        response = requests.post(
-            urljoin(self.lava_url, "jobs/"),
-            headers=authentication,
-            data={"definition": definition},
-            timeout=DEFAULT_TIMEOUT
-        )
-        if response.status_code == 201:
-            return response.json()['job_ids']
+        if not settings.DEBUG_LAVA_SUBMIT:
+            # authentication headers
+            authentication = {
+                "Authorization": "Token %s" % self.lava_api_token,
+            }
+            response = requests.post(
+                urljoin(self.lava_url, "jobs/"),
+                headers=authentication,
+                data={"definition": definition},
+                timeout=DEFAULT_TIMEOUT
+            )
+            if response.status_code == 201:
+                return response.json()['job_ids']
+        else:
+            # save job definition to file
+            y_definition = yaml.safe_load(definition)
+            file_name = y_definition.get('job_name')
+            if file_name:
+                file_name = file_name.replace(" ", "_") + ".yaml"
+            with open(os.path.join(settings.BASE_DIR, file_name), "w") as y_file:
+                yaml.dump(y_definition, y_file, default_flow_style=False)
+            # return random id list
+            return [len(definition)]
         return []
 
     def __str__(self):
@@ -73,33 +84,42 @@ class SQUADBackend(models.Model):
             build,
             environment,
             job_id):
-        # authentication headers
-        authentication = {
-            "Auth-Token": self.squad_token,
-        }
-        return requests.post(
-            urljoin(self.squad_url, f"api/watchjob/{group}/{project}/{build}/{environment}"),
-            headers=authentication,
-            data={"testjob_id": job_id,
-                  "backend": self.name},
-            timeout=DEFAULT_TIMEOUT
-        )
+        if not settings.DEBUG_SQUAD_SUBMIT:
+            # authentication headers
+            authentication = {
+                "Auth-Token": self.squad_token,
+            }
+            return requests.post(
+                urljoin(self.squad_url, f"api/watchjob/{group}/{project}/{build}/{environment}"),
+                headers=authentication,
+                data={"testjob_id": job_id,
+                      "backend": self.name},
+                timeout=DEFAULT_TIMEOUT
+            )
+        else:
+            from requests.models import Response
+
+            response = Response()
+            response.status_code = 200
+            response._content = f"{job_id}".encode()
+            return response
 
     def update_testjob(self, squad_job_id, name, job_definition):
-        headers = {
-            "Authorization": f"Token {self.squad_token}"
-        }
-        testjob_api_url = urljoin(self.squad_url, f"api/testjobs/{squad_job_id}")
-        job_details_request = requests.get(testjob_api_url, headers=headers)
-        if job_details_request.status_code == 200:
-            # prepare PUT to update definition
-            job_details = job_details_request.json()
-            job_details.update({"definition": job_definition, "name": name})
-            return requests.put(
-                testjob_api_url,
-                data=job_details,
-                headers=headers
-            )
+        if not settings.DEBUG_SQUAD_SUBMIT:
+            headers = {
+                "Authorization": f"Token {self.squad_token}"
+            }
+            testjob_api_url = urljoin(self.squad_url, f"api/testjobs/{squad_job_id}")
+            job_details_request = requests.get(testjob_api_url, headers=headers)
+            if job_details_request.status_code == 200:
+                # prepare PUT to update definition
+                job_details = job_details_request.json()
+                job_details.update({"definition": job_definition, "name": name})
+                return requests.put(
+                    testjob_api_url,
+                    data=job_details,
+                    headers=headers
+                )
         return None
 
 

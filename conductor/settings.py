@@ -24,6 +24,8 @@ DATA_DIR = BASE_DIR
 SECRET_KEY = 'secret-key'
 
 DEBUG = True
+DEBUG_LAVA_SUBMIT = False
+DEBUG_SQUAD_SUBMIT = False
 
 ALLOWED_HOSTS = []
 CSRF_TRUSTED_ORIGINS = ['https://conductor.infra.foundries.io']
