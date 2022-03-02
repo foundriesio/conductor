@@ -31,6 +31,10 @@ class BuildAdmin(admin.ModelAdmin):
     models = models.Build
 
 
+class BuildTagAdmin(admin.ModelAdmin):
+    models = models.BuildTag
+
+
 class RunAdmin(admin.ModelAdmin):
     models = models.Run
 
@@ -55,6 +59,7 @@ admin.site.register(models.LAVABackend, LAVABackendAdmin)
 admin.site.register(models.SQUADBackend, SQUADBackendAdmin)
 admin.site.register(models.Project, ProjectAdmin)
 admin.site.register(models.Build, BuildAdmin)
+admin.site.register(models.BuildTag, BuildTagAdmin)
 admin.site.register(models.Run, RunAdmin)
 admin.site.register(models.LAVADeviceType, LAVADeviceTypeAdmin)
 admin.site.register(models.LAVADevice, LAVADeviceAdmin)

@@ -29,7 +29,7 @@ from django.http import (
 from django.views.decorators.csrf import csrf_exempt
 
 from conductor.core.models import Project, Build, LAVADevice, Run
-from conductor.core.tasks import create_build_run, merge_lmp_manifest, update_build_commit_id, check_device_ota_completed
+from conductor.core.tasks import create_build_run, merge_lmp_manifest, update_build_commit_id, check_device_ota_completed, tag_build_runs
 from conductor.core.utils import ISO8601_JSONEncoder
 
 
@@ -147,7 +147,7 @@ def process_jobserv_webhook(request):
     if run_url is not None:
         # only call update_build_commit_id once as
         # all runs should contain identical GIT_SHA
-        workflow = (update_build_commit_id.si(build.pk, run_url) | group(build_run_list))
+        workflow = (update_build_commit_id.si(build.pk, run_url)| tag_build_runs.si(build.pk) | group(build_run_list))
         workflow.delay()
 
     return HttpResponse("Created", status=201)

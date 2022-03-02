@@ -13,6 +13,7 @@
 # limitations under the License.
 
 import logging
+import os
 import requests
 import yaml
 from django.conf import settings
@@ -60,7 +61,7 @@ class LAVABackend(models.Model):
         else:
             # save job definition to file
             y_definition = yaml.safe_load(definition)
-            file_name = y_definition.get('job_name')
+            file_name = y_definition.get('device_type') + "_" + y_definition.get('job_name')
             if file_name:
                 file_name = file_name.replace(" ", "_") + ".yaml"
             with open(os.path.join(settings.BASE_DIR, file_name), "w") as y_file:
@@ -78,7 +79,7 @@ class SQUADBackend(models.Model):
     squad_url = models.URLField()
     squad_token = models.CharField(max_length=128)
 
-    def watch_lava_job(self, 
+    def watch_lava_job(self,
             group,
             project,
             build,
@@ -100,7 +101,7 @@ class SQUADBackend(models.Model):
             from requests.models import Response
 
             response = Response()
-            response.status_code = 200
+            response.status_code = 201
             response._content = f"{job_id}".encode()
             return response
 
@@ -128,6 +129,7 @@ class Project(models.Model):
     # secret stored in a factory and passed in webhook
     # request POST header
     secret = models.CharField(max_length=128)
+    privkey = models.CharField(max_length=2048, null=True, blank=True)
     lava_backend = models.ForeignKey(
         LAVABackend,
         on_delete=models.SET_NULL,
@@ -139,6 +141,11 @@ class Project(models.Model):
         null=True,
         blank=True)
     squad_group = models.CharField(max_length=16, null=True, blank=True)
+
+    # name of the tag applied to devices and targets
+    testing_tag = models.CharField(max_length=16, null=True, blank=True)
+    # set to True to apply testing_tag to target
+    apply_testing_tag_on_callback = models.BooleanField(default=False)
 
     def watch_qa_reports_job(self, build, environment, job_id):
         if self.squad_backend:
@@ -190,6 +197,14 @@ class Build(models.Model):
             "OSTREE_HASH": run.ostree_hash,
             "TARGET": f"{self.build_id}",
         }
+
+
+class BuildTag(models.Model):
+    name = models.CharField(max_length=32)
+    builds = models.ManyToManyField(Build)
+
+    def __str__(self):
+        return self.name
 
 
 class Run(models.Model):

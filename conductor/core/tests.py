@@ -23,6 +23,7 @@ from unittest.mock import patch, MagicMock, PropertyMock
 from conductor.core.models import (
     Project,
     Build,
+    BuildTag,
     Run,
     LAVABackend,
     SQUADBackend,
@@ -40,6 +41,7 @@ from conductor.core.tasks import (
     create_upgrade_commit,
     update_build_reason,
     update_build_commit_id,
+    tag_build_runs,
 )
 
 
@@ -453,6 +455,46 @@ RUNDEF_JSON = {
   }
 } 
 
+PEM_PRIV_KEY = """-----BEGIN RSA PRIVATE KEY-----
+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
+-----END RSA PRIVATE KEY-----"""
+
 
 class ProjectTest(TestCase):
     def setUp(self):
@@ -481,15 +523,19 @@ class ProjectTest(TestCase):
 
     @patch('requests.post')
     def test_submit_lava_job(self, post_mock):
-        definition = "lava test definition"
+        definition = """
+        device_type: foo
+        job_name: lava test definition
+        """
         response_mock = MagicMock()
         response_mock.status_code = 201
         response_mock.json.return_value = {'job_ids': ['123']}
         post_mock.return_value = response_mock
 
         ret_list = self.project.submit_lava_job(definition)
-        post_mock.assert_called()
-        self.assertEqual(ret_list, ['123'])
+        if not settings.DEBUG_LAVA_SUBMIT:
+            post_mock.assert_called()
+            self.assertEqual(ret_list, ['123'])
 
     @patch('requests.post')
     def test_squad_watch_job(self, post_mock):
@@ -501,14 +547,17 @@ class ProjectTest(TestCase):
         post_mock.return_value = response_mock
 
         squad_watch_job_response = self.project.watch_qa_reports_job(self.build, environment, test_job_id)
-        self.assertEqual(squad_watch_job_response.text, "321")
+        if not settings.DEBUG_SQUAD_SUBMIT:
+            self.assertEqual(squad_watch_job_response.text, "321")
+            post_mock.assert_called_with(
+                f"{self.squadbackend1.squad_url}api/watchjob/{self.project.squad_group}/{self.project.name}/{self.build.build_id}/{environment}",
+                headers={'Auth-Token': self.squadbackend1.squad_token},
+                data={'testjob_id': test_job_id, 'backend': self.squadbackend1.name},
+                timeout=DEFAULT_TIMEOUT
+            )
+        else:
+            self.assertEqual(squad_watch_job_response.text, test_job_id)
         self.assertEqual(squad_watch_job_response.status_code, 201)
-        post_mock.assert_called_with(
-            f"{self.squadbackend1.squad_url}api/watchjob/{self.project.squad_group}/{self.project.name}/{self.build.build_id}/{environment}",
-            headers={'Auth-Token': self.squadbackend1.squad_token},
-            data={'testjob_id': test_job_id, 'backend': self.squadbackend1.name},
-            timeout=DEFAULT_TIMEOUT
-        )
 
     @patch('requests.put')
     @patch('requests.get')
@@ -526,17 +575,18 @@ class ProjectTest(TestCase):
         put_mock.return_value = response_mock
 
         squad_watch_job_response = self.project.squad_backend.update_testjob(squad_job_id, squad_job_name, squad_job_definition)
-        get_mock.assert_called_with(
-            f"{self.squadbackend1.squad_url}api/testjobs/{squad_job_id}",
-            headers={'Authorization': f"Token {self.squadbackend1.squad_token}"}
-        )
-        self.assertEqual(squad_watch_job_response.text, "321")
-        self.assertEqual(squad_watch_job_response.status_code, 200)
-        put_mock.assert_called_with(
-            f"{self.squadbackend1.squad_url}api/testjobs/{squad_job_id}",
-            headers={'Authorization': f"Token {self.squadbackend1.squad_token}"},
-            data={'definition': squad_job_definition, 'name': squad_job_name}
-        )
+        if not settings.DEBUG_SQUAD_SUBMIT:
+            get_mock.assert_called_with(
+                f"{self.squadbackend1.squad_url}api/testjobs/{squad_job_id}",
+                headers={'Authorization': f"Token {self.squadbackend1.squad_token}"}
+            )
+            self.assertEqual(squad_watch_job_response.text, "321")
+            self.assertEqual(squad_watch_job_response.status_code, 200)
+            put_mock.assert_called_with(
+                f"{self.squadbackend1.squad_url}api/testjobs/{squad_job_id}",
+                headers={'Authorization': f"Token {self.squadbackend1.squad_token}"},
+                data={'definition': squad_job_definition, 'name': squad_job_name}
+            )
 
 class LAVADeviceTest(TestCase):
     def setUp(self):
@@ -896,7 +946,8 @@ class TaskTest(TestCase):
                "-m", settings.FIO_UPGRADE_ROLLBACK_MESSAGE]
 
         create_upgrade_commit(self.build.id)
-        run_mock.assert_called_with(cmd, check=True)
+        if not settings.DEBUG_FIO_SUBMIT:
+            run_mock.assert_called_with(cmd, check=True)
 
     @patch.object(Repo, "remote")
     @patch.object(Repo, "commit")
@@ -1021,3 +1072,81 @@ class TaskTest(TestCase):
         self.assertEqual(self.build.build_reason, None)
         self.assertEqual(self.build.schedule_tests, True)
         upgrade_mock.assert_not_called()
+
+
+
+    @patch('requests.put')
+    @patch('requests.get')
+    def test_tag_build_runs(self, get_mock, put_mock):
+        targets_json = {
+          "signatures": [
+            {
+              "keyid": "c567cbb9576c9cb2d94554c9bdf230fe9fc84f43bfc773a74d3451cc05716171",
+              "method": "rsassa-pss-sha256",
+              "sig": "fmkTP2o9D+lATkmhEoBBH5tomhvYkXTtbe7z13wEQW1VkBdStlYwvciIfxPElh2wVWLUUofmoxar/91blEmjhHH3Lnup5hXwbTRM1NQb8LjLxrjOyk7YAewNPd7GahyVI6aUo2npjTiC7X3n0OA4eRbBqIVJ0nCojSAwWREFcFZYNVVCoGIkOz4F/eFAPONIp0r+e7Hd+0uUrKHY4RvNvRMD81uSG91vjB/ngTE0++0YOgqo54Xf0uHeBnDLpw8YjBqssmV+BhigIKHmOmBbMp2M25BKyV+oCABLmpySL2Fgp4b2HHw405uIGhn4E2sz2Cw4dtuoa/qBA7CWy5xelw=="
+            }
+          ],
+          "signed": {
+            "_type": "Targets",
+            "expires": "2022-03-22T12:52:29Z",
+            "version": 1197,
+            "targets": {
+              "am64xx-evm-lmp-268": {
+                "hashes": {
+                  "sha256": "16c74d7813f9cda8164e7eb31d718db11615e90f63a8fab880b97512be455b36"
+                },
+                "length": 0,
+                "custom": {
+                  "cliUploaded": False,
+                  "name": "am64xx-evm-lmp",
+                  "version": "268",
+                  "hardwareIds": [
+                    "am64xx-evm"
+                  ],
+                  "targetFormat": "OSTREE",
+                  "uri": "https://ci.foundries.io/projects/milosz-rpi3/lmp/builds/268",
+                  "createdAt": "2022-02-14T19:44:56Z",
+                  "updatedAt": "2022-02-14T19:44:56Z",
+                  "lmp-manifest-sha": "97a9416598fe20b46b36448527d9832f181b038d",
+                  "arch": "aarch64",
+                  "image-file": "lmp-factory-image-am64xx-evm.wic.gz",
+                  "meta-subscriber-overrides-sha": "6bfeb94ef4bfffd1afe4b58187b1c81a5e39cc12",
+                  "tags": [
+                    "master"
+                  ]
+                }
+              }
+            }
+          }
+        }
+        get_response = MagicMock()
+        get_response.json = MagicMock(return_value=targets_json)
+        get_mock.return_value = get_response
+
+        self.project.testing_tag = "testing1"
+        self.project.privkey = PEM_PRIV_KEY
+        self.project.apply_testing_tag_on_callback = True
+        self.project.save()
+        tag_build_runs(self.build.pk)
+        bt = BuildTag.objects.filter(builds=self.build)
+        self.assertEqual(len(bt), 1)
+        if not settings.DEBUG_FIO_SUBMIT:
+            get_mock.assert_called()
+            put_mock.assert_called()
+
+    def test_tag_build_runs_no_build(self):
+        ret = tag_build_runs(99999)
+        self.assertEqual(ret, None)
+
+    def test_tag_build_runs_dont_apply(self):
+        self.project.apply_testing_tag_on_callback = False
+        self.project.save()
+        ret = tag_build_runs(self.build.pk)
+        self.assertEqual(ret, None)
+
+    def test_tag_build_runs_no_project_tag(self):
+        self.project.testing_tag = None
+        self.project.save()
+        ret = tag_build_runs(self.build.pk)
+        self.assertEqual(ret, None)
+

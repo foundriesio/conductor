@@ -12,14 +12,26 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import base64
+import canonicaljson
 import gitdb
+import hashlib
+import json
 import os
 import requests
 import subprocess
 import yaml
+
+from cryptography.hazmat.primitives import hashes
+from cryptography.hazmat.primitives.serialization import (
+    load_pem_private_key,
+)
+from cryptography.hazmat.primitives.asymmetric import padding, rsa
+from cryptography.hazmat.backends import default_backend
+
 from conductor.celery import app as celery
 from celery.utils.log import get_task_logger
-from conductor.core.models import Run, Build, LAVADeviceType, LAVADevice, LAVAJob, Project
+from conductor.core.models import Run, Build, BuildTag, LAVADeviceType, LAVADevice, LAVAJob, Project
 from datetime import timedelta
 from django.conf import settings
 from django.db import transaction
@@ -73,6 +85,126 @@ def _get_os_tree_hash(url, project):
     os_tree_hash_request = requests_retry_session(session=session).get(urljoin(url, "other/ostree.sha.txt"))
     if os_tree_hash_request.status_code == 200:
         return os_tree_hash_request.text.strip()
+    return None
+
+
+def _get_factory_targets(factory: str) -> dict:
+    token = getattr(settings, "FIO_API_TOKEN", None)
+    authentication = {
+        "OSF-TOKEN": token,
+    }
+    r = requests.get(
+        f"https://api.foundries.io/ota/repo/{factory}/api/v1/user_repo/targets.json",
+        headers=authentication,
+    )
+    r.raise_for_status()
+    return r.json()
+
+
+def _put_factory_targets(factory: str, checksum: str, targets: dict):
+    token = getattr(settings, "FIO_API_TOKEN", None)
+    headers = {"OSF-TOKEN": token, "x-ats-role-checksum": checksum}
+    r = requests.put(
+        f"https://api.foundries.io/ota/repo/{factory}/api/v1/user_repo/targets",
+        headers=headers,
+        json=targets,
+    )
+    if not r.ok:
+        print("ERROR:", r.text)
+    r.raise_for_status()
+    pass
+
+
+def _change_tag(build, new_tag, add=True):
+    logger.debug(f"Adding tag {new_tag} to the build {build} in factory {build.project}")
+
+    if not build.project.privkey:
+        logger.warning(f"No private key for project {build.project}")
+        return None
+    privbytes = build.project.privkey.encode()
+    key = load_pem_private_key(privbytes, None, backend=default_backend())
+
+    # add the tag to the target(s):
+    meta = _get_factory_targets(build.project.name)
+    m = hashlib.sha256()
+    m.update(canonicaljson.encode_canonical_json(meta))
+    checksum = m.hexdigest()
+
+    for target in meta["signed"]["targets"].values():
+        ver_str = target["custom"]["version"]
+        ver = int(ver_str)
+        if ver == build.build_id:
+            if add:
+                # add tag to target
+                target["custom"]["tags"].append(new_tag)
+            else:
+                # remove tag from target
+                if new_tag in target["custom"]["tags"]:
+                    target["custom"]["tags"].remove(new_tag)
+
+    meta["signed"]["version"] += 1
+
+    # now sign data
+    canonical = canonicaljson.encode_canonical_json(meta["signed"])
+    sig = key.sign(
+        canonical,
+        padding.PSS(mgf=padding.MGF1(hashes.SHA256()), salt_length=32),
+        hashes.SHA256(),
+    )
+    assert len(meta["signatures"]) == 1
+    meta["signatures"][0]["sig"] = base64.b64encode(sig).decode()
+    _put_factory_targets(build.project.name, checksum, meta)
+
+
+def _add_tag(build, tag):
+    logger.debug(f"Adding tag {tag} to the build {build} in factory {build.project}")
+    if not settings.DEBUG_FIO_SUBMIT:
+        _change_tag(build, tag.name, add=True)
+    build.buildtag_set.add(tag)
+
+
+def _remove_tag(build, tag):
+    logger.debug(f"Removing tag {tag} from the build {build} in factory {build.project}")
+    if not settings.DEBUG_FIO_SUBMIT:
+        _change_tag(build, tag.name, add=False)
+    oldtags = build.buildtag_set.filter(name=tag.name)
+    if oldtags:
+        for oldtag in oldtags:
+            build.buildtag_set.remove(oldtag)
+
+
+@celery.task(bind=True)
+def tag_build_runs(self, build_id):
+    logger.debug("Received tagging task for build: %s" % build_id)
+    build = None
+    try:
+        build = Build.objects.get(pk=build_id)
+    except Build.DoesNotExist:
+        return None
+
+    if not build.project.apply_testing_tag_on_callback:
+        logger.info(f"Not setting tag on build {build}. Disabled in project settings")
+        return None
+
+    if not build.project.testing_tag:
+        logger.debug("Nothing to do as project doesn't have testing tag")
+        return None
+
+    testing_buildtag, _ = BuildTag.objects.get_or_create(name=build.project.testing_tag)
+
+    previous_builds = build.project.build_set.filter(build_id__lt=build.build_id, tag=build.tag).order_by('-build_id')
+    previous_build = None
+    if previous_builds:
+        previous_build = previous_builds[0]
+    old_tagged_builds = build.project.build_set.filter(buildtag=testing_buildtag, build_id__lt=previous_build.build_id)
+    # there should only be 2 tagged builds: current and previous
+
+    # remove tags from old builds
+    for old_tagged_build in old_tagged_builds:
+        _remove_tag(old_tagged_build, testing_buildtag)
+
+    # tag current build
+    _add_tag(build, testing_buildtag)
     return None
 
 
@@ -158,6 +290,8 @@ def create_build_run(self, build_id, run_name):
                 run_name=run_name
             )
 
+    logger.debug(f"run_name: {run_name}")
+    logger.debug(f"{templates}")
     for template in templates:
         lcl_build = template.get("build")
         if not lcl_build:
@@ -304,6 +438,7 @@ def __project_repository_exists(project):
             raise ProjectMisconfiguredError()
     return False
 
+
 @celery.task
 def create_upgrade_commit(build_id):
     project = None
@@ -319,16 +454,20 @@ def create_upgrade_commit(build_id):
     if not __project_repository_exists(project):
         logger.error(f"Repository for {project} missing!")
         return
-    # call shell script create empty commit
-    cmd = [os.path.join(settings.FIO_REPOSITORY_SCRIPT_PATH_PREFIX, "upgrade_commit.sh"),
-           "-d", repository_path,
-           "-r", settings.FIO_REPOSITORY_REMOTE_NAME,
-           "-m", settings.FIO_UPGRADE_ROLLBACK_MESSAGE]
-    print(cmd)
-    try:
-        subprocess.run(cmd, check=True)
-    except subprocess.CalledProcessError:
-        pass
+    if not settings.DEBUG_FIO_SUBMIT:
+        # call shell script create empty commit
+        cmd = [os.path.join(settings.FIO_REPOSITORY_SCRIPT_PATH_PREFIX, "upgrade_commit.sh"),
+               "-d", repository_path,
+               "-r", settings.FIO_REPOSITORY_REMOTE_NAME,
+               "-m", settings.FIO_UPGRADE_ROLLBACK_MESSAGE]
+        logger.debug(f"cmd")
+        try:
+            subprocess.run(cmd, check=True)
+        except subprocess.CalledProcessError:
+            pass
+    else:
+        logger.debug("Debugging FIO submit")
+        logger.debug(f"cmd")
 
 
 @celery.task

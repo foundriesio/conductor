@@ -1,8 +1,10 @@
 aiohttp
 amqp
 asgiref
+canonicaljson
 celery
 contextlib2
+cryptography
 Django
 django-celery-results
 GitPython
