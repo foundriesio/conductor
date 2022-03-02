@@ -129,7 +129,7 @@ class Project(models.Model):
     # secret stored in a factory and passed in webhook
     # request POST header
     secret = models.CharField(max_length=128)
-    privkey = models.CharField(max_length=2048, null=True, blank=True)
+    privkey = models.TextField(null=True, blank=True)
     lava_backend = models.ForeignKey(
         LAVABackend,
         on_delete=models.SET_NULL,
