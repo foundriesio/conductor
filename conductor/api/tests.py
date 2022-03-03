@@ -124,7 +124,8 @@ class ApiViewTest(TestCase):
         )
         self.assertEqual(response.status_code, 403)
 
-    def test_jobserv_webhook_container_build(self):
+    @patch("conductor.core.tasks.tag_build_runs.delay")
+    def test_jobserv_webhook_container_build(self, tag_mock):
         request_body_dict = {
             "status": "PASSED",
             "build_id": 1,
@@ -142,7 +143,8 @@ class ApiViewTest(TestCase):
             content_type="application/json",
             **{"HTTP_X_JobServ_Sig":f"sha256: {sig.hexdigest()}"}
         )
-        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.status_code, 201)
+        tag_mock.assert_called()
 
     def test_jobserv_webhook_wrong_project(self):
         request_body_dict = {

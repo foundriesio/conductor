@@ -128,29 +128,39 @@ def process_jobserv_webhook(request):
 
     trigger_name = request_body_json.get("trigger_name")
     project = get_object_or_404(Project, name=project_name)
-    if "platform" not in trigger_name:
-        # do nothing for container builds
+    build = None
+    if "containers" in trigger_name or "platform" in trigger_name:
+        # create new Build
+        build_branch = trigger_name.split("-")[1]
+        build, _ = Build.objects.get_or_create(
+            url=build_url,
+            project=project,
+            build_id=build_id,
+            tag=build_branch)
+    if not build:
+        # in case build is not created, exit gracefully
         return HttpResponse("OK")
-    # create new Build
-    build_branch = trigger_name.split("-")[1]
-    build, _ = Build.objects.get_or_create(
-        url=build_url,
-        project=project,
-        build_id=build_id,
-        tag=build_branch)
-    run_url = None
-    build_run_list = []
-    for run in request_body_json.get("runs"):
-        run_url = run.get("url")
-        run_name = run.get("name")
-        build_run_list.append(create_build_run.si(build.pk, run_name))
-    if run_url is not None:
-        # only call update_build_commit_id once as
-        # all runs should contain identical GIT_SHA
-        workflow = (update_build_commit_id.si(build.pk, run_url)| tag_build_runs.si(build.pk) | group(build_run_list))
-        workflow.delay()
 
-    return HttpResponse("Created", status=201)
+    if "containers" in trigger_name:
+        # only create build and tag it
+        # build won't have a commit ID in conductor DB
+        tag_build_runs.delay(build.pk)
+        return HttpResponse("Created", status=201)
+    if "platform" in trigger_name:
+        run_url = None
+        build_run_list = []
+        for run in request_body_json.get("runs"):
+            run_url = run.get("url")
+            run_name = run.get("name")
+            build_run_list.append(create_build_run.si(build.pk, run_name))
+        if run_url is not None:
+            # only call update_build_commit_id once as
+            # all runs should contain identical GIT_SHA
+            workflow = (update_build_commit_id.si(build.pk, run_url)| tag_build_runs.si(build.pk) | group(build_run_list))
+            workflow.delay()
+
+        return HttpResponse("Created", status=201)
+    return HttpResponse("OK")
 
 
 @csrf_exempt
