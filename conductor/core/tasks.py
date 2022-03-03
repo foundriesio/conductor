@@ -97,7 +97,11 @@ def _get_factory_targets(factory: str) -> dict:
         f"https://api.foundries.io/ota/repo/{factory}/api/v1/user_repo/targets.json",
         headers=authentication,
     )
-    r.raise_for_status()
+    try:
+        r.raise_for_status()
+    except requests.exceptions.HTTPError as e:
+        logger.error(e)
+        return None
     return r.json()
 
 
@@ -109,10 +113,10 @@ def _put_factory_targets(factory: str, checksum: str, targets: dict):
         headers=headers,
         json=targets,
     )
-    if not r.ok:
-        print("ERROR:", r.text)
-    r.raise_for_status()
-    pass
+    try:
+        r.raise_for_status()
+    except requests.exceptions.HTTPError as e:
+        logger.error(e)
 
 
 def _change_tag(build, new_tag, add=True):
@@ -126,6 +130,9 @@ def _change_tag(build, new_tag, add=True):
 
     # add the tag to the target(s):
     meta = _get_factory_targets(build.project.name)
+    if not meta:
+        logger.error("Empty targets JSON received")
+        return
     m = hashlib.sha256()
     m.update(canonicaljson.encode_canonical_json(meta))
     checksum = m.hexdigest()
