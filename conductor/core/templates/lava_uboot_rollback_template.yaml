@@ -26,24 +26,7 @@ actions:
     name: network_turn_on
 - boot:
     namespace: before
-    prompts:
-    {% for prompt in prompts %}
-     - "{{ prompt }}"
-    {% endfor %}
-    timeout:
-      minutes: 10
-    auto_login:
-      login_prompt: 'login:'
-      username: fio
-      password_prompt: "Password:"
-      password: "fio"
-      login_commands:
-      - sudo su
-      - fio
-    method: minimal
-    transfer_overlay:
-      download_command: cd /home ; wget
-      unpack_command: tar -C / -xzf
+{% include "boot.inc.yaml" %}
 - test:
     namespace: before
     timeout:
@@ -82,24 +65,7 @@ actions:
 - boot:
     namespace: after
     connection-namespace: before
-    prompts:
-    {% for prompt in prompts %}
-     - "{{ prompt }}"
-    {% endfor %}
-    timeout:
-      minutes: 10
-    auto_login:
-      login_prompt: 'login:'
-      username: fio
-      password_prompt: "Password:"
-      password: "fio"
-      login_commands:
-      - sudo su
-      - fio
-    method: minimal
-    transfer_overlay:
-      download_command: cd /home ; wget
-      unpack_command: tar -C / -xzf
+{% include "boot.inc.yaml" %}
 - test:
     namespace: after
     connection-namespace: before
@@ -129,24 +95,7 @@ actions:
 - boot:
     namespace: after
     connection-namespace: before
-    prompts:
-    {% for prompt in prompts %}
-     - "{{ prompt }}"
-    {% endfor %}
-    timeout:
-      minutes: 10
-    auto_login:
-      login_prompt: 'login:'
-      username: fio
-      password_prompt: "Password:"
-      password: "fio"
-      login_commands:
-      - sudo su
-      - fio
-    method: minimal
-    transfer_overlay:
-      download_command: cd /home ; wget
-      unpack_command: tar -C / -xzf
+{% include "boot.inc.yaml" %}
 - test:
     namespace: after
     connection-namespace: before
