@@ -1,4 +1,4 @@
-{% if device_type == "imx8mmevk" or device_type == "imx8mp-lpddr4-evk" or device_type == "imx8mmevk-sec" %}
+{% if device_type == "imx8mmevk" or device_type == "imx8mp-lpddr4-evk" or device_type == "imx8mmevk-sec" or device_type == "imx6ullevk" %}
 - deploy:
     timeout:
       minutes: 20
@@ -6,12 +6,17 @@
     images:
         image:
             url: downloads://lmp-factory-image-{{ device_type }}.wic
-        bootloader:
-            url: downloads://imx-boot-{{ device_type }}
         sitimg:
             url: downloads://sit-{{ device_type }}.bin
         uboot:
             url: downloads://u-boot-{{ device_type }}.itb
         mfgtools:
             url: downloads://mfgtool-files.tgz
+    {% if device_type == "imx6ullevk" %}
+        splimage:
+            url: downloads://SPL-{{ device_type }}
+    {% else %}
+        bootloader:
+            url: downloads://imx-boot-{{ device_type }}
+    {% endif %}
 {% endif %}

@@ -1,7 +1,7 @@
 - deploy:
     timeout:
       minutes: 20
-{% if device_type == "imx8mmevk" or device_type == "imx8mp-lpddr4-evk" or device_type == "imx8mmevk-sec" %}
+{% if device_type == "imx8mmevk" or device_type == "imx8mp-lpddr4-evk" or device_type == "imx8mmevk-sec" or device_type == "imx6ullevk" %}
     to: downloads
 {% else %}
     to: flasher
@@ -36,7 +36,7 @@
         headers:
           OSF-TOKEN: OSF-TOKEN
 {% endif %}
-{% if device_type == "imx8mmevk" or device_type == "imx8mp-lpddr4-evk" or device_type == "imx8mmevk-sec" %}
+{% if device_type == "imx8mmevk" or device_type == "imx8mp-lpddr4-evk" or device_type == "imx8mmevk-sec" or device_type == "imx6ullevk" %}
       mfgtools:
         url: {{ MFGTOOL_URL }}
         headers:
