@@ -94,13 +94,16 @@ actions:
       from: git
       path: automated/linux/ima/ima.yaml
       name: ima-smoke
-{% if device_type == "raspberrypi4-64" %}
+{% if device_type == "raspberrypi4-64" or device_type == "stm32mp1-disco" %}
     - repository: http://github.com/linaro/test-definitions.git
       from: git
       path: automated/linux/hci-smoke/hci-smoke.yaml
       name: hci-smoke
       params:
         MODE: "scan lescan"
+    {% if device_type == "stm32mp1-disco" %}
+        BOOT: "disabled"
+    {% endif %}
 {% endif %}
 {% if device_type == "raspberrypi4-64" or device_type == "stm32mp1-disco" or device_type == "imx8mmevk" %}
     - repository: http://github.com/linaro/test-definitions.git
