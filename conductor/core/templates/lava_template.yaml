@@ -85,10 +85,8 @@ actions:
       from: git
       path: automated/linux/wlan-smoke/wlan-smoke.yaml
       name: wlan-smoke
-{% if device_type == "imx8mmevk" %}
       params:
-        DEVICE: "mlan0"
-{% endif %}
+        DEVICE: "wlan0"
 {% endif %}
     - repository: http://github.com/linaro/test-definitions.git
       from: git
@@ -112,11 +110,9 @@ actions:
       name: wlan-download
       params:
 {% if device_type == "imx8mmevk" %}
-        DEVICE: mlan0
         TIME_DELAY: 120s
-{% else %}
-        DEVICE: wlan0
 {% endif %}
+        DEVICE: wlan0
         ETHERNET_DEVICE: "{{ net_interface }}"
         SSID_NAME: Foundriesio
         SSID_PASSWORD: StrictlyComeDancing
