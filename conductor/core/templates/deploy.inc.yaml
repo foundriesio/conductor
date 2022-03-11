@@ -18,7 +18,7 @@
         headers:
           OSF-TOKEN: OSF-TOKEN
 {% endif %}
-{% if device_type == "imx8mmevk" or device_type == "imx6ullevk" or device_type == "imx8mmevk-sec" %}
+{% if device_type == "imx8mmevk" or device_type == "imx6ullevk" or device_type == "imx8mp-lpddr4-evk" device_type == "imx8mmevk-sec" %}
       sitimg:
         url: {{ SITIMG_URL }}
         headers:
