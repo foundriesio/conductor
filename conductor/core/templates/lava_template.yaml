@@ -80,7 +80,7 @@ actions:
       name: aklite
       params:
         TARGET: {{ target }}
-{% if device_type == "imx8mmevk" or device_type == 'raspberrypi4-64'%}
+{% if device_type == "imx8mmevk" or device_type == "raspberrypi4-64" or device_type == "stm32mp1-disco" %}
     - repository: http://github.com/linaro/test-definitions.git
       from: git
       path: automated/linux/wlan-smoke/wlan-smoke.yaml
@@ -119,7 +119,7 @@ actions:
         FILE_URL: http://archive.ubuntu.com/ubuntu/dists/bionic/main/installer-amd64/current/images/netboot/mini.iso
         FILE_CHECKSUM: "8388f7232b400bdc80279668847f90da"
 {% endif %}
-{% if device_type == "imx8mmevk" or device_type == 'imx6ullevk' %}
+{% if device_type == "imx8mmevk" or device_type == "imx6ullevk" %}
     - repository: http://github.com/linaro/test-definitions.git
       from: git
       path: automated/linux/optee/optee-xtest.yaml
