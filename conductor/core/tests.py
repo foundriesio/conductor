@@ -1125,6 +1125,7 @@ class TaskTest(TestCase):
 
         self.project.testing_tag = "testing1"
         self.project.privkey = PEM_PRIV_KEY
+        self.project.keyid = "abcdefghi123456789"
         self.project.apply_testing_tag_on_callback = True
         self.project.save()
         tag_build_runs(self.build.pk)

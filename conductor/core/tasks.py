@@ -118,6 +118,7 @@ def _put_factory_targets(factory: str, checksum: str, targets: dict):
         r.raise_for_status()
     except requests.exceptions.HTTPError as e:
         logger.error(e)
+        logger.error(r.text)
 
 
 def _change_tag(build, new_tag, add=True):
@@ -125,6 +126,9 @@ def _change_tag(build, new_tag, add=True):
 
     if not build.project.privkey:
         logger.warning(f"No private key for project {build.project}")
+        return None
+    if not build.project.keyid:
+        logger.warning(f"No ID for private key for project {build.project}")
         return None
     privbytes = build.project.privkey.encode()
     key = load_pem_private_key(privbytes, None, backend=default_backend())
@@ -153,6 +157,7 @@ def _change_tag(build, new_tag, add=True):
                     target["custom"]["tags"].remove(new_tag)
 
     meta["signed"]["version"] += 1
+    meta["signatures"][0]["keyid"] = build.project.keyid
 
     # now sign data
     canonical = canonicaljson.encode_canonical_json(meta["signed"])
