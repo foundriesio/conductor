@@ -108,6 +108,7 @@ def _get_factory_targets(factory: str) -> dict:
 def _put_factory_targets(factory: str, checksum: str, targets: dict):
     token = getattr(settings, "FIO_API_TOKEN", None)
     headers = {"OSF-TOKEN": token, "x-ats-role-checksum": checksum}
+    logger.debug("PUTting new targets.json to the backend")
     r = requests.put(
         f"https://api.foundries.io/ota/repo/{factory}/api/v1/user_repo/targets",
         headers=headers,
@@ -120,7 +121,7 @@ def _put_factory_targets(factory: str, checksum: str, targets: dict):
 
 
 def _change_tag(build, new_tag, add=True):
-    logger.debug(f"Adding tag {new_tag} to the build {build} in factory {build.project}")
+    logger.debug(f"Changing tag {new_tag} on the build {build} in factory {build.project}")
 
     if not build.project.privkey:
         logger.warning(f"No private key for project {build.project}")
@@ -143,9 +144,11 @@ def _change_tag(build, new_tag, add=True):
         if ver == build.build_id:
             if add:
                 # add tag to target
+                logger.debug(f"Adding tag {new_tag} to targets.json")
                 target["custom"]["tags"].append(new_tag)
             else:
                 # remove tag from target
+                logger.debug(f"Removin tag {new_tag} from targets.json")
                 if new_tag in target["custom"]["tags"]:
                     target["custom"]["tags"].remove(new_tag)
 
