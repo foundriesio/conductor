@@ -6,6 +6,7 @@ REPOSITORY_REMOTE=origin
 REPOSITORY_LMP_URL="https://github.com/foundriesio/lmp-manifest"
 REPOSITORY_LMP_REMOTE=lmp
 REPOSITORY_TOKEN=""
+REPOSITORY_DEFAULT_BRANCH=master
 
 usage() {
     echo "Usage: $0 [-d <repository_dir>]
@@ -17,7 +18,7 @@ usage() {
     exit 1
 }
 
-while getopts "d:r:l:u:w:t:" o; do
+while getopts "d:r:l:u:w:t:b:" o; do
   case "$o" in
     # The current working directory will be used by default.
     # Use '-p' specify partition that used for fio test.
@@ -27,6 +28,7 @@ while getopts "d:r:l:u:w:t:" o; do
     l) REPOSITORY_LMP_REMOTE="${OPTARG}" ;;
     w) REPOSITORY_LMP_URL="${OPTARG}" ;;
     t) REPOSITORY_TOKEN="${OPTARG}" ;;
+    b) REPOSITORY_DEFAULT_BRANCH="${OPTARG}";;
     *) usage ;;
   esac
 done
@@ -44,5 +46,5 @@ git config http.https://source.foundries.io.extraheader "Authorization: basic $(
 git config user.email "testbot@foundries.io"
 git config user.name "Testbot"
 git remote add "${REPOSITORY_REMOTE}" "${REPOSITORY_URL}"
-git pull "${REPOSITORY_REMOTE}" master
+git pull "${REPOSITORY_REMOTE}" "${REPOSITORY_DEFAULT_BRANCH}"
 git remote add "${REPOSITORY_LMP_REMOTE}" "${REPOSITORY_LMP_URL}"

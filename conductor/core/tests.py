@@ -930,7 +930,8 @@ class TaskTest(TestCase):
                "-u", "%s/%s/lmp-manifest.git" % (settings.FIO_REPOSITORY_BASE, self.project.name),
                "-l", settings.FIO_BASE_REMOTE_NAME,
                "-w", settings.FIO_BASE_MANIFEST,
-               "-t", settings.FIO_REPOSITORY_TOKEN]
+               "-t", settings.FIO_REPOSITORY_TOKEN,
+               "-b", self.project.default_branch]
         create_project_repository(self.project.id)
         # at this stage repository should already exist
         # it is created when creating project
@@ -943,7 +944,8 @@ class TaskTest(TestCase):
         cmd = [os.path.join(settings.FIO_REPOSITORY_SCRIPT_PATH_PREFIX, "upgrade_commit.sh"),
                "-d", repository_path,
                "-r", settings.FIO_REPOSITORY_REMOTE_NAME,
-               "-m", settings.FIO_UPGRADE_ROLLBACK_MESSAGE]
+               "-m", settings.FIO_UPGRADE_ROLLBACK_MESSAGE,
+               "-b", self.project.default_branch]
 
         create_upgrade_commit(self.build.id)
         if not settings.DEBUG_FIO_SUBMIT:

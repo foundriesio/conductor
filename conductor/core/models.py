@@ -149,6 +149,8 @@ class Project(models.Model):
     testing_tag = models.CharField(max_length=16, null=True, blank=True)
     # set to True to apply testing_tag to target
     apply_testing_tag_on_callback = models.BooleanField(default=False)
+    # name of the default branch in the lmp-manifest project
+    default_branch = models.CharField(max_length=16, default="master")
 
     def watch_qa_reports_job(self, build, environment, job_id):
         if self.squad_backend:

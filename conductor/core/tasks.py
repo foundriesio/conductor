@@ -383,7 +383,7 @@ def _update_build_reason(build):
     repository = Repo(repository_path)
     try:
         remote = repository.remote(name=settings.FIO_REPOSITORY_REMOTE_NAME)
-        remote.pull(refspec="master")
+        remote.pull(refspec=build.project.default_branch)
         if build.commit_id:
             try:
                 commit = repository.commit(rev=build.commit_id)
@@ -475,7 +475,8 @@ def create_upgrade_commit(build_id):
         cmd = [os.path.join(settings.FIO_REPOSITORY_SCRIPT_PATH_PREFIX, "upgrade_commit.sh"),
                "-d", repository_path,
                "-r", settings.FIO_REPOSITORY_REMOTE_NAME,
-               "-m", settings.FIO_UPGRADE_ROLLBACK_MESSAGE]
+               "-m", settings.FIO_UPGRADE_ROLLBACK_MESSAGE,
+               "-b", project.default_branch]
         logger.debug(f"cmd")
         try:
             subprocess.run(cmd, check=True)
@@ -506,8 +507,10 @@ def create_project_repository(project_id):
            "-u", "%s/%s/lmp-manifest.git" % (settings.FIO_REPOSITORY_BASE, project.name),
            "-l", settings.FIO_BASE_REMOTE_NAME,
            "-w", settings.FIO_BASE_MANIFEST,
-           "-t", settings.FIO_REPOSITORY_TOKEN]
-    print(cmd)
+           "-t", settings.FIO_REPOSITORY_TOKEN,
+           "-b", project.default_branch]
+    logger.debug("Calling repository creation script")
+    logger.debug(" ".join(cmd))
     try:
         subprocess.run(cmd, check=True)
     except subprocess.CalledProcessError:
@@ -529,7 +532,8 @@ def merge_lmp_manifest():
         cmd = [os.path.join(settings.FIO_REPOSITORY_SCRIPT_PATH_PREFIX,"merge_manifest.sh"),
                "-d", repository_path,
                "-r", settings.FIO_REPOSITORY_REMOTE_NAME,
-               "-l", settings.FIO_BASE_REMOTE_NAME]
+               "-l", settings.FIO_BASE_REMOTE_NAME,
+               "-b", project.default_branch]
         logger.info("Calling merge_manifest.sh script")
         logger.info(" ".join(cmd))
         try:
