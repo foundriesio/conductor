@@ -11,7 +11,7 @@ usage() {
     exit 1
 }
 
-while getopts "d:r:m:" o; do
+while getopts "d:r:m:b:" o; do
   case "$o" in
     # The current working directory will be used by default.
     # Use '-p' specify partition that used for fio test.
