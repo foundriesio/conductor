@@ -1,6 +1,6 @@
 timeouts:
   job:
-    minutes: 40
+    minutes: 45
   connection:
     minutes: 5
   action:

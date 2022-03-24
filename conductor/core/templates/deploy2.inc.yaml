@@ -1,7 +1,7 @@
 {% if device_type == "imx8mmevk" or device_type == "imx8mp-lpddr4-evk" or device_type == "imx8mmevk-sec" or device_type == "imx6ullevk" %}
 - deploy:
     timeout:
-      minutes: 20
+      minutes: 25
     to: flasher
     images:
         image:
