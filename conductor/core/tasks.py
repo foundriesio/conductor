@@ -409,7 +409,10 @@ def update_build_commit_id(build_id, run_url):
     authentication = {
         "OSF-TOKEN": token,
     }
-    run_json_request = requests.get(urljoin(run_url, ".rundef.json"), headers=authentication)
+
+    session = requests.Session()
+    session.headers.update(authentication)
+    run_json_request = requests_retry_session(session=session).get(urljoin(run_url, ".rundef.json"))
     if run_json_request.status_code == 200:
         with transaction.atomic():
             build = None

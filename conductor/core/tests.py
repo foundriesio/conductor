@@ -1018,7 +1018,7 @@ class TaskTest(TestCase):
         self.assertEqual(self.build.schedule_tests, True)
 
     @patch("conductor.core.tasks.create_upgrade_commit.delay")
-    @patch("requests.get")
+    @patch("requests.Session.get")
     @patch.object(Repo, "remote")
     @patch.object(Repo, "commit")
     def test_update_commit_id(self, commit_mock, remote_mock, get_mock, upgrade_mock):
@@ -1047,7 +1047,7 @@ class TaskTest(TestCase):
         upgrade_mock.assert_called()
 
     @patch("conductor.core.tasks.create_upgrade_commit.delay")
-    @patch("requests.get")
+    @patch("requests.Session.get")
     @patch.object(Repo, "remote")
     @patch.object(Repo, "commit")
     def test_update_commit_id_no_access(self, commit_mock, remote_mock, get_mock, upgrade_mock):
