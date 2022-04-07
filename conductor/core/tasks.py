@@ -707,7 +707,7 @@ def process_testjob_notification(event_data):
                 lava_db_device:
             if event_data.get("health") == "Complete":
                 # remove device from factory at the latest possible moment
-                lava_db_device.remove_from_factory()
+                lava_db_device.remove_from_factory(factory=lava_job.project.name)
                 device_pdu_action(lava_db_device.id, power_on=True)
             else:
                 # report OTA failure?
@@ -718,7 +718,7 @@ def process_testjob_notification(event_data):
                 lava_db_device:
             # remove device from factory so it can autoregister
             # and update it's target ID
-            lava_db_device.remove_from_factory()
+            lava_db_device.remove_from_factory(factory=lava_job.project.name)
         if lava_job.job_type == LAVAJob.JOB_LAVA and \
                 event_data.get("state") == "Finished" and \
                 lava_db_device:

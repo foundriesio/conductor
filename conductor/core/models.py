@@ -342,16 +342,22 @@ class LAVADevice(models.Model):
                 logger.error(device_details_request.text)
         return {}
 
-    def remove_from_factory(self):
+    def remove_from_factory(self, factory=None):
+        if not factory:
+            logger.error("Factory name is required when removing device")
+            return {}
         token = getattr(settings, "FIO_API_TOKEN", None)
         authentication = {
             "OSF-TOKEN": token,
         }
         if self.auto_register_name:
-            url = f"https://api.foundries.io/ota/devices/{self.auto_register_name}/"
+            url = f"https://api.foundries.io/ota/devices/{self.auto_register_name}/?factory=factory"
             device_remove_request = requests.delete(url, headers=authentication)
             if device_remove_request.status_code == 200:
                 return device_remove_request.json()
+            else:
+                logger.error(f"Device {self.auto_register_name} deletion failed")
+                logger.error(device_remove_request.text)
         return {}
 
 

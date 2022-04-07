@@ -669,9 +669,17 @@ class LAVADeviceTest(TestCase):
         response_mock = MagicMock()
         response_mock.status_code = 200
         delete_mock.return_value = response_mock
-        self.lava_device1.remove_from_factory()
+        self.lava_device1.remove_from_factory(self.project.name)
         delete_mock.assert_called()
 
+    @patch("requests.delete")
+    def test_remove_from_factory_fail(self, delete_mock):
+        response_mock = MagicMock()
+        response_mock.status_code = 400
+        delete_mock.return_value = response_mock
+        response = self.lava_device1.remove_from_factory(self.project.name)
+        delete_mock.assert_called()
+        self.assertEqual({}, response)
 
 class TaskTest(TestCase):
     def setUp(self):
