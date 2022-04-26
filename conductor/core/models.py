@@ -351,8 +351,9 @@ class LAVADevice(models.Model):
             "OSF-TOKEN": token,
         }
         if self.auto_register_name:
-            url = f"https://api.foundries.io/ota/devices/{self.auto_register_name}/?factory=factory"
-            device_remove_request = requests.delete(url, headers=authentication)
+            params = {"factory": factory}
+            url = f"https://api.foundries.io/ota/devices/{self.auto_register_name}/"
+            device_remove_request = requests.delete(url, headers=authentication, params=params)
             if device_remove_request.status_code == 200:
                 return device_remove_request.json()
             else:

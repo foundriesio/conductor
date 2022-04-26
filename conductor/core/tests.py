@@ -670,7 +670,10 @@ class LAVADeviceTest(TestCase):
         response_mock.status_code = 200
         delete_mock.return_value = response_mock
         self.lava_device1.remove_from_factory(self.project.name)
-        delete_mock.assert_called()
+        delete_mock.assert_called_with(
+            f'https://api.foundries.io/ota/devices/{self.lava_device1.auto_register_name}/',
+            headers={'OSF-TOKEN': settings.FIO_API_TOKEN},
+            params={"factory": self.project.name})
 
     @patch("requests.delete")
     def test_remove_from_factory_fail(self, delete_mock):
@@ -678,7 +681,10 @@ class LAVADeviceTest(TestCase):
         response_mock.status_code = 400
         delete_mock.return_value = response_mock
         response = self.lava_device1.remove_from_factory(self.project.name)
-        delete_mock.assert_called()
+        delete_mock.assert_called_with(
+            f'https://api.foundries.io/ota/devices/{self.lava_device1.auto_register_name}/',
+            headers={'OSF-TOKEN': settings.FIO_API_TOKEN},
+            params={"factory": self.project.name})
         self.assertEqual({}, response)
 
 class TaskTest(TestCase):
