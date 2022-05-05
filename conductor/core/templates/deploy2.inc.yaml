@@ -1,4 +1,4 @@
-{% if device_type == "imx8mmevk" or device_type == "imx8mp-lpddr4-evk" or device_type == "imx8mmevk-sec" or device_type == "imx6ullevk" %}
+{% if device_type == "imx8mmevk" or device_type == "imx8mp-lpddr4-evk" or device_type ==  "imx8mmevk-sec" or device_type == "imx6ullevk" or device_type ==  "imx8mq-evk" %}
 - deploy:
     timeout:
       minutes: 25
@@ -18,5 +18,9 @@
     {% else %}
         bootloader:
             url: downloads://imx-boot-{{ device_type }}
+    {% endif %}
+    {% if device_type == "imx8mq-evk" %}
+        bootloadernohdmi:
+            url: downloads://imx-boot-{{ device_type }}-nohdmi
     {% endif %}
 {% endif %}

@@ -758,6 +758,26 @@ class TaskTest(TestCase):
             net_interface="eth0",
             project=self.project,
         )
+        self.device_type3 = LAVADeviceType.objects.create(
+            name="imx8mp-lpddr4-evk",
+            net_interface="eth0",
+            project=self.project,
+        )
+        self.device_type4 = LAVADeviceType.objects.create(
+            name="imx8mmevk-sec",
+            net_interface="eth0",
+            project=self.project,
+        )
+        self.device_type5 = LAVADeviceType.objects.create(
+            name="imx6ullevk",
+            net_interface="eth0",
+            project=self.project,
+        )
+        self.device_type6 = LAVADeviceType.objects.create(
+            name="imx8mq-evk",
+            net_interface="eth0",
+            project=self.project,
+        )
 
         self.lava_device1 = LAVADevice.objects.create(
             device_type = self.device_type1,
@@ -770,6 +790,34 @@ class TaskTest(TestCase):
             device_type = self.device_type2,
             name = "raspberrypi4-64-1",
             auto_register_name = "ota_device_1",
+            project = self.project,
+            pduagent=self.pduagent1
+        )
+        self.lava_device3 = LAVADevice.objects.create(
+            device_type = self.device_type3,
+            name = "imx8mp-lpddr4-evk-01",
+            auto_register_name = "ota_device_3",
+            project = self.project,
+            pduagent=self.pduagent1
+        )
+        self.lava_device4 = LAVADevice.objects.create(
+            device_type = self.device_type4,
+            name = "imx8mmevk-sec-01",
+            auto_register_name = "ota_device_4",
+            project = self.project,
+            pduagent=self.pduagent1
+        )
+        self.lava_device5 = LAVADevice.objects.create(
+            device_type = self.device_type5,
+            name = "imx6ullevk-01",
+            auto_register_name = "ota_device_5",
+            project = self.project,
+            pduagent=self.pduagent1
+        )
+        self.lava_device6 = LAVADevice.objects.create(
+            device_type = self.device_type6,
+            name = "imx8mq-evk-01",
+            auto_register_name = "ota_device_6",
             project = self.project,
             pduagent=self.pduagent1
         )
@@ -796,6 +844,98 @@ class TaskTest(TestCase):
         assert 3 == submit_lava_job_mock.call_count
         get_hash_mock.assert_called()
         assert 3 == get_hash_mock.call_count
+
+    @patch('conductor.core.tasks._get_os_tree_hash', return_value="someHash1")
+    @patch('conductor.core.models.SQUADBackend.update_testjob')
+    @patch('conductor.core.models.Project.watch_qa_reports_job')
+    @patch('conductor.core.models.Project.submit_lava_job', return_value=[123])
+    @patch('conductor.core.tasks.update_build_reason')
+    def test_create_build_run_imx8mp_lpddr4_evk(self, update_build_reason_mock, submit_lava_job_mock, watch_qa_reports_mock, update_testjob_mock, get_hash_mock):
+        response_mock = MagicMock()
+        response_mock.status_code = 201
+        response_mock.text = "321"
+        watch_qa_reports_mock.return_value = response_mock
+        run_name = "imx8mp-lpddr4-evk"
+        self.build.build_reason = "Hello world"
+        self.build.schedule_tests = True
+        self.build.save()
+        create_build_run(self.build.id, run_name)
+        update_build_reason_mock.assert_not_called()
+        submit_lava_job_mock.assert_called()
+        watch_qa_reports_mock.assert_called()
+        update_testjob_mock.assert_called()
+        assert 2 == submit_lava_job_mock.call_count
+        get_hash_mock.assert_called()
+        assert 2 == get_hash_mock.call_count
+
+    @patch('conductor.core.tasks._get_os_tree_hash', return_value="someHash1")
+    @patch('conductor.core.models.SQUADBackend.update_testjob')
+    @patch('conductor.core.models.Project.watch_qa_reports_job')
+    @patch('conductor.core.models.Project.submit_lava_job', return_value=[123])
+    @patch('conductor.core.tasks.update_build_reason')
+    def test_create_build_run_imx8mmevk_sec(self, update_build_reason_mock, submit_lava_job_mock, watch_qa_reports_mock, update_testjob_mock, get_hash_mock):
+        response_mock = MagicMock()
+        response_mock.status_code = 201
+        response_mock.text = "321"
+        watch_qa_reports_mock.return_value = response_mock
+        run_name = "imx8mmevk-sec"
+        self.build.build_reason = "Hello world"
+        self.build.schedule_tests = True
+        self.build.save()
+        create_build_run(self.build.id, run_name)
+        update_build_reason_mock.assert_not_called()
+        submit_lava_job_mock.assert_called()
+        watch_qa_reports_mock.assert_called()
+        update_testjob_mock.assert_called()
+        assert 2 == submit_lava_job_mock.call_count
+        get_hash_mock.assert_called()
+        assert 2 == get_hash_mock.call_count
+
+    @patch('conductor.core.tasks._get_os_tree_hash', return_value="someHash1")
+    @patch('conductor.core.models.SQUADBackend.update_testjob')
+    @patch('conductor.core.models.Project.watch_qa_reports_job')
+    @patch('conductor.core.models.Project.submit_lava_job', return_value=[123])
+    @patch('conductor.core.tasks.update_build_reason')
+    def test_create_build_run_imx6ullevk(self, update_build_reason_mock, submit_lava_job_mock, watch_qa_reports_mock, update_testjob_mock, get_hash_mock):
+        response_mock = MagicMock()
+        response_mock.status_code = 201
+        response_mock.text = "321"
+        watch_qa_reports_mock.return_value = response_mock
+        run_name = "imx6ullevk"
+        self.build.build_reason = "Hello world"
+        self.build.schedule_tests = True
+        self.build.save()
+        create_build_run(self.build.id, run_name)
+        update_build_reason_mock.assert_not_called()
+        submit_lava_job_mock.assert_called()
+        watch_qa_reports_mock.assert_called()
+        update_testjob_mock.assert_called()
+        assert 2 == submit_lava_job_mock.call_count
+        get_hash_mock.assert_called()
+        assert 2 == get_hash_mock.call_count
+
+    @patch('conductor.core.tasks._get_os_tree_hash', return_value="someHash1")
+    @patch('conductor.core.models.SQUADBackend.update_testjob')
+    @patch('conductor.core.models.Project.watch_qa_reports_job')
+    @patch('conductor.core.models.Project.submit_lava_job', return_value=[123])
+    @patch('conductor.core.tasks.update_build_reason')
+    def test_create_build_run_imx8mq_evk(self, update_build_reason_mock, submit_lava_job_mock, watch_qa_reports_mock, update_testjob_mock, get_hash_mock):
+        response_mock = MagicMock()
+        response_mock.status_code = 201
+        response_mock.text = "321"
+        watch_qa_reports_mock.return_value = response_mock
+        run_name = "imx8mq-evk"
+        self.build.build_reason = "Hello world"
+        self.build.schedule_tests = True
+        self.build.save()
+        create_build_run(self.build.id, run_name)
+        update_build_reason_mock.assert_not_called()
+        submit_lava_job_mock.assert_called()
+        watch_qa_reports_mock.assert_called()
+        update_testjob_mock.assert_called()
+        assert 2 == submit_lava_job_mock.call_count
+        get_hash_mock.assert_called()
+        assert 2 == get_hash_mock.call_count
 
     @patch('conductor.core.tasks._get_os_tree_hash', return_value="someHash1")
     @patch('conductor.core.models.SQUADBackend.watch_lava_job', return_value=None)
