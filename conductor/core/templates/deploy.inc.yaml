@@ -1,7 +1,7 @@
 - deploy:
     timeout:
       minutes: 20
-{% if device_type == "imx8mmevk" or device_type == "imx8mp-lpddr4-evk" or device_type == "imx8mmevk-sec" or device_type == "imx6ullevk" %}
+{% if device_type == "imx8mmevk" or device_type == "imx8mp-lpddr4-evk" or device_type == "imx8mmevk-sec" or device_type == "imx6ullevk" or device_type == "imx8mq-evk" %}
     to: downloads
 {% else %}
     to: flasher
@@ -12,7 +12,7 @@
         compression: gz
         headers:
           OSF-TOKEN: OSF-TOKEN
-{% if device_type == "imx8mmevk" or device_type == "imx6ullevk" or device_type == "imx8mp-lpddr4-evk" or device_type == "imx8mmevk-sec" %}
+{% if device_type == "imx8mmevk" or device_type == "imx6ullevk" or device_type == "imx8mp-lpddr4-evk" or device_type == "imx8mmevk-sec" or device_type == "imx8mq-evk" %}
       bootloader:
         url: {{ BOOTLOADER_URL }}
         headers:
@@ -24,7 +24,7 @@
         headers:
           OSF-TOKEN: OSF-TOKEN
 {% endif %}
-{% if device_type == "imx8mmevk" or device_type == "imx6ullevk" or device_type == "imx8mp-lpddr4-evk" or device_type == "imx8mmevk-sec" %}
+{% if device_type == "imx8mmevk" or device_type == "imx6ullevk" or device_type == "imx8mp-lpddr4-evk" or device_type == "imx8mmevk-sec" or device_type == "imx8mq-evk" %}
       sitimg:
         url: {{ SITIMG_URL }}
         headers:
@@ -36,13 +36,13 @@
         headers:
           OSF-TOKEN: OSF-TOKEN
 {% endif %}
-{% if device_type == "imx8mmevk" or device_type == "imx8mp-lpddr4-evk" or device_type == "imx8mmevk-sec" %}
+{% if device_type == "imx8mmevk" or device_type == "imx8mp-lpddr4-evk" or device_type == "imx8mmevk-sec" or device_type == "imx8mq-evk" %}
       uboot:
         url: {{ UBOOT_URL }}
         headers:
           OSF-TOKEN: OSF-TOKEN
 {% endif %}
-{% if device_type == "imx8mmevk" or device_type == "imx8mp-lpddr4-evk" or device_type == "imx8mmevk-sec" or device_type == "imx6ullevk" %}
+{% if device_type == "imx8mmevk" or device_type == "imx8mp-lpddr4-evk" or device_type == "imx8mmevk-sec" or device_type == "imx6ullevk" or device_type == "imx8mq-evk" %}
       mfgtools:
         url: {{ MFGTOOL_URL }}
         headers:
