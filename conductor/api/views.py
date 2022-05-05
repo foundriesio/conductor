@@ -170,7 +170,7 @@ def process_lmp_build(request):
         return request_body_json
     else:
         # check if the build has trigger_name "build-release"
-        if not request_body_json.get("trigger_name") == "build-release":
+        if not request_body_json.get("trigger_name") in ["build-release", "build-release-stable"]:
             logger.warning("trigger_name not set to build-release")
             return HttpResponse("OK")
         # check if build is successful
