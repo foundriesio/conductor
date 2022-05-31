@@ -8,6 +8,19 @@ timeouts:
 context:
   test_character_delay: 10
   lava_test_results_dir: "/home/fio/lava-%s"
+{% if device_type == "intel-corei7-64" %}
+  arch: x86_64
+  cpu: kvm64
+  netdevice: user,hostfwd=tcp::22223-:22
+{% endif %}
+{% if device_type == "qemuarm64-secureboot" %}
+  arch: aarch64
+  extra_options:
+   - "-chardev null,id=virtcon"
+   - "-machine virt,secure=on"
+{% endif %}
+{% if device_type == "qemuarm" %}
+{% endif %}
 device_type: {{ device_type }}
 job_name: basic tests - {{ target }}
 priority: 50
@@ -24,6 +37,8 @@ actions:
 - boot:
 {% include "boot.inc.yaml" %}
 
+{# QEMU conditional block #}
+{% if device_type != "intel-corei7-64" and device_type != "qemuarm64-secureboot" and device_type != "qemuarm" %}
 - test:
     timeout:
       minutes: 20
@@ -131,3 +146,5 @@ actions:
       name: network-manager
       params:
         INTERFACE: "{{ net_interface }}"
+{# end of QEMU conditional block #}
+{% endif %}

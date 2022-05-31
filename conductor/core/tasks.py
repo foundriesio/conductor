@@ -248,6 +248,7 @@ def create_build_run(self, build_id, run_name):
         return None
 
     templates = []
+    qemu_runs = ["intel-corei7-64", "qemuarm64-secureboot", "qemuarm"]
     if build.build_reason and build.schedule_tests:
         # only schedule tests when build_reason is present
         # at this point is should be filled in
@@ -256,7 +257,7 @@ def create_build_run(self, build_id, run_name):
              "job_type": LAVAJob.JOB_LAVA,
              "build": build},
         )
-        if previous_build:
+        if previous_build and run_name not in qemu_runs:
             templates = templates + [
                 {"name": "lava_deploy_template.yaml",
                  "job_type": LAVAJob.JOB_OTA,
@@ -272,7 +273,7 @@ def create_build_run(self, build_id, run_name):
         # for automatically triggered "upgrade builds"
         # in this case previous build refers to the actual
         # changes that need to be tested
-        if previous_build:
+        if previous_build and run_name not in qemu_runs:
             logger.info(f"Scheduling test jobs for run: {run_name}")
             templates = templates + [
                 {"name": "lava_aklite_interrupt_template.yaml",

@@ -778,6 +778,11 @@ class TaskTest(TestCase):
             net_interface="eth0",
             project=self.project,
         )
+        self.device_type7 = LAVADeviceType.objects.create(
+            name="intel-corei7-64",
+            net_interface="eth0",
+            project=self.project,
+        )
 
         self.lava_device1 = LAVADevice.objects.create(
             device_type = self.device_type1,
@@ -818,6 +823,13 @@ class TaskTest(TestCase):
             device_type = self.device_type6,
             name = "imx8mq-evk-01",
             auto_register_name = "ota_device_6",
+            project = self.project,
+            pduagent=self.pduagent1
+        )
+        self.lava_device7 = LAVADevice.objects.create(
+            device_type = self.device_type7,
+            name = "qemu-01",
+            auto_register_name = "ota_device_7",
             project = self.project,
             pduagent=self.pduagent1
         )
@@ -972,6 +984,23 @@ class TaskTest(TestCase):
         assert 2 == submit_lava_job_mock.call_count
         get_hash_mock.assert_called()
         assert 2 == get_hash_mock.call_count
+
+    @patch('conductor.core.tasks._get_os_tree_hash', return_value="someHash1")
+    @patch('conductor.core.models.Project.watch_qa_reports_job', return_value=None)
+    @patch('conductor.core.models.Project.submit_lava_job', return_value=[123])
+    @patch('conductor.core.tasks.update_build_reason')
+    def test_create_build_run_qemu(self, update_build_reason_mock, submit_lava_job_mock, watch_qa_reports_mock, get_hash_mock):
+        run_name = "intel-corei7-64"
+        self.build.build_reason = "Hello world"
+        self.build.schedule_tests = True
+        self.build.save()
+        create_build_run(self.build.id, run_name)
+        update_build_reason_mock.assert_not_called()
+        submit_lava_job_mock.assert_called()
+        watch_qa_reports_mock.assert_called()
+        assert 1 == submit_lava_job_mock.call_count
+        get_hash_mock.assert_called()
+        assert 1 == get_hash_mock.call_count
 
     @patch('conductor.core.tasks._get_os_tree_hash', return_value="someHash1")
     @patch('conductor.core.models.Project.watch_qa_reports_job', return_value=None)

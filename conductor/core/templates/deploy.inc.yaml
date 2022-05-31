@@ -3,6 +3,8 @@
       minutes: 20
 {% if device_type == "imx8mmevk" or device_type == "imx8mp-lpddr4-evk" or device_type == "imx8mmevk-sec" or device_type == "imx6ullevk" or device_type == "imx8mq-evk" %}
     to: downloads
+{% elif device_type == "intel-corei7-64" or device_type == "qemuarm64-secureboot" or device_type == "qemuarm" %}
+    to: tmpfs
 {% else %}
     to: flasher
 {% endif %}
@@ -12,6 +14,21 @@
         compression: gz
         headers:
           OSF-TOKEN: OSF-TOKEN
+{% if device_type == "intel-corei7-64" or device_type == "qemuarm64-secureboot" %}
+        image_arg: -drive id=disk0,file={image},if=none,format=raw -device virtio-blk-device,drive=disk0 -object rng-random,filename=/dev/urandom,id=rng0 -device virtio-rng-pci,rng=rng0
+{% endif %}
+{% if device_type == "intel-corei7-64" or device_type == "qemuarm64-secureboot" %}
+      bios:
+      {% if device_type == "qemuarm64-secureboot" %}
+        image_arg: -no-acpi -bios {bios}
+      {% endif %}
+      {% if device_type == "intel-corei7-64" %}
+        image_arg: -drive if=pflash,format=qcow2,file={bios}
+      {% endif %}
+        url: {{ BIOS_URL }}
+        headers:
+          OSF-TOKEN: OSF-TOKEN
+{% endif %}
 {% if device_type == "imx8mmevk" or device_type == "imx6ullevk" or device_type == "imx8mp-lpddr4-evk" or device_type == "imx8mmevk-sec" or device_type == "imx8mq-evk" %}
       bootloader:
         url: {{ BOOTLOADER_URL }}
