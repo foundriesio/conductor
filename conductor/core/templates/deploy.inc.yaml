@@ -75,9 +75,11 @@
             - tar -C mfgtool-files --strip-components=1 -xvf mfgtool-files.tar.gz
             - rm mfgtool-files.tar.gz
 {% if device_type == "imx8mm-lpddr4-evk-sec" %}
+            - cd /home/lmp-tools
+            - git pull origin master
             - "/home/lmp-tools/security/imx_hab4/sign-file.sh --cst /home/cst-3.3.1/linux64/bin/cst --spl $IMAGE_PATH/imx-boot-{{ device_type }} --csf-template /home/lmp-tools/security/imx_hab4/u-boot-spl-sign.csf-template --key-dir /home/lmp-tools/security/imx_hab4/"
             - "/home/lmp-tools/security/imx_hab4/sign-file.sh --cst /home/cst-3.3.1/linux64/bin/cst --spl $IMAGE_PATH/mfgtool-files/imx-boot-mfgtool --csf-template /home/lmp-tools/security/imx_hab4/u-boot-spl-sign.csf-template --key-dir /home/lmp-tools/security/imx_hab4/"
 {% endif %}
-            - tar  -C $IMAGE_PATH -czvf mfgtool-files.tgz mfgtool-files
+            - tar  -C $IMAGE_PATH -czvf $IMAGE_PATH/mfgtool-files.tgz mfgtool-files
             - ls -l $IMAGE_PATH
 {% endif %}
