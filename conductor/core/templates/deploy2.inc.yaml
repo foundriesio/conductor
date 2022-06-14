@@ -1,4 +1,4 @@
-{% if device_type == "imx8mmevk" or device_type == "imx8mp-lpddr4-evk" or device_type ==  "imx8mm-lpddr4-evk-sec" or device_type == "imx6ullevk" or device_type ==  "imx8mq-evk" %}
+{% if device_type == "imx8mmevk" or device_type == "imx8mm-lpddr4-evk" or device_type == "imx8mp-lpddr4-evk" or device_type ==  "imx8mm-lpddr4-evk-sec" or device_type == "imx6ullevk" or device_type ==  "imx8mq-evk" %}
 - deploy:
     timeout:
       minutes: 25

@@ -1,7 +1,7 @@
 - deploy:
     timeout:
       minutes: 20
-{% if device_type == "imx8mmevk" or device_type == "imx8mp-lpddr4-evk" or device_type == "imx8mm-lpddr4-evk-sec" or device_type == "imx6ullevk" or device_type == "imx8mq-evk" %}
+{% if device_type == "imx8mmevk" or device_type == "imx8mm-lpddr4-evk" or device_type == "imx8mp-lpddr4-evk" or device_type == "imx8mm-lpddr4-evk-sec" or device_type == "imx6ullevk" or device_type == "imx8mq-evk" %}
     to: downloads
 {% elif device_type == "intel-corei7-64" or device_type == "qemuarm64-secureboot" or device_type == "qemuarm" %}
     to: tmpfs
@@ -29,7 +29,7 @@
         headers:
           OSF-TOKEN: OSF-TOKEN
 {% endif %}
-{% if device_type == "imx8mmevk" or device_type == "imx6ullevk" or device_type == "imx8mp-lpddr4-evk" or device_type == "imx8mm-lpddr4-evk-sec" or device_type == "imx8mq-evk" %}
+{% if device_type == "imx8mmevk" or device_type == "imx8mm-lpddr4-evk" or device_type == "imx6ullevk" or device_type == "imx8mp-lpddr4-evk" or device_type == "imx8mm-lpddr4-evk-sec" or device_type == "imx8mq-evk" %}
       bootloader:
         url: {{ BOOTLOADER_URL }}
         headers:
@@ -41,7 +41,7 @@
         headers:
           OSF-TOKEN: OSF-TOKEN
 {% endif %}
-{% if device_type == "imx8mmevk" or device_type == "imx6ullevk" or device_type == "imx8mp-lpddr4-evk" or device_type == "imx8mm-lpddr4-evk-sec" or device_type == "imx8mq-evk" %}
+{% if device_type == "imx8mmevk" or device_type == "imx8mm-lpddr4-evk" or device_type == "imx6ullevk" or device_type == "imx8mp-lpddr4-evk" or device_type == "imx8mm-lpddr4-evk-sec" or device_type == "imx8mq-evk" %}
       sitimg:
         url: {{ SITIMG_URL }}
         headers:
@@ -53,13 +53,13 @@
         headers:
           OSF-TOKEN: OSF-TOKEN
 {% endif %}
-{% if device_type == "imx8mmevk" or device_type == "imx8mp-lpddr4-evk" or device_type == "imx8mm-lpddr4-evk-sec" or device_type == "imx8mq-evk" %}
+{% if device_type == "imx8mmevk" or device_type == "imx8mm-lpddr4-evk" or device_type == "imx8mp-lpddr4-evk" or device_type == "imx8mm-lpddr4-evk-sec" or device_type == "imx8mq-evk" %}
       uboot:
         url: {{ UBOOT_URL }}
         headers:
           OSF-TOKEN: OSF-TOKEN
 {% endif %}
-{% if device_type == "imx8mmevk" or device_type == "imx8mp-lpddr4-evk" or device_type == "imx8mm-lpddr4-evk-sec" or device_type == "imx6ullevk" or device_type == "imx8mq-evk" %}
+{% if device_type == "imx8mmevk" or device_type == "imx8mm-lpddr4-evk" or device_type == "imx8mp-lpddr4-evk" or device_type == "imx8mm-lpddr4-evk-sec" or device_type == "imx6ullevk" or device_type == "imx8mq-evk" %}
       mfgtools:
         url: {{ MFGTOOL_URL }}
         headers:
