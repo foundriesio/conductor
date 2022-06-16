@@ -333,8 +333,9 @@ class LAVADevice(models.Model):
             "OSF-TOKEN": token,
         }
         if self.auto_register_name:
+            params = {"factory": self.project.name}
             url = f"https://api.foundries.io/ota/devices/{self.auto_register_name}/"
-            device_details_request = requests.get(url, headers=authentication)
+            device_details_request = requests.get(url, headers=authentication, params=params)
             if device_details_request.status_code == 200:
                 return device_details_request.json()
             else:
