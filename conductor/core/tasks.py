@@ -263,7 +263,7 @@ def create_build_run(self, build_id, run_name):
                  "job_type": LAVAJob.JOB_OTA,
                  "build": previous_build},
             ]
-        if run_name in ["imx8mmevk", "imx8mm-lpddr4-evk"]:
+        if run_name in ["imx8mmevk", "imx8mm-lpddr4-evk", "imx8mm-lpddr4-evk-sec"]:
             templates.append(
                 {"name": "lava_security_template.yaml",
                  "job_type": LAVAJob.JOB_LAVA,
