@@ -41,10 +41,12 @@ class RunAdmin(admin.ModelAdmin):
 
 class LAVADeviceTypeAdmin(admin.ModelAdmin):
     models = models.LAVADeviceType
+    list_filter = ('project',)
 
 
 class LAVADeviceAdmin(admin.ModelAdmin):
     models = models.LAVADevice
+    list_filter = ('project', 'device_type')
 
 
 class LAVAJobAdmin(admin.ModelAdmin):
