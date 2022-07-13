@@ -50,7 +50,7 @@ actions:
         name: poweroff
         wait_for_prompt: False
         successes:
-        - message: "reboot: Power down"
+        - message: "Powering off"
 - deploy:
     namespace: after
     connection-namespace: before
@@ -91,7 +91,7 @@ actions:
         name: poweroff-after
         wait_for_prompt: False
         successes:
-        - message: "reboot: Power down"
+        - message: "Powering off"
 - boot:
     namespace: after
     connection-namespace: before
