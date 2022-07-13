@@ -452,10 +452,12 @@ def __project_repository_exists(project):
     repository_path = os.path.join(settings.FIO_REPOSITORY_HOME, project.name)
     if os.path.exists(repository_path):
         if os.path.isdir(repository_path):
+            logger.info(f"Project repository for {project} exists")
             # do nothing, directory exists
             return True
         else:
             # raise exception, there should not be a file with this name
+            logger.error(f"Project repository for {project} missing")
             raise ProjectMisconfiguredError()
     return False
 
