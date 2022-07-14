@@ -36,6 +36,11 @@ actions:
       from: git
       path: automated/linux/ota-rollback/download-update.yaml
       name: prepare-kernel-upgrade
+      {% if device_type == "imx8mm-lpddr4-evk-sec" %}
+      parameters:
+        UBOOT_VAR_TOOL: "fiovb_printenv"
+        UBOOT_VAR_SET_TOOL: "fiovb_setenv"
+      {% endif %}
 - test:
     namespace: before
     timeout:
@@ -74,6 +79,11 @@ actions:
       from: git
       path: automated/linux/ota-rollback/verify-rollback.yaml
       name: verify-kernel-rollback
+      {% if device_type == "imx8mm-lpddr4-evk-sec" %}
+      parameters:
+        UBOOT_VAR_TOOL: "fiovb_printenv"
+        UBOOT_VAR_SET_TOOL: "fiovb_setenv"
+      {% endif %}
 - test:
     namespace: after
     connection-namespace: before
@@ -102,3 +112,8 @@ actions:
       from: git
       path: automated/linux/ota-rollback/verify-reboot.yaml
       name: verify-kernel-reboot
+      {% if device_type == "imx8mm-lpddr4-evk-sec" %}
+      parameters:
+        UBOOT_VAR_TOOL: "fiovb_printenv"
+        UBOOT_VAR_SET_TOOL: "fiovb_setenv"
+      {% endif %}
