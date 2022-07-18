@@ -1,6 +1,6 @@
 timeouts:
   job:
-    minutes: 20
+    minutes: 25
   connection:
     minutes: 5
   action:
@@ -10,8 +10,6 @@ context:
   lava_test_results_dir: "/home/fio/lava-%s"
 device_type: {{ device_type }}
 job_name: security - {{ target }}
-tags:
-    - se050
 priority: 50
 visibility: public
 metadata:
@@ -40,3 +38,6 @@ actions:
       from: git
       path: automated/linux/pkcs11/pkcs11.yaml
       name: pkcs11
+      parameters:
+          PTOOL: "pkcs11-tool --module /usr/lib/libckteec.so.0.1.0"
+          USE_SE05X: "false"
