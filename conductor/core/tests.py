@@ -706,6 +706,13 @@ class TaskTest(TestCase):
             squad_backend=self.squadbackend1,
             squad_group="squadgroup"
         )
+        self.project_rolling = Project.objects.create(
+            name="testProject2",
+            secret="webhooksecret",
+            lava_backend=self.lavabackend1,
+            squad_backend=self.squadbackend1,
+            squad_group="squadgroup"
+        )
         self.previous_build = Build.objects.create(
             url="https://example.com/build/1/",
             project=self.project,
@@ -746,6 +753,17 @@ class TaskTest(TestCase):
             device_type="raspberrypi4-64",
             ostree_hash="currentHash",
             run_name="raspberrypi4-64"
+        )
+        self.build_rolling = Build.objects.create(
+            url="https://example.com/build/2/",
+            project=self.project_rolling,
+            build_id="2"
+        )
+        self.build_run_rolling = Run.objects.create(
+            build=self.build_rolling,
+            device_type="imx8mmevk",
+            ostree_hash="currentHash",
+            run_name="imx8mmevk"
         )
 
         self.device_type1 = LAVADeviceType.objects.create(
@@ -1133,6 +1151,19 @@ class TaskTest(TestCase):
         create_upgrade_commit(self.build.id)
         if not settings.DEBUG_FIO_SUBMIT:
             run_mock.assert_called_with(cmd, check=True)
+
+    @patch("subprocess.run")
+    def test_create_upgrade_commit_rolling(self, run_mock):
+        repository_path = os.path.join(settings.FIO_REPOSITORY_HOME, self.project_rolling.name)
+        cmd = [os.path.join(settings.FIO_REPOSITORY_SCRIPT_PATH_PREFIX, "upgrade_commit.sh"),
+               "-d", repository_path,
+               "-r", settings.FIO_REPOSITORY_REMOTE_NAME,
+               "-m", settings.FIO_UPGRADE_ROLLBACK_MESSAGE,
+               "-b", self.project_rolling.default_branch]
+
+        create_upgrade_commit(self.build.id)
+        if not settings.DEBUG_FIO_SUBMIT:
+            run_mock.assert_not_called()
 
     @patch.object(Repo, "remote")
     @patch.object(Repo, "commit")

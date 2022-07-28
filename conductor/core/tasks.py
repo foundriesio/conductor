@@ -472,6 +472,10 @@ def create_upgrade_commit(build_id):
     except Build.DoesNotExist:
         # do nothing if build is not found
         return
+    if not project.create_ota_commit:
+        # don't create upgrade commit
+        logger.info(f"Project {project} does not require additional OTA commit")
+        return
     # check if repository DIR already exists
     repository_path = os.path.join(settings.FIO_REPOSITORY_HOME, project.name)
     if not __project_repository_exists(project):

@@ -146,6 +146,7 @@ class Project(models.Model):
         null=True,
         blank=True)
     squad_group = models.CharField(max_length=16, null=True, blank=True)
+    create_ota_commit = models.BooleanField(default=False)
 
     # name of the tag applied to devices and targets
     testing_tag = models.CharField(max_length=16, null=True, blank=True)
