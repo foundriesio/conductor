@@ -76,7 +76,9 @@ def requests_retry_session(
 def _get_os_tree_hash(url, project):
     logger.debug("Retrieving ostree hash with base url: %s" % url)
     # ToDo: add headers for authentication
-    token = getattr(settings, "FIO_API_TOKEN", None)
+    token = project.fio_api_token
+    if token is None:
+        token = getattr(settings, "FIO_API_TOKEN", None)
     authentication = {
         "OSF-TOKEN": token,
     }
@@ -88,8 +90,9 @@ def _get_os_tree_hash(url, project):
     return None
 
 
-def _get_factory_targets(factory: str) -> dict:
-    token = getattr(settings, "FIO_API_TOKEN", None)
+def _get_factory_targets(factory: str, token: str) -> dict:
+    if token is None:
+        token = getattr(settings, "FIO_API_TOKEN", None)
     authentication = {
         "OSF-TOKEN": token,
     }
@@ -105,8 +108,9 @@ def _get_factory_targets(factory: str) -> dict:
     return r.json()
 
 
-def _put_factory_targets(factory: str, checksum: str, targets: dict):
-    token = getattr(settings, "FIO_API_TOKEN", None)
+def _put_factory_targets(factory: str, checksum: str, targets: dict, token: str):
+    if token is None:
+        token = getattr(settings, "FIO_API_TOKEN", None)
     headers = {"OSF-TOKEN": token, "x-ats-role-checksum": checksum}
     logger.debug("PUTting new targets.json to the backend")
     r = requests.put(
@@ -134,7 +138,7 @@ def _change_tag(build, new_tag, add=True):
     key = load_pem_private_key(privbytes, None, backend=default_backend())
 
     # add the tag to the target(s):
-    meta = _get_factory_targets(build.project.name)
+    meta = _get_factory_targets(build.project.name, project.fio_api_token)
     if not meta:
         logger.error("Empty targets JSON received")
         return
@@ -168,7 +172,7 @@ def _change_tag(build, new_tag, add=True):
     )
     assert len(meta["signatures"]) == 1
     meta["signatures"][0]["sig"] = base64.b64encode(sig).decode()
-    _put_factory_targets(build.project.name, checksum, meta)
+    _put_factory_targets(build.project.name, checksum, meta, project.fio_api_token)
 
 
 def _add_tag(build, tag):
@@ -407,7 +411,14 @@ def _update_build_reason(build):
 
 @celery.task
 def update_build_commit_id(build_id, run_url):
-    token = getattr(settings, "FIO_API_TOKEN", None)
+    build = None
+    try:
+        build = Build.objects.get(pk=build_id)
+    except Build.DoesNotExist:
+        return None
+    token = build.project.fio_api_token
+    if token is None:
+        token = getattr(settings, "FIO_API_TOKEN", None)
     authentication = {
         "OSF-TOKEN": token,
     }
@@ -417,12 +428,6 @@ def update_build_commit_id(build_id, run_url):
     run_json_request = requests_retry_session(session=session).get(urljoin(run_url, ".rundef.json"))
     if run_json_request.status_code == 200:
         with transaction.atomic():
-            build = None
-            try:
-                build = Build.objects.get(pk=build_id)
-            except Build.DoesNotExist:
-                return None
-
             run_json = run_json_request.json()
             commit_id = run_json['env']['GIT_SHA']
             build.commit_id = commit_id
@@ -746,7 +751,11 @@ def process_device_notification(event_data):
 
 
 def __report_test_result(device, result):
-    token = getattr(settings, "FIO_API_TOKEN", None)
+    token = device.project.fio_api_token
+    if token is None:
+        # fallback to the global token
+        # this will be phased out in the next version
+        token = getattr(settings, "FIO_API_TOKEN", None)
     authentication = {
         "OSF-TOKEN": token,
     }

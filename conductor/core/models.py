@@ -154,6 +154,8 @@ class Project(models.Model):
     apply_testing_tag_on_callback = models.BooleanField(default=False)
     # name of the default branch in the lmp-manifest project
     default_branch = models.CharField(max_length=16, default="master")
+    # token to allow FoundriesFactory backend operations
+    fio_api_token = models.CharField(max_length=40, blank=True, null=True)
 
     def watch_qa_reports_job(self, build, environment, job_id):
         if self.squad_backend:
@@ -331,7 +333,9 @@ class LAVADevice(models.Model):
 
     def get_current_target(self):
         # checks the current target reported by FIO API
-        token = getattr(settings, "FIO_API_TOKEN", None)
+        token = self.project.fio_api_token
+        if token is None:
+            token = getattr(settings, "FIO_API_TOKEN", None)
         authentication = {
             "OSF-TOKEN": token,
         }
@@ -350,7 +354,9 @@ class LAVADevice(models.Model):
         if not factory:
             logger.error("Factory name is required when removing device")
             return {}
-        token = getattr(settings, "FIO_API_TOKEN", None)
+        token = self.project.fio_api_token
+        if token is None:
+            token = getattr(settings, "FIO_API_TOKEN", None)
         authentication = {
             "OSF-TOKEN": token,
         }

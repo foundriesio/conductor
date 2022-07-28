@@ -513,7 +513,8 @@ class ProjectTest(TestCase):
             secret="webhooksecret",
             lava_backend=self.lavabackend1,
             squad_backend=self.squadbackend1,
-            squad_group="squadgroup"
+            squad_group="squadgroup",
+            fio_api_token="fio_api_token1"
         )
         self.build = Build.objects.create(
             url="https://example.com/build/1/",
@@ -598,7 +599,8 @@ class LAVADeviceTest(TestCase):
         self.project = Project.objects.create(
             name="testProject1",
             secret="webhooksecret",
-            lava_backend=self.lavabackend1
+            lava_backend=self.lavabackend1,
+            fio_api_token="fio_api_token1"
         )
         self.pduagent1 = PDUAgent.objects.create(
             name="pduagent1",
@@ -661,7 +663,10 @@ class LAVADeviceTest(TestCase):
         response_mock.json.return_value = TARGET_DICT
         get_mock.return_value = response_mock
         target = self.lava_device1.get_current_target()
-        get_mock.assert_called()
+        get_mock.assert_called_with(
+            f'https://api.foundries.io/ota/devices/{self.lava_device1.auto_register_name}/',
+            headers={'OSF-TOKEN': self.project.fio_api_token},
+            params={"factory": self.project.name})
         self.assertEqual(target, TARGET_DICT)
 
     @patch("requests.delete")
@@ -672,7 +677,7 @@ class LAVADeviceTest(TestCase):
         self.lava_device1.remove_from_factory(self.project.name)
         delete_mock.assert_called_with(
             f'https://api.foundries.io/ota/devices/{self.lava_device1.auto_register_name}/',
-            headers={'OSF-TOKEN': settings.FIO_API_TOKEN},
+            headers={'OSF-TOKEN': self.project.fio_api_token},
             params={"factory": self.project.name})
 
     @patch("requests.delete")
@@ -683,7 +688,7 @@ class LAVADeviceTest(TestCase):
         response = self.lava_device1.remove_from_factory(self.project.name)
         delete_mock.assert_called_with(
             f'https://api.foundries.io/ota/devices/{self.lava_device1.auto_register_name}/',
-            headers={'OSF-TOKEN': settings.FIO_API_TOKEN},
+            headers={'OSF-TOKEN': self.project.fio_api_token},
             params={"factory": self.project.name})
         self.assertEqual({}, response)
 
@@ -704,14 +709,16 @@ class TaskTest(TestCase):
             secret="webhooksecret",
             lava_backend=self.lavabackend1,
             squad_backend=self.squadbackend1,
-            squad_group="squadgroup"
+            squad_group="squadgroup",
+            fio_api_token="fio_api_token1"
         )
         self.project_rolling = Project.objects.create(
             name="testProject2",
             secret="webhooksecret",
             lava_backend=self.lavabackend1,
             squad_backend=self.squadbackend1,
-            squad_group="squadgroup"
+            squad_group="squadgroup",
+            fio_api_token="fio_api_token2"
         )
         self.previous_build = Build.objects.create(
             url="https://example.com/build/1/",
