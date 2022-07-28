@@ -710,7 +710,8 @@ class TaskTest(TestCase):
             lava_backend=self.lavabackend1,
             squad_backend=self.squadbackend1,
             squad_group="squadgroup",
-            fio_api_token="fio_api_token1"
+            fio_api_token="fio_api_token1",
+            fio_repository_token="fio_repository_token1"
         )
         self.project_rolling = Project.objects.create(
             name="testProject2",
@@ -718,7 +719,8 @@ class TaskTest(TestCase):
             lava_backend=self.lavabackend1,
             squad_backend=self.squadbackend1,
             squad_group="squadgroup",
-            fio_api_token="fio_api_token2"
+            fio_api_token="fio_api_token2",
+            fio_repository_token="fio_repository_token2"
         )
         self.previous_build = Build.objects.create(
             url="https://example.com/build/1/",
@@ -1138,7 +1140,7 @@ class TaskTest(TestCase):
                "-u", "%s/%s/lmp-manifest.git" % (settings.FIO_REPOSITORY_BASE, self.project.name),
                "-l", settings.FIO_BASE_REMOTE_NAME,
                "-w", settings.FIO_BASE_MANIFEST,
-               "-t", settings.FIO_REPOSITORY_TOKEN,
+               "-t", self.project.fio_repository_token,
                "-b", self.project.default_branch]
         create_project_repository(self.project.id)
         # at this stage repository should already exist

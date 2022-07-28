@@ -156,6 +156,8 @@ class Project(models.Model):
     default_branch = models.CharField(max_length=16, default="master")
     # token to allow FoundriesFactory backend operations
     fio_api_token = models.CharField(max_length=40, blank=True, null=True)
+    # token to allow source code operations
+    fio_repository_token = models.CharField(max_length=40, blank=True, null=True)
 
     def watch_qa_reports_job(self, build, environment, job_id):
         if self.squad_backend:

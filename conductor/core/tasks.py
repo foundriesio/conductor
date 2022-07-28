@@ -508,6 +508,9 @@ def create_project_repository(project_id):
     project = None
     try:
         project = Project.objects.get(pk=project_id)
+        fio_repository_token = project.fio_repository_token
+        if not fio_repository_token:
+            fio_repository_token = settings.FIO_REPOSITORY_TOKEN
     except Project.DoesNotExist:
         # do nothing if project is not found
         return
@@ -523,7 +526,7 @@ def create_project_repository(project_id):
            "-u", "%s/%s/lmp-manifest.git" % (settings.FIO_REPOSITORY_BASE, project.name),
            "-l", settings.FIO_BASE_REMOTE_NAME,
            "-w", settings.FIO_BASE_MANIFEST,
-           "-t", settings.FIO_REPOSITORY_TOKEN,
+           "-t", fio_repository_token,
            "-b", project.default_branch]
     logger.debug("Calling repository creation script")
     logger.debug(" ".join(cmd))
