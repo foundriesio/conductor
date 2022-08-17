@@ -172,20 +172,19 @@ def _change_tag(build, new_tag, add=True):
     )
     assert len(meta["signatures"]) == 1
     meta["signatures"][0]["sig"] = base64.b64encode(sig).decode()
-    _put_factory_targets(build.project.name, checksum, meta, project.fio_api_token)
+    if not settings.DEBUG_FIO_SUBMIT:
+        _put_factory_targets(build.project.name, checksum, meta, build.project.fio_api_token)
 
 
 def _add_tag(build, tag):
     logger.debug(f"Adding tag {tag} to the build {build} in factory {build.project}")
-    if not settings.DEBUG_FIO_SUBMIT:
-        _change_tag(build, tag.name, add=True)
+    _change_tag(build, tag.name, add=True)
     build.buildtag_set.add(tag)
 
 
 def _remove_tag(build, tag):
     logger.debug(f"Removing tag {tag} from the build {build} in factory {build.project}")
-    if not settings.DEBUG_FIO_SUBMIT:
-        _change_tag(build, tag.name, add=False)
+    _change_tag(build, tag.name, add=False)
     oldtags = build.buildtag_set.filter(name=tag.name)
     if oldtags:
         for oldtag in oldtags:
@@ -213,10 +212,11 @@ def tag_build_runs(self, build_id):
 
     previous_builds = build.project.build_set.filter(build_id__lt=build.build_id, tag=build.tag).order_by('-build_id')
     previous_build = None
+    old_tagged_builds = []
     if previous_builds:
         previous_build = previous_builds[0]
-    old_tagged_builds = build.project.build_set.filter(buildtag=testing_buildtag, build_id__lt=previous_build.build_id)
-    # there should only be 2 tagged builds: current and previous
+        old_tagged_builds = build.project.build_set.filter(buildtag=testing_buildtag, build_id__lt=previous_build.build_id)
+        # there should only be 2 tagged builds: current and previous
 
     # remove tags from old builds
     for old_tagged_build in old_tagged_builds:

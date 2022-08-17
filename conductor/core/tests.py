@@ -722,10 +722,27 @@ class TaskTest(TestCase):
             fio_api_token="fio_api_token2",
             fio_repository_token="fio_repository_token2"
         )
-        self.previous_build = Build.objects.create(
+        self.old_previous_build = Build.objects.create(
             url="https://example.com/build/1/",
             project=self.project,
             build_id="1"
+        )
+        self.previous_build = Build.objects.create(
+            url="https://example.com/build/1/",
+            project=self.project,
+            build_id="2"
+        )
+        self.old_previous_build_run_1 = Run.objects.create(
+            build=self.old_previous_build,
+            device_type="imx8mmevk",
+            ostree_hash="previousHash",
+            run_name="imx8mmevk"
+        )
+        self.old_previous_build_run_2 = Run.objects.create(
+            build=self.old_previous_build,
+            device_type="raspberrypi4-64",
+            ostree_hash="previousHash",
+            run_name="raspberrypi4-64"
         )
         self.pduagent1 = PDUAgent.objects.create(
             name="pduagent1",
@@ -749,7 +766,7 @@ class TaskTest(TestCase):
         self.build = Build.objects.create(
             url="https://example.com/build/2/",
             project=self.project,
-            build_id="2"
+            build_id="4"
         )
         self.build_run = Run.objects.create(
             build=self.build,
@@ -1353,12 +1370,22 @@ class TaskTest(TestCase):
         self.project.keyid = "abcdefghi123456789"
         self.project.apply_testing_tag_on_callback = True
         self.project.save()
-        tag_build_runs(self.build.pk)
-        bt = BuildTag.objects.filter(builds=self.build)
+        tag_build_runs(self.old_previous_build.pk)
+        bt = BuildTag.objects.filter(builds=self.old_previous_build)
         self.assertEqual(len(bt), 1)
         if not settings.DEBUG_FIO_SUBMIT:
             get_mock.assert_called()
             put_mock.assert_called()
+        tag_build_runs(self.previous_build.pk)
+        project_buildtag = BuildTag.objects.get(name=self.project.testing_tag)
+        tagged_builds = Build.objects.filter(buildtag=project_buildtag)
+        self.assertEqual(len(tagged_builds), 2)
+        if not settings.DEBUG_FIO_SUBMIT:
+            get_mock.assert_called()
+            put_mock.assert_called()
+        tag_build_runs(self.build.pk)
+        tagged_builds = Build.objects.filter(buildtag=project_buildtag)
+        self.assertEqual(len(tagged_builds), 2)
 
     def test_tag_build_runs_no_build(self):
         ret = tag_build_runs(99999)
