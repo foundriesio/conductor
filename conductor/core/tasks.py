@@ -138,7 +138,7 @@ def _change_tag(build, new_tag, add=True):
     key = load_pem_private_key(privbytes, None, backend=default_backend())
 
     # add the tag to the target(s):
-    meta = _get_factory_targets(build.project.name, project.fio_api_token)
+    meta = _get_factory_targets(build.project.name, build.project.fio_api_token)
     if not meta:
         logger.error("Empty targets JSON received")
         return
