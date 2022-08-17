@@ -294,7 +294,7 @@ def create_build_run(self, build_id, run_name):
                  "build": previous_build},
             ]
             # only imx8mm and imx6ull support u-boot OTA update
-            if run_name in ["imx8mmevk", "imx8mm-lpddr4-evk", "imx6ullevk", "imx8mp-lpddr4-evk"]:
+            if run_name in ["imx8mmevk", "imx8mm-lpddr4-evk", "imx6ullevk", "imx8mp-lpddr4-evk", "imx8mmevk-sec", "imx8mm-lpddr4-evk-sec"]:
                 templates.append(
                     {"name": "lava_uboot_rollback_template.yaml",
                      "job_type": LAVAJob.JOB_LAVA,
