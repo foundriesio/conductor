@@ -334,6 +334,8 @@ def create_build_run(self, build_id, run_name):
             "device_type": run_name,
             "build_url": lcl_build.url,
             "build_id": lcl_build.build_id,
+            "build_commit": lcl_build.commit_id,
+            "build_reason": lcl_build.build_reason,
 
             "IMAGE_URL": "%slmp-factory-image-%s.wic.gz" % (run_url, run_name),
             "BOOTLOADER_URL": "%simx-boot-%s" % (run_url, run_name),

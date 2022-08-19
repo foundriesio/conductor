@@ -1,5 +1,7 @@
 metadata:
   build-url: '{{ build_url }}'
   build-id: '{{ build_id }}'
+  lmp-manifest-commit-id: '{{ build_commit }}'
+  build-reason: '{{ build_reason }}'
   trigger: '{{ trigger }}'
 
