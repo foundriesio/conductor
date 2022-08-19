@@ -25,10 +25,7 @@ device_type: {{ device_type }}
 job_name: basic tests - {{ target }}
 priority: 50
 visibility: public
-metadata:
-  build-url: '{{ build_url }}'
-  build-id: '{{ build_id }}'
-  trigger: '{{ trigger }}'
+{% include "metadata.inc.yaml" %}
 actions:
 {% include "deploy.inc.yaml" %}
 {% include "deploy2.inc.yaml" %}

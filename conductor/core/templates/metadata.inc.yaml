@@ -1,0 +1,5 @@
+metadata:
+  build-url: '{{ build_url }}'
+  build-id: '{{ build_id }}'
+  trigger: '{{ trigger }}'
+
