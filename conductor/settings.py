@@ -33,16 +33,19 @@ CSRF_TRUSTED_ORIGINS = ['https://conductor.infra.foundries.io']
 INSTALLED_APPS = [
     'django.contrib.admin',
     'django.contrib.auth',
+    'polymorphic',
     'django.contrib.contenttypes',
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
     'django_celery_results',
+    'sortedm2m',
     'conductor.core',
     'conductor.api',
     'conductor.pduserver',
     'conductor.frontend',
     'conductor.listener',
+    'conductor.testplan',
 ]
 
 MIDDLEWARE = [

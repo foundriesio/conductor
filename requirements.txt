@@ -5,8 +5,10 @@ canonicaljson
 celery
 contextlib2
 cryptography
-Django
+Django==4.0.4
 django-celery-results
+django-polymorphic
+django-sortedm2m
 GitPython
 psycopg2-binary
 pyzmq
