@@ -411,7 +411,6 @@ def create_build_run(self, build_id, run_name):
         if not lava_job_definition:
             # possibly raise exception
             return
-        print(f"{lava_job_definition}")
         job_ids = build.project.submit_lava_job(lava_job_definition)
         job_type=template.get("job_type")
         logger.debug(job_ids)
