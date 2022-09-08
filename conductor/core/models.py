@@ -21,6 +21,7 @@ from django.db import models
 from django.utils import timezone
 from urllib.parse import urljoin
 
+from conductor.testplan.models import TestPlan
 
 DEFAULT_TIMEOUT=60
 logger = logging.getLogger()
@@ -158,6 +159,9 @@ class Project(models.Model):
     fio_api_token = models.CharField(max_length=40, blank=True, null=True)
     # token to allow source code operations
     fio_repository_token = models.CharField(max_length=40, blank=True, null=True)
+
+    # test plans
+    testplans = models.ManyToManyField(TestPlan, null=True)
 
     def watch_qa_reports_job(self, build, environment, job_id):
         if self.squad_backend:

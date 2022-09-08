@@ -36,6 +36,7 @@ from datetime import timedelta
 from django.conf import settings
 from django.db import transaction
 from django.template.loader import get_template
+from django.template import engines, TemplateSyntaxError
 from django.utils import timezone
 from git import Repo
 from requests.adapters import HTTPAdapter
@@ -227,6 +228,24 @@ def tag_build_runs(self, build_id):
     return None
 
 
+def _template_from_string(template_string, using=None):
+    """
+    Convert a string into a template object,
+    using a given template engine or using the default backends
+    from settings.TEMPLATES if no engine was specified.
+    """
+    # This function is based on django.template.loader.get_template,
+    # but uses Engine.from_string instead of Engine.get_template.
+    chain = []
+    engine_list = engines.all() if using is None else [engines[using]]
+    for engine in engine_list:
+        try:
+            return engine.from_string(template_string)
+        except TemplateSyntaxError as e:
+            chain.append(e)
+    raise TemplateSyntaxError(template_string, chain=chain)
+
+
 @celery.task(bind=True)
 def create_build_run(self, build_id, run_name):
     logger.debug("Received task for build: %s" % build_id)
@@ -252,64 +271,86 @@ def create_build_run(self, build_id, run_name):
         return None
 
     templates = []
-    qemu_runs = ["intel-corei7-64", "qemuarm64-secureboot", "qemuarm"]
-    if build.build_reason and build.schedule_tests:
-        # only schedule tests when build_reason is present
-        # at this point is should be filled in
-        templates.append(
-            {"name": "lava_template.yaml",
-             "job_type": LAVAJob.JOB_LAVA,
-             "build": build},
-        )
-        if previous_build and run_name not in qemu_runs:
-            templates = templates + [
-                {"name": "lava_deploy_template.yaml",
-                 "job_type": LAVAJob.JOB_OTA,
-                 "build": previous_build},
-            ]
-        if run_name in ["imx8mmevk", "imx8mm-lpddr4-evk", "imx8mm-lpddr4-evk-sec"]:
+    # if there is a TestPlan object defined for the Project
+    # use it to generate templates. Otherwise use the static rules
+    # below
+    if build.project.testplans.all():
+        for plan in build.project.testplans.filter(lava_device_type=run_name):
+            if build.build_reason and build.schedule_tests:
+                for plan_testjob in plan.testjobs.filter(is_ota_job=False):
+                    templates.append({
+                        "name": plan_testjob.name,
+                        "job_type": LAVAJob.JOB_LAVA,
+                        "build": build,
+                        "template": _template_from_string(yaml.dump(plan_testjob.get_job_definition(), default_flow_style=False))
+                    })
+            if build.build_reason and not build.schedule_tests:
+                for plan_testjob in plan.testjobs.filter(is_ota_job=True):
+                    templates.append({
+                        "name": plan_testjob.name,
+                        "job_type": LAVAJob.JOB_LAVA,
+                        "build": previous_build,
+                        "template": _template_from_string(yaml.dump(plan_testjob.get_job_definition(), default_flow_style=False))
+                    })
+    else:
+        qemu_runs = ["intel-corei7-64", "qemuarm64-secureboot", "qemuarm"]
+        if build.build_reason and build.schedule_tests:
+            # only schedule tests when build_reason is present
+            # at this point is should be filled in
             templates.append(
-                {"name": "lava_security_template.yaml",
+                {"name": "lava_template.yaml",
                  "job_type": LAVAJob.JOB_LAVA,
                  "build": build},
             )
-    if build.build_reason and not build.schedule_tests:
-        # for automatically triggered "upgrade builds"
-        # in this case previous build refers to the actual
-        # changes that need to be tested
-        if previous_build and run_name not in qemu_runs:
-            logger.info(f"Scheduling test jobs for run: {run_name}")
-            templates = templates + [
-                {"name": "lava_aklite_interrupt_template.yaml",
-                 "job_type": LAVAJob.JOB_LAVA,
-                 "build": previous_build},
-                {"name": "lava_aklite_interrupt_meta_template.yaml",
-                 "job_type": LAVAJob.JOB_LAVA,
-                 "build": previous_build},
-                {"name": "lava_kernel_rollback_template.yaml",
-                 "job_type": LAVAJob.JOB_LAVA,
-                 "build": previous_build},
-                {"name": "lava_deploy_template.yaml",
-                 "job_type": LAVAJob.JOB_OTA,
-                 "build": previous_build},
-            ]
-            # only imx8mm and imx6ull support u-boot OTA update
-            if run_name in ["imx8mmevk", "imx8mm-lpddr4-evk", "imx6ullevk", "imx8mp-lpddr4-evk", "imx8mmevk-sec", "imx8mm-lpddr4-evk-sec"]:
+            if previous_build and run_name not in qemu_runs:
+                templates = templates + [
+                    {"name": "lava_deploy_template.yaml",
+                     "job_type": LAVAJob.JOB_OTA,
+                     "build": previous_build},
+                ]
+            if run_name in ["imx8mmevk", "imx8mm-lpddr4-evk", "imx8mm-lpddr4-evk-sec"]:
                 templates.append(
-                    {"name": "lava_uboot_rollback_template.yaml",
+                    {"name": "lava_security_template.yaml",
                      "job_type": LAVAJob.JOB_LAVA,
-                     "build": previous_build}
+                     "build": build},
                 )
-        # also create Run objects for checking the OTA status
-        run_url = f"{build.url}runs/{run_name}/"
-        ostree_hash=_get_os_tree_hash(run_url, build.project)
-        if ostree_hash:
-            run, _ = Run.objects.get_or_create(
-                build=build,
-                device_type=device_type,
-                ostree_hash=ostree_hash,
-                run_name=run_name
-            )
+        if build.build_reason and not build.schedule_tests:
+            # for automatically triggered "upgrade builds"
+            # in this case previous build refers to the actual
+            # changes that need to be tested
+            if previous_build and run_name not in qemu_runs:
+                logger.info(f"Scheduling test jobs for run: {run_name}")
+                templates = templates + [
+                    {"name": "lava_aklite_interrupt_template.yaml",
+                     "job_type": LAVAJob.JOB_LAVA,
+                     "build": previous_build},
+                    {"name": "lava_aklite_interrupt_meta_template.yaml",
+                     "job_type": LAVAJob.JOB_LAVA,
+                     "build": previous_build},
+                    {"name": "lava_kernel_rollback_template.yaml",
+                     "job_type": LAVAJob.JOB_LAVA,
+                     "build": previous_build},
+                    {"name": "lava_deploy_template.yaml",
+                     "job_type": LAVAJob.JOB_OTA,
+                     "build": previous_build},
+                ]
+                # only imx8mm and imx6ull support u-boot OTA update
+                if run_name in ["imx8mmevk", "imx8mm-lpddr4-evk", "imx6ullevk", "imx8mp-lpddr4-evk", "imx8mmevk-sec", "imx8mm-lpddr4-evk-sec"]:
+                    templates.append(
+                        {"name": "lava_uboot_rollback_template.yaml",
+                         "job_type": LAVAJob.JOB_LAVA,
+                         "build": previous_build}
+                    )
+            # also create Run objects for checking the OTA status
+            run_url = f"{build.url}runs/{run_name}/"
+            ostree_hash=_get_os_tree_hash(run_url, build.project)
+            if ostree_hash:
+                run, _ = Run.objects.get_or_create(
+                    build=build,
+                    device_type=device_type,
+                    ostree_hash=ostree_hash,
+                    run_name=run_name
+                )
 
     logger.debug(f"run_name: {run_name}")
     logger.debug(f"{templates}")
@@ -362,7 +403,15 @@ def create_build_run(self, build_id, run_name):
                 # ignore values that are not strings
                 pass
 
-        lava_job_definition = get_template(template["name"]).render(context)
+        lava_job_definition = None
+        if not template.get("template", None):
+            lava_job_definition = get_template(template["name"]).render(context)
+        else:
+            lava_job_definition = template["template"].render(context)
+        if not lava_job_definition:
+            # possibly raise exception
+            return
+        print(f"{lava_job_definition}")
         job_ids = build.project.submit_lava_job(lava_job_definition)
         job_type=template.get("job_type")
         logger.debug(job_ids)
