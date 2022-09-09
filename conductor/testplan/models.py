@@ -101,13 +101,14 @@ class TestJob(models.Model):
     actions = SortedManyToManyField(LAVAAction)
     is_ota_job = models.BooleanField(default=False)
 
-    def get_job_definition(self):
+    def get_job_definition(self, testplan):
         timeouts_dict = {}
         for item in self.timeouts.all():
             timeouts_dict[item.name] = {item.timeout_units: item.timeout_value}
 
         job_yaml = {
-            "name": self.name,
+            "job_name": self.name,
+            "device_type": testplan.lava_device_type,
             "visibility": self.visibility,
             "priority": self.priority,
             "timeouts": timeouts_dict,

@@ -282,7 +282,7 @@ def create_build_run(self, build_id, run_name):
                         "name": plan_testjob.name,
                         "job_type": LAVAJob.JOB_LAVA,
                         "build": build,
-                        "template": _template_from_string(yaml.dump(plan_testjob.get_job_definition(), default_flow_style=False))
+                        "template": _template_from_string(yaml.dump(plan_testjob.get_job_definition(plan), default_flow_style=False))
                     })
             if build.build_reason and not build.schedule_tests:
                 for plan_testjob in plan.testjobs.filter(is_ota_job=True):
@@ -290,7 +290,7 @@ def create_build_run(self, build_id, run_name):
                         "name": plan_testjob.name,
                         "job_type": LAVAJob.JOB_LAVA,
                         "build": previous_build,
-                        "template": _template_from_string(yaml.dump(plan_testjob.get_job_definition(), default_flow_style=False))
+                        "template": _template_from_string(yaml.dump(plan_testjob.get_job_definition(plan), default_flow_style=False))
                     })
     else:
         qemu_runs = ["intel-corei7-64", "qemuarm64-secureboot", "qemuarm"]
