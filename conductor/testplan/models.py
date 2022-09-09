@@ -324,7 +324,7 @@ class TestDefinition(models.Model):
         return td_dict
 
     def __str__(self):
-        return f"{self.name} ({self.testtype})"
+        return f"{self.name} ({self.testtype}) ({self.device_type})"
 
 
 class TestAction(LAVAAction):
