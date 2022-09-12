@@ -186,6 +186,11 @@ class Deployment(LAVAAction):
                 "images": images_dict
             }
         }
+        if self.namespace and self.connection_namespace:
+            deployment_dict.update({
+                "namespace": self.namespace,
+                "connection-namespace": self.connection_namespace
+            })
         if self.postprocess:
             deployment_dict["deploy"].update({"postprocess": self.postprocess.to_yaml()})
         return deployment_dict
@@ -238,6 +243,11 @@ class Boot(LAVAAction):
             }
         }
 
+        if self.namespace and self.connection_namespace:
+            boot_dict.update({
+                "namespace": self.namespace,
+                "connection-namespace": self.connection_namespace
+            })
         if self.auto_login:
             boot_dict["boot"].update({"auto_login": self.auto_login.to_yaml()})
         if self.transfer_overlay:
@@ -337,6 +347,11 @@ class TestAction(LAVAAction):
             "test": {
             }
         }
+        if self.namespace and self.connection_namespace:
+            return_dict.update({
+                "namespace": self.namespace,
+                "connection-namespace": self.connection_namespace
+            })
         if self.timeout:
             return_dict["test"].update({
                 "timeout": {self.timeout.timeout_units: self.timeout.timeout_value}
@@ -366,7 +381,7 @@ class CommandAction(LAVAAction):
         if self.namespace:
             command_dict["command"].update({"namespace": self.namespace})
         if self.connection_namespace:
-            command_dict["command"].update({"connection_namespace": self.connection_namespace})
+            command_dict["command"].update({"connection-namespace": self.connection_namespace})
         return command_dict
 
     def __str__(self):
