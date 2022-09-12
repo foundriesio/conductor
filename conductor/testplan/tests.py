@@ -121,7 +121,8 @@ class DeploymentTest(TestCase):
         self.deployment1 = Deployment(
             deploy_to=Deployment.DEPLOY_DOWNLOADS,
             name="deploy1",
-            postprocess=self.deployPostprocess1
+            postprocess=self.deployPostprocess1,
+            action_type="deploy"
         )
         self.deployment1.save()
         self.deployment1.images.add(self.downloadImage1)
@@ -199,7 +200,8 @@ class BootTest(TestCase):
             transfer_overlay_download="cd /home ; wget",
             transfer_overlay_unpack="tar -C /home/fio -xzf",
             auto_login=self.autoLogin1,
-            prompts="- \"Password:\"\n- root@imx8mmevk"
+            prompts="- \"Password:\"\n- root@imx8mmevk",
+            action_type="boot"
         )
 
     def test_to_yaml(self):
@@ -252,7 +254,7 @@ class TestActionTests(TestCase):
             name="definition1",
             device_type="dev_type1",
             path="example/path",
-            repository="https://example.com/git"
+            repository="https://example.com/git",
         )
         self.testDefinition1.save()
         self.testDefinition2 = TestDefinition(
@@ -271,7 +273,8 @@ class TestActionTests(TestCase):
         self.timeout1.save()
         self.testAction1 = TestAction(
             name="testaction1",
-            timeout=self.timeout1
+            timeout=self.timeout1,
+            action_type="test"
         )
         self.testAction1.save()
         self.testAction1.definitions.add(self.testDefinition1)

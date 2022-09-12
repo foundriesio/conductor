@@ -57,8 +57,23 @@ class LAVAAction(PolymorphicModel):
     action_type = models.CharField(max_length=16, choices=ACTION_CHOICES)
 
     def to_yaml(self):
-        # implemented in deriving objects
-        return {}
+        return_dict = {
+            self.action_type: {}
+        }
+        if self.timeout:
+            return_dict[self.action_type].update({
+                "timeout": {self.timeout.timeout_units: self.timeout.timeout_value}
+            })
+        if self.namespace:
+            return_dict[self.action_type].update({
+                "namespace": self.namespace,
+            })
+        if self.connection_namespace:
+            return_dict[self.action_type].update({
+                "connection-namespace": self.connection_namespace
+            })
+
+        return return_dict
 
 
 class TestJobMetadata(models.Model):
@@ -180,20 +195,11 @@ class Deployment(LAVAAction):
                 images_dict[image.name].update({"compression": image.compression})
             if image.headers:
                 images_dict[image.name].update({"headers": image.get_headers()})
-        deployment_dict = {
-            "deploy": {
-                "to": self.deploy_to,
-                "images": images_dict
-            }
-        }
-        if self.namespace:
-            deployment_dict["deploy"].update({
-                "namespace": self.namespace,
-            })
-        if self.connection_namespace:
-            deployment_dict["deploy"].update({
-                "connection-namespace": self.connection_namespace
-            })
+        deployment_dict = super().to_yaml()
+        deployment_dict[self.action_type].update({
+            "to": self.deploy_to,
+            "images": images_dict
+        })
         if self.postprocess:
             deployment_dict["deploy"].update({"postprocess": self.postprocess.to_yaml()})
         return deployment_dict
@@ -239,27 +245,17 @@ class Boot(LAVAAction):
     name = models.CharField(max_length=32, null=True, blank=True)  # make not null!!
 
     def to_yaml(self):
-        boot_dict = {
-            "boot": {
-                "prompts": yaml.safe_load(self.prompts),
-                "method" : self.method,
-            }
-        }
-
-        if self.namespace:
-            boot_dict["boot"].update({
-                "namespace": self.namespace,
-            })
-        if self.connection_namespace:
-            boot_dict["boot"].update({
-                "connection-namespace": self.connection_namespace
-            })
+        boot_dict = super().to_yaml()
+        boot_dict[self.action_type].update({
+            "prompts": yaml.safe_load(self.prompts),
+            "method" : self.method,
+        })
         if self.auto_login:
-            boot_dict["boot"].update({"auto_login": self.auto_login.to_yaml()})
+            boot_dict[self.action_type].update({"auto_login": self.auto_login.to_yaml()})
         if self.transfer_overlay:
             # assume overaly fields are not empty
             # ToDo: check this on object creation
-            boot_dict["boot"].update(
+            boot_dict[self.action_type].update(
                 {"transfer_overlay": {
                     "download_command": self.transfer_overlay_download,
                     "unpack_command": self.transfer_overlay_unpack
@@ -349,30 +345,15 @@ class TestAction(LAVAAction):
     definitions = SortedManyToManyField(TestDefinition)
 
     def to_yaml(self):
-        return_dict = {
-            "test": {
-            }
-        }
-        if self.namespace:
-            return_dict["test"].update({
-                "namespace": self.namespace,
-            })
-        if self.connection_namespace:
-            return_dict["test"].update({
-                "connection-namespace": self.connection_namespace
-            })
-        if self.timeout:
-            return_dict["test"].update({
-                "timeout": {self.timeout.timeout_units: self.timeout.timeout_value}
-            })
+        return_dict = super().to_yaml()
         if self.definitions.filter(testtype=TestDefinition.TYPE_GIT):
-            return_dict["test"].update({"definitions": []})
+            return_dict[self.action_type].update({"definitions": []})
         if self.definitions.filter(testtype=TestDefinition.TYPE_INTERACTIVE):
-            return_dict["test"].update({"interactive": []})
+            return_dict[self.action_type].update({"interactive": []})
         for definition in self.definitions.filter(testtype=TestDefinition.TYPE_GIT):
-            return_dict["test"]["definitions"].append(definition.to_yaml())
+            return_dict[self.action_type]["definitions"].append(definition.to_yaml())
         for definition in self.definitions.filter(testtype=TestDefinition.TYPE_INTERACTIVE):
-            return_dict["test"]["interactive"].append(definition.to_yaml())
+            return_dict[self.action_type]["interactive"].append(definition.to_yaml())
         return return_dict
 
 
