@@ -187,7 +187,7 @@ class Deployment(LAVAAction):
             }
         }
         if self.namespace and self.connection_namespace:
-            deployment_dict.update({
+            deployment_dict["deploy"].update({
                 "namespace": self.namespace,
                 "connection-namespace": self.connection_namespace
             })
@@ -244,7 +244,7 @@ class Boot(LAVAAction):
         }
 
         if self.namespace and self.connection_namespace:
-            boot_dict.update({
+            boot_dict["boot"].update({
                 "namespace": self.namespace,
                 "connection-namespace": self.connection_namespace
             })
@@ -348,7 +348,7 @@ class TestAction(LAVAAction):
             }
         }
         if self.namespace and self.connection_namespace:
-            return_dict.update({
+            return_dict["test"].update({
                 "namespace": self.namespace,
                 "connection-namespace": self.connection_namespace
             })
