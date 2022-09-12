@@ -266,7 +266,7 @@ class InteractiveCommand(models.Model):
             "command": self.command,
             "name": self.name,
             "wait_for_prompt": self.wait_for_prompt,
-            "success": yaml.safe_load(self.success_messages)
+            "successes": yaml.safe_load(self.success_messages)
         }
 
     def __str__(self):
