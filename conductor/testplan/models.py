@@ -186,9 +186,12 @@ class Deployment(LAVAAction):
                 "images": images_dict
             }
         }
-        if self.namespace and self.connection_namespace:
+        if self.namespace:
             deployment_dict["deploy"].update({
                 "namespace": self.namespace,
+            })
+        if self.connection_namespace:
+            deployment_dict["deploy"].update({
                 "connection-namespace": self.connection_namespace
             })
         if self.postprocess:
@@ -243,9 +246,12 @@ class Boot(LAVAAction):
             }
         }
 
-        if self.namespace and self.connection_namespace:
+        if self.namespace:
             boot_dict["boot"].update({
                 "namespace": self.namespace,
+            })
+        if self.connection_namespace:
+            boot_dict["boot"].update({
                 "connection-namespace": self.connection_namespace
             })
         if self.auto_login:
@@ -347,9 +353,12 @@ class TestAction(LAVAAction):
             "test": {
             }
         }
-        if self.namespace and self.connection_namespace:
+        if self.namespace:
             return_dict["test"].update({
                 "namespace": self.namespace,
+            })
+        if self.connection_namespace:
+            return_dict["test"].update({
                 "connection-namespace": self.connection_namespace
             })
         if self.timeout:
