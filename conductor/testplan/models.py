@@ -99,7 +99,7 @@ class TestJobContext(models.Model):
 
 
 class TestJob(models.Model):
-    name = models.CharField(max_length=32)
+    name = models.CharField(max_length=128)
     metadata = models.ForeignKey(TestJobMetadata, on_delete=models.SET_NULL, null=True, blank=True)
     context = models.ForeignKey(TestJobContext, on_delete=models.SET_NULL, null=True, blank=True)
     priority = models.IntegerField(default=50)
