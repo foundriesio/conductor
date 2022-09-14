@@ -161,7 +161,7 @@ class Project(models.Model):
     fio_repository_token = models.CharField(max_length=40, blank=True, null=True)
 
     # test plans
-    testplans = models.ManyToManyField(TestPlan, null=True)
+    testplans = models.ManyToManyField(TestPlan, null=True, blank=True)
 
     def watch_qa_reports_job(self, build, environment, job_id):
         if self.squad_backend:
