@@ -387,6 +387,7 @@ def create_build_run(self, build_id, run_name):
             "net_interface": device_type.net_interface,
             "os_tree_hash": run.ostree_hash,
             "target": lcl_build.build_id,
+            "ota_target": build.build_id,
         }
         if run_name == "raspberrypi4-64":
             context["BOOTLOADER_URL"] = "%sother/u-boot-%s.bin" % (run_url, run_name)
