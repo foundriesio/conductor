@@ -564,6 +564,30 @@ class ProjectTest(TestCase):
             self.assertEqual(squad_watch_job_response.text, test_job_id)
         self.assertEqual(squad_watch_job_response.status_code, 201)
 
+    @patch('requests.post')
+    def test_squad_watch_job(self, post_mock):
+        self.project.qa_report_project_name = "project_qa_reports"
+        self.project.save()
+        test_job_id = "123"
+        environment = "environment"
+        response_mock = MagicMock()
+        response_mock.status_code = 201
+        response_mock.text = "321"
+        post_mock.return_value = response_mock
+
+        squad_watch_job_response = self.project.watch_qa_reports_job(self.build, environment, test_job_id)
+        if not settings.DEBUG_SQUAD_SUBMIT:
+            self.assertEqual(squad_watch_job_response.text, "321")
+            post_mock.assert_called_with(
+                f"{self.squadbackend1.squad_url}api/watchjob/{self.project.squad_group}/{self.project.qa_report_project_name}/{self.build.build_id}/{environment}",
+                headers={'Auth-Token': self.squadbackend1.squad_token},
+                data={'testjob_id': test_job_id, 'backend': self.squadbackend1.name},
+                timeout=DEFAULT_TIMEOUT
+            )
+        else:
+            self.assertEqual(squad_watch_job_response.text, test_job_id)
+        self.assertEqual(squad_watch_job_response.status_code, 201)
+
     @patch('requests.put')
     @patch('requests.get')
     def test_squad_update_job(self, get_mock, put_mock):

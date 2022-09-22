@@ -148,6 +148,7 @@ class Project(models.Model):
         blank=True)
     squad_group = models.CharField(max_length=16, null=True, blank=True)
     create_ota_commit = models.BooleanField(default=False)
+    qa_reports_project_name = models.CharField(max_length=32, null=True, blank=True)
 
     # name of the tag applied to devices and targets
     testing_tag = models.CharField(max_length=16, null=True, blank=True)
@@ -164,10 +165,13 @@ class Project(models.Model):
     testplans = models.ManyToManyField(TestPlan, null=True, blank=True)
 
     def watch_qa_reports_job(self, build, environment, job_id):
+        qa_reports_project_name = self.name
+        if self.qa_reports_project_name:
+            qa_reports_project_name = self.qa_reports_project_name
         if self.squad_backend:
             return self.squad_backend.watch_lava_job(
                     self.squad_group,
-                    self.name,
+                    qa_reports_project_name,
                     build.build_id,
                     environment,
                     job_id)
