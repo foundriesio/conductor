@@ -149,6 +149,7 @@ class Project(models.Model):
     squad_group = models.CharField(max_length=16, null=True, blank=True)
     create_ota_commit = models.BooleanField(default=False)
     qa_reports_project_name = models.CharField(max_length=32, null=True, blank=True)
+    el2go_product_id = models.CharField(max_length=32, null=True, blank=True)
 
     # name of the tag applied to devices and targets
     testing_tag = models.CharField(max_length=16, null=True, blank=True)
@@ -284,6 +285,7 @@ class LAVADevice(models.Model):
     device_type = models.ForeignKey(LAVADeviceType, on_delete=models.CASCADE)
     name = models.CharField(max_length=32)
     auto_register_name = models.CharField(max_length=64, null=True, blank=True)
+    el2go_name = models.CharField(max_length=64, null=True, blank=True)
     project = models.ForeignKey(Project, on_delete=models.CASCADE)
     pduagent = models.ForeignKey(PDUAgent, null=True, blank=True, on_delete=models.CASCADE)
     # field to record when device was requested to go to maintenance
@@ -292,9 +294,12 @@ class LAVADevice(models.Model):
 
     CONTROL_LAVA = "LAVA"
     CONTROL_PDU = "PDU"
+    # This is like LAVA but tells conductor to call backend el2g_delete and el2g_add functions
+    CONTROL_EL2GO = "EL2G"
     CONTROL_CHOICES = [
         (CONTROL_LAVA, "Lava"),
-        (CONTROL_PDU, "PDU")
+        (CONTROL_PDU, "PDU"),
+        (CONTROL_EL2GO, "EL2GO")
     ]
     controlled_by = models.CharField(
         max_length=16,
@@ -341,14 +346,18 @@ class LAVADevice(models.Model):
             self.controlled_by = LAVADevice.CONTROL_LAVA
             self.save()
 
-    def get_current_target(self):
-        # checks the current target reported by FIO API
+    def _get_auth_dict(self):
         token = self.project.fio_api_token
         if token is None:
             token = getattr(settings, "FIO_API_TOKEN", None)
         authentication = {
             "OSF-TOKEN": token,
         }
+        return authentication
+
+    def get_current_target(self):
+        # checks the current target reported by FIO API
+        authentication = self._get_auth_dict()
         if self.auto_register_name:
             params = {"factory": self.project.name}
             url = f"https://api.foundries.io/ota/devices/{self.auto_register_name}/"
@@ -364,12 +373,7 @@ class LAVADevice(models.Model):
         if not factory:
             logger.error("Factory name is required when removing device")
             return {}
-        token = self.project.fio_api_token
-        if token is None:
-            token = getattr(settings, "FIO_API_TOKEN", None)
-        authentication = {
-            "OSF-TOKEN": token,
-        }
+        authentication = self._get_auth_dict()
         if self.auto_register_name:
             params = {"factory": factory}
             url = f"https://api.foundries.io/ota/devices/{self.auto_register_name}/"
@@ -381,6 +385,31 @@ class LAVADevice(models.Model):
                 logger.error(device_remove_request.text)
         return {}
 
+    def _el2go_operation(self, requests_method):
+        authentication = self._get_auth_dict()
+        if self.el2go_name:
+            params = {
+                "product-id": self.project.el2go_product_id,
+                "devices": [self.el2go_name],
+                "production": False
+            }
+            url = f"https://api.foundries.io/ota/factories/{self.project.name}/"
+            device_operation_request = requests_method(url, headers=authentication, data=params)
+            if device_operation_request.status_code == 200:
+                return device_operation_request.json()
+            else:
+                logger.error(f"Operation {request_method.__name_} on {self.el2go_name} EL2GO device failed")
+                logger.error(device_operation_request.text)
+        return {}
+
+    def remove_from_el2go(self):
+        # DELETE to /ota/factories/{factory}/el2g/devices/
+        return self._el2go_operation(requests.delete)
+
+    def add_to_el2go(self):
+        # POST to /ota/factories/{factory}/el2g/devices/
+        return self._el2go_operation(requests.post)
+
 
 class LAVAJob(models.Model):
     job_id = models.IntegerField()
@@ -389,10 +418,12 @@ class LAVAJob(models.Model):
     definition = models.TextField()
     project = models.ForeignKey(Project, on_delete=models.CASCADE)
     JOB_LAVA = "LAVA"
+    JOB_EL2GO = "EL2GO"
     JOB_OTA = "OTA"
     JOB_CHOICES = [
         (JOB_LAVA, "Lava"),
-        (JOB_OTA, "OTA")
+        (JOB_OTA, "OTA"),
+        (JOB_EL2GO, "EL2GO"),
     ]
 
     job_type = models.CharField(

@@ -278,17 +278,23 @@ def create_build_run(self, build_id, run_name):
         for plan in build.project.testplans.filter(lava_device_type=run_name):
             if build.build_reason and build.schedule_tests:
                 for plan_testjob in plan.testjobs.filter(is_ota_job=False):
+                    job_type = LAVAJob.JOB_LAVA
+                    if plan_testjob.is_el2go_job:
+                        job_type = LAVAJob.JOB_EL2GO
                     templates.append({
                         "name": plan_testjob.name,
-                        "job_type": LAVAJob.JOB_LAVA,
+                        "job_type": job_type,
                         "build": build,
                         "template": _template_from_string(yaml.dump(plan_testjob.get_job_definition(plan), default_flow_style=False))
                     })
             if build.build_reason and not build.schedule_tests:
                 for plan_testjob in plan.testjobs.filter(is_ota_job=True):
+                    job_type = LAVAJob.JOB_LAVA
+                    if plan_testjob.is_el2go_job:
+                        job_type = LAVAJob.JOB_EL2GO
                     templates.append({
                         "name": plan_testjob.name,
-                        "job_type": LAVAJob.JOB_LAVA,
+                        "job_type": job_type,
                         "build": previous_build,
                         "template": _template_from_string(yaml.dump(plan_testjob.get_job_definition(plan), default_flow_style=False))
                     })
@@ -422,7 +428,7 @@ def create_build_run(self, build_id, run_name):
                 project=build.project,
                 job_type=job_type,
             )
-            if job_type == LAVAJob.JOB_LAVA:
+            if job_type in [LAVAJob.JOB_LAVA, LAVAJob.JOB_EL2GO]:
                 # returns HTTPResponse object or None
                 watch_response = build.project.watch_qa_reports_job(lcl_build, run_name, job)
                 if watch_response and watch_response.status_code == 201:
@@ -790,6 +796,21 @@ def process_testjob_notification(event_data):
                 event_data.get("state") == "Finished" and \
                 lava_db_device:
             retrieve_lava_results(lava_db_device.id, job_id)
+        if lava_job.job_type == LAVAJob.JOB_EL2GO and \
+                event_data.get("state") == "Running" and \
+                lava_db_device:
+            # remove device from factory so it can autoregister
+            # and update it's target ID
+            lava_db_device.remove_from_factory(factory=lava_job.project.name)
+            # add 2 EL2GO so the device can retrieve credentials
+            lava_db_device.add_to_el2go()
+        if lava_job.job_type == LAVAJob.JOB_EL2GO and \
+                event_data.get("state") == "Finished" and \
+                lava_db_device:
+            retrieve_lava_results(lava_db_device.id, job_id)
+            # remove EL2GO so the device can retrieve credentials
+            # in the next job
+            lava_db_device.delete_from_el2go()
 
     except LAVAJob.DoesNotExist:
         logger.debug(f"Job {job_id} not found")

@@ -115,6 +115,7 @@ class TestJob(models.Model):
     timeouts = models.ManyToManyField(Timeout)
     actions = SortedManyToManyField(LAVAAction)
     is_ota_job = models.BooleanField(default=False)
+    is_el2go_job = models.BooleanField(default=False)
 
     def get_job_definition(self, testplan):
         timeouts_dict = {}
