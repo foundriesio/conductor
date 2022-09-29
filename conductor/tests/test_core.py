@@ -880,6 +880,11 @@ class TaskTest(TestCase):
             net_interface="eth0",
             project=self.project_testplan,
         )
+        self.device_type_testplan2 = LAVADeviceType.objects.create(
+            name="imx8mmevk-sec",
+            net_interface="eth0",
+            project=self.project_testplan,
+        )
 
         self.lava_device1 = LAVADevice.objects.create(
             device_type = self.device_type1,
@@ -937,6 +942,13 @@ class TaskTest(TestCase):
             project = self.project_testplan,
             pduagent=self.pduagent1
         )
+        self.lava_device_testplan2 = LAVADevice.objects.create(
+            device_type = self.device_type_testplan2,
+            name = "imx8mmevk-sec-1",
+            auto_register_name = "ota_device_1",
+            project = self.project_testplan,
+            pduagent=self.pduagent1
+        )
         self.testplan1 = TestPlan.objects.create(
             name = "testplan_imx8mm",
             lava_device_type = "imx8mmevk"
@@ -949,6 +961,20 @@ class TaskTest(TestCase):
         self.testplan1.testjobs.add(self.testjob_imx8mm1)
         self.testplan1.save()
         self.project_testplan.testplans.add(self.testplan1)
+
+        self.testplan2 = TestPlan.objects.create(
+            name = "testplan_el2go",
+            lava_device_type = "imx8mmevk-sec"
+        )
+        self.testplan2.save()
+        self.testjob_imx8mm2 = TestJob.objects.create(
+            priority=50,
+            is_el2go_job=True
+        )
+        self.testjob_imx8mm2.save()
+        self.testplan2.testjobs.add(self.testjob_imx8mm2)
+        self.testplan2.save()
+        self.project_testplan.testplans.add(self.testplan2)
 
     @patch('conductor.core.tasks._get_os_tree_hash', return_value="someHash1")
     @patch('conductor.core.models.SQUADBackend.update_testjob')
@@ -984,6 +1010,29 @@ class TaskTest(TestCase):
         response_mock.text = "321"
         watch_qa_reports_mock.return_value = response_mock
         run_name = "imx8mmevk"
+        self.build_testplan.build_reason = "Hello world"
+        self.build_testplan.schedule_tests = True
+        self.build_testplan.save()
+        create_build_run(self.build_testplan.id, run_name)
+        update_build_reason_mock.assert_not_called()
+        submit_lava_job_mock.assert_called()
+        watch_qa_reports_mock.assert_called()
+        update_testjob_mock.assert_called()
+        assert 1 == submit_lava_job_mock.call_count
+        get_hash_mock.assert_called()
+        assert 1 == get_hash_mock.call_count
+
+    @patch('conductor.core.tasks._get_os_tree_hash', return_value="someHash1")
+    @patch('conductor.core.models.SQUADBackend.update_testjob')
+    @patch('conductor.core.models.Project.watch_qa_reports_job')
+    @patch('conductor.core.models.Project.submit_lava_job', return_value=[123])
+    @patch('conductor.core.tasks.update_build_reason')
+    def test_create_build_run_testplan_el2go(self, update_build_reason_mock, submit_lava_job_mock, watch_qa_reports_mock, update_testjob_mock, get_hash_mock):
+        response_mock = MagicMock()
+        response_mock.status_code = 201
+        response_mock.text = "321"
+        watch_qa_reports_mock.return_value = response_mock
+        run_name = "imx8mmevk-sec"
         self.build_testplan.build_reason = "Hello world"
         self.build_testplan.schedule_tests = True
         self.build_testplan.save()
