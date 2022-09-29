@@ -810,7 +810,7 @@ def process_testjob_notification(event_data):
             retrieve_lava_results(lava_db_device.id, job_id)
             # remove EL2GO so the device can retrieve credentials
             # in the next job
-            lava_db_device.delete_from_el2go()
+            lava_db_device.remove_from_el2go()
 
     except LAVAJob.DoesNotExist:
         logger.debug(f"Job {job_id} not found")

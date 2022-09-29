@@ -46,6 +46,7 @@ from conductor.core.tasks import (
     update_build_reason,
     update_build_commit_id,
     tag_build_runs,
+    process_testjob_notification,
 )
 
 
@@ -935,6 +936,7 @@ class TaskTest(TestCase):
             project = self.project,
             pduagent=self.pduagent1
         )
+        # testplan
         self.lava_device_testplan1 = LAVADevice.objects.create(
             device_type = self.device_type_testplan1,
             name = "imx8mmevk-1",
@@ -975,6 +977,149 @@ class TaskTest(TestCase):
         self.testplan2.testjobs.add(self.testjob_imx8mm2)
         self.testplan2.save()
         self.project_testplan.testplans.add(self.testplan2)
+
+        # notifications
+        self.lavajob1 = LAVAJob.objects.create(
+            job_id=1,
+            device=self.lava_device_testplan1,
+            project=self.project_testplan,
+            job_type=LAVAJob.JOB_LAVA
+        )
+        self.lavajob2 = LAVAJob.objects.create(
+            job_id=2,
+            device=self.lava_device_testplan2,
+            project=self.project_testplan,
+            job_type=LAVAJob.JOB_EL2GO
+        )
+
+    @patch('conductor.core.tasks.retrieve_lava_results')
+    @patch('conductor.core.models.LAVADevice.add_to_el2go')
+    @patch('conductor.core.models.LAVADevice.remove_from_el2go')
+    @patch('conductor.core.models.LAVADevice.remove_from_factory')
+    def test_process_testjob_notification_lava_missing_job_id(
+            self,
+            remove_factory_mock,
+            remove_el2go_mock,
+            add_el2go_mock,
+            retrieve_mock):
+        event_data = {
+            "job": 3,
+            "device": self.lava_device_testplan1.name,
+            "state": "Running",
+        }
+        process_testjob_notification(event_data)
+        retrieve_mock.assert_not_called()
+        add_el2go_mock.assert_not_called()
+        remove_el2go_mock.assert_not_called()
+        remove_factory_mock.assert_not_called()
+
+    @patch('conductor.core.tasks.retrieve_lava_results')
+    @patch('conductor.core.models.LAVADevice.add_to_el2go')
+    @patch('conductor.core.models.LAVADevice.remove_from_el2go')
+    @patch('conductor.core.models.LAVADevice.remove_from_factory')
+    def test_process_testjob_notification_lava_running(
+            self,
+            remove_factory_mock,
+            remove_el2go_mock,
+            add_el2go_mock,
+            retrieve_mock):
+        event_data = {
+            "job": self.lavajob1.job_id,
+            "device": self.lava_device_testplan1.name,
+            "state": "Running",
+        }
+        process_testjob_notification(event_data)
+        retrieve_mock.assert_not_called()
+        add_el2go_mock.assert_not_called()
+        remove_el2go_mock.assert_not_called()
+        remove_factory_mock.assert_called()
+
+    @patch('conductor.core.tasks.retrieve_lava_results')
+    @patch('conductor.core.models.LAVADevice.add_to_el2go')
+    @patch('conductor.core.models.LAVADevice.remove_from_el2go')
+    @patch('conductor.core.models.LAVADevice.remove_from_factory')
+    def test_process_testjob_notification_lava_finished_complete(
+            self,
+            remove_factory_mock,
+            remove_el2go_mock,
+            add_el2go_mock,
+            retrieve_mock):
+        event_data = {
+            "job": self.lavajob1.job_id,
+            "device": self.lava_device_testplan1.name,
+            "state": "Finished",
+            "health": "Complete"
+        }
+        process_testjob_notification(event_data)
+        retrieve_mock.assert_called()
+        add_el2go_mock.assert_not_called()
+        remove_el2go_mock.assert_not_called()
+        remove_factory_mock.assert_not_called()
+
+    @patch('conductor.core.tasks.retrieve_lava_results')
+    @patch('conductor.core.models.LAVADevice.add_to_el2go')
+    @patch('conductor.core.models.LAVADevice.remove_from_el2go')
+    @patch('conductor.core.models.LAVADevice.remove_from_factory')
+    def test_process_testjob_notification_lava_finished_incomplete(
+            self,
+            remove_factory_mock,
+            remove_el2go_mock,
+            add_el2go_mock,
+            retrieve_mock):
+        event_data = {
+            "job": self.lavajob1.job_id,
+            "device": self.lava_device_testplan1.name,
+            "state": "Finished",
+            "health": "Incomplete"
+        }
+        process_testjob_notification(event_data)
+        retrieve_mock.assert_called()
+        add_el2go_mock.assert_not_called()
+        remove_el2go_mock.assert_not_called()
+        remove_factory_mock.assert_not_called()
+
+    @patch('conductor.core.tasks.retrieve_lava_results')
+    @patch('conductor.core.models.LAVADevice.add_to_el2go')
+    @patch('conductor.core.models.LAVADevice.remove_from_el2go')
+    @patch('conductor.core.models.LAVADevice.remove_from_factory')
+    def test_process_testjob_notification_el2go_running(
+            self,
+            remove_factory_mock,
+            remove_el2go_mock,
+            add_el2go_mock,
+            retrieve_mock):
+        event_data = {
+            "job": self.lavajob2.job_id,
+            "device": self.lava_device_testplan1.name,
+            "state": "Running"
+        }
+        process_testjob_notification(event_data)
+        retrieve_mock.assert_not_called()
+        add_el2go_mock.assert_called()
+        remove_el2go_mock.assert_not_called()
+        remove_factory_mock.assert_called()
+
+    @patch('conductor.core.tasks.retrieve_lava_results')
+    @patch('conductor.core.models.LAVADevice.add_to_el2go')
+    @patch('conductor.core.models.LAVADevice.remove_from_el2go')
+    @patch('conductor.core.models.LAVADevice.remove_from_factory')
+    def test_process_testjob_notification_el2go_finished(
+            self,
+            remove_factory_mock,
+            remove_el2go_mock,
+            add_el2go_mock,
+            retrieve_mock):
+        event_data = {
+            "job": self.lavajob2.job_id,
+            "device": self.lava_device_testplan1.name,
+            "state": "Finished",
+            "health": "Complete"
+        }
+        process_testjob_notification(event_data)
+        retrieve_mock.assert_called()
+        add_el2go_mock.assert_not_called()
+        remove_el2go_mock.assert_called()
+        remove_factory_mock.assert_not_called()
 
     @patch('conductor.core.tasks._get_os_tree_hash', return_value="someHash1")
     @patch('conductor.core.models.SQUADBackend.update_testjob')
