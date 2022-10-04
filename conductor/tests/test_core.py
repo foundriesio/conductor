@@ -1489,6 +1489,8 @@ class TaskTest(TestCase):
         commit = MagicMock()
         commit_message = PropertyMock(return_value="abc")
         type(commit).message = commit_message
+        commit_hexsha = PropertyMock(return_value="aaabbbcccddd")
+        type(commit).hexsha = commit_hexsha
         commit_mock.return_value = commit
 
         self.build.commit_id = "aaabbbcccddd"
@@ -1511,6 +1513,8 @@ class TaskTest(TestCase):
         commit = MagicMock()
         commit_message = PropertyMock(return_value=settings.FIO_UPGRADE_ROLLBACK_MESSAGE)
         type(commit).message = commit_message
+        commit_hexsha = PropertyMock(return_value="aaabbbcccddd")
+        type(commit).hexsha = commit_hexsha
         commit_mock.return_value = commit
 
         self.build.commit_id = "aaabbbcccddd"
@@ -1525,15 +1529,19 @@ class TaskTest(TestCase):
         self.assertEqual(self.build.schedule_tests, False)
 
     @patch.object(Repo, "remote")
-    @patch.object(Repo, "commit", side_effect=ValueError)
+    @patch.object(Repo, "commit")
     def test_update_build_reason_missing_commit(self, commit_mock, remote_mock):
         remote = MagicMock()
         remote.pull = MagicMock()
         remote_mock.return_value = remote
-        commit = MagicMock()
-        commit_message = PropertyMock(return_value=settings.FIO_UPGRADE_ROLLBACK_MESSAGE)
-        type(commit).message = commit_message
-        commit_mock.return_value = commit
+        def commit(rev):
+            if rev == "HEAD":
+                return_mock = MagicMock()
+                commit_hexsha = PropertyMock(return_value="aaabbbcccddd")
+                type(return_mock).hexsha = commit_hexsha
+                return return_mock
+            raise ValueError
+        commit_mock.side_effect = commit
 
         self.build.commit_id = "aaabbbcccddd"
         self.build.save()
@@ -1541,7 +1549,6 @@ class TaskTest(TestCase):
         remote_mock.assert_called()
         remote.pull.assert_called()
         commit_mock.assert_called()
-        commit_message.assert_not_called()
         self.build.refresh_from_db()
         self.assertEqual(self.build.build_reason, "Trigerred from meta-sub")
         self.assertEqual(self.build.schedule_tests, True)
@@ -1557,6 +1564,8 @@ class TaskTest(TestCase):
         commit = MagicMock()
         commit_message = PropertyMock(return_value="abc")
         type(commit).message = commit_message
+        commit_hexsha = PropertyMock(return_value="aaabbbcccddd")
+        type(commit).hexsha = commit_hexsha
         commit_mock.return_value = commit
 
         request = MagicMock()

@@ -170,10 +170,13 @@ class Project(models.Model):
         if self.qa_reports_project_name:
             qa_reports_project_name = self.qa_reports_project_name
         if self.squad_backend:
+            build_version = build.build_id
+            if build.lmp_commit:
+                build_version = build.lmp_commit
             return self.squad_backend.watch_lava_job(
                     self.squad_group,
                     qa_reports_project_name,
-                    build.build_id,
+                    build_version,
                     environment,
                     job_id)
         return None
@@ -204,6 +207,9 @@ class Build(models.Model):
     # for some builds tests don't need to be scheduled
     # these are builds that are used for update/rollback testing
     schedule_tests = models.BooleanField(default=True)
+    # lmp_commit is the head of lmp-manifest tree
+    # before commit. It will be used as build version in qa-reports
+    lmp_commit = models.CharField(max_length=40, blank=True, null=True)
 
     def __str__(self):
         return f"{self.build_id} ({self.project.name})"

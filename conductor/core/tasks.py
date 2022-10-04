@@ -444,6 +444,7 @@ def _update_build_reason(build):
         return None
     repository_path = os.path.join(settings.FIO_REPOSITORY_HOME, build.project.name)
     repository = Repo(repository_path)
+    old_commit = repository.commit("HEAD")
     try:
         remote = repository.remote(name=settings.FIO_REPOSITORY_REMOTE_NAME)
         remote.pull(refspec=build.project.default_branch)
@@ -453,6 +454,15 @@ def _update_build_reason(build):
                 logger.debug(f"Commit: {build.commit_id}")
                 logger.debug(f"Commit message: {commit.message}")
                 build.build_reason = commit.message[:127]
+                if len(commit.parents) > 1:
+                    # this is merge commit
+                    for parent in commit.parents:
+                        if parent.hexsha == old_commit.hexsha:
+                            # this is previous HEAD
+                            continue
+                        build.lmp_commit = parent.hexsha
+                else:
+                    build.lmp_commit = commit.hexsha
             except ValueError:
                 # commit was not found in the repository
                 # this usually means build was triggered from meta-sub
@@ -544,7 +554,6 @@ def create_upgrade_commit(build_id):
         logger.error(f"Repository for {project} missing!")
         return
     if not settings.DEBUG_FIO_SUBMIT:
-        # call shell script create empty commit
         cmd = [os.path.join(settings.FIO_REPOSITORY_SCRIPT_PATH_PREFIX, "upgrade_commit.sh"),
                "-d", repository_path,
                "-r", settings.FIO_REPOSITORY_REMOTE_NAME,
