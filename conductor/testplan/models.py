@@ -305,6 +305,7 @@ class TestDefinition(models.Model):
     device_type = models.CharField(max_length=32, null=True, blank=True)
     path = models.CharField(max_length=256, null=True, blank=True)
     repository = models.CharField(max_length=256, null=True, blank=True)
+    branch = models.CharField(max_length=64, null=True, blank=True)
     parameters = models.TextField(blank=True)
     prompts = models.TextField(default="[]")
     interactive_commands = SortedManyToManyField(InteractiveCommand, blank=True)
@@ -325,6 +326,8 @@ class TestDefinition(models.Model):
                 "path": self.path,
                 "name": self.name
             }
+            if self.branch:
+                td_dict.update({"branch": self.branch})
             if self.parameters:
                 td_dict.update({"parameters": self.parameters_yaml()})
         if self.testtype == TestDefinition.TYPE_INTERACTIVE:
