@@ -58,6 +58,7 @@ class LAVABackend(models.Model):
                 timeout=DEFAULT_TIMEOUT
             )
             if response.status_code == 201:
+                logger.debug(response.text)
                 return response.json()['job_ids']
             else:
                 logger.info(f"LAVA submission failed with code {response.status_code}")
@@ -163,7 +164,7 @@ class Project(models.Model):
     fio_repository_token = models.CharField(max_length=40, blank=True, null=True)
 
     # test plans
-    testplans = models.ManyToManyField(TestPlan, null=True, blank=True)
+    testplans = models.ManyToManyField(TestPlan, blank=True)
 
     def watch_qa_reports_job(self, build, environment, job_id):
         qa_reports_project_name = self.name
@@ -399,12 +400,13 @@ class LAVADevice(models.Model):
                 "devices": [self.el2go_name],
                 "production": False
             }
-            url = f"https://api.foundries.io/ota/factories/{self.project.name}/"
-            device_operation_request = requests_method(url, headers=authentication, data=params)
+            url = f"https://api.foundries.io/ota/factories/{self.project.name}/el2g/devices/"
+            device_operation_request = requests_method(url, headers=authentication, json=params)
             if device_operation_request.status_code == 200:
                 return device_operation_request.json()
             else:
-                logger.error(f"Operation {request_method.__name_} on {self.el2go_name} EL2GO device failed")
+                logger.error(f"Operation {requests_method.__name__} on {self.el2go_name} EL2GO device failed")
+                logger.error(f"called URL: {url}")
                 logger.error(device_operation_request.text)
         return {}
 

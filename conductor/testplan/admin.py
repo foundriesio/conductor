@@ -29,6 +29,10 @@ class TestJobContextAdmin(admin.ModelAdmin):
     models = models.TestJobContext
 
 
+class TestJobTagAdmin(admin.ModelAdmin):
+    models = models.TestJobTag
+
+
 class TestJobMetadataAdmin(admin.ModelAdmin):
     models = models.TestJobMetadata
 
@@ -44,7 +48,7 @@ class DeployPostprocessAdmin(admin.ModelAdmin):
 
 class DeploymentAdmin(admin.ModelAdmin):
     models = models.Deployment
-    list_display = ('name', 'namespace') 
+    list_display = ('name', 'namespace')
     save_as = True
 
 
@@ -90,6 +94,7 @@ class InteractiveCommandAdmin(admin.ModelAdmin):
 admin.site.register(models.Timeout, TimeoutAdmin)
 admin.site.register(models.TestJob, TestJobAdmin)
 admin.site.register(models.TestJobContext, TestJobContextAdmin)
+admin.site.register(models.TestJobTag, TestJobTagAdmin)
 admin.site.register(models.TestJobMetadata, TestJobMetadataAdmin)
 admin.site.register(models.DownloadImage, DownloadImageAdmin)
 admin.site.register(models.DeployPostprocess, DeployPostprocessAdmin)

@@ -268,6 +268,7 @@ def create_build_run(self, build_id, run_name):
     try:
         device_type = LAVADeviceType.objects.get(name=run_name, project=build.project)
     except LAVADeviceType.DoesNotExist:
+        logger.debug(f"Device type {run_name} not found for {build.project}")
         return None
 
     templates = []
@@ -420,7 +421,7 @@ def create_build_run(self, build_id, run_name):
             return
         job_ids = build.project.submit_lava_job(lava_job_definition)
         job_type=template.get("job_type")
-        logger.debug(job_ids)
+        logger.debug(f"LAVA job IDs: {job_ids}")
         for job in job_ids:
             LAVAJob.objects.create(
                 job_id=job,

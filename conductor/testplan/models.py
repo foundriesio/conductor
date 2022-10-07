@@ -98,6 +98,13 @@ class TestJobContext(models.Model):
         return self.name
 
 
+class TestJobTag(models.Model):
+    name = models.CharField(max_length=32)
+
+    def __str__(self):
+        return self.name
+
+
 class TestJob(models.Model):
     name = models.CharField(max_length=128)
     metadata = models.ForeignKey(TestJobMetadata, on_delete=models.SET_NULL, null=True, blank=True)
@@ -113,6 +120,7 @@ class TestJob(models.Model):
     )
     visibility = models.CharField(max_length=8, choices=VISIBILITY_CHOICES, default=VISIBILITY_PUBLIC)
     timeouts = models.ManyToManyField(Timeout)
+    tags = models.ManyToManyField(TestJobTag, blank=True)
     actions = SortedManyToManyField(LAVAAction)
     is_ota_job = models.BooleanField(default=False)
     is_el2go_job = models.BooleanField(default=False)
@@ -134,6 +142,8 @@ class TestJob(models.Model):
             job_yaml["metadata"] = self.metadata.to_yaml()
         if self.context:
             job_yaml["context"] = self.context.to_yaml()
+        if self.tags:
+            job_yaml["tags"] = list(self.tags.all().values_list('name', flat=True))
         return job_yaml
 
     def __str__(self):
