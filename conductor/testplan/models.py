@@ -355,7 +355,7 @@ class TestDefinition(models.Model):
 
 
 class TestAction(LAVAAction):
-    name = models.CharField(max_length=32)
+    name = models.CharField(max_length=64)
     definitions = SortedManyToManyField(TestDefinition)
 
     def to_yaml(self):

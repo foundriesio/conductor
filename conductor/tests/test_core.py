@@ -567,7 +567,7 @@ class ProjectTest(TestCase):
 
     @patch('requests.post')
     def test_squad_watch_job(self, post_mock):
-        self.project.qa_report_project_name = "project_qa_reports"
+        self.project.qa_reports_project_name = "project_qa_reports"
         self.project.save()
         test_job_id = "123"
         environment = "environment"
@@ -580,7 +580,7 @@ class ProjectTest(TestCase):
         if not settings.DEBUG_SQUAD_SUBMIT:
             self.assertEqual(squad_watch_job_response.text, "321")
             post_mock.assert_called_with(
-                f"{self.squadbackend1.squad_url}api/watchjob/{self.project.squad_group}/{self.project.qa_report_project_name}/{self.build.build_id}/{environment}",
+                f"{self.squadbackend1.squad_url}api/watchjob/{self.project.squad_group}/{self.project.qa_reports_project_name}/{self.build.build_id}/{environment}",
                 headers={'Auth-Token': self.squadbackend1.squad_token},
                 data={'testjob_id': test_job_id, 'backend': self.squadbackend1.name},
                 timeout=DEFAULT_TIMEOUT
@@ -740,7 +740,8 @@ class TaskTest(TestCase):
             squad_backend=self.squadbackend1,
             squad_group="squadgroup",
             fio_api_token="fio_api_token1",
-            fio_repository_token="fio_repository_token1"
+            fio_repository_token="fio_repository_token1",
+            create_ota_commit=True
         )
         self.project_rolling = Project.objects.create(
             name="testProject2",
@@ -1476,7 +1477,7 @@ class TaskTest(TestCase):
                "-m", settings.FIO_UPGRADE_ROLLBACK_MESSAGE,
                "-b", self.project_rolling.default_branch]
 
-        create_upgrade_commit(self.build.id)
+        create_upgrade_commit(self.build_rolling.id)
         if not settings.DEBUG_FIO_SUBMIT:
             run_mock.assert_not_called()
 
