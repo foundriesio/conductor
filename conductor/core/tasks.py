@@ -300,64 +300,7 @@ def create_build_run(self, build_id, run_name):
                         "template": _template_from_string(yaml.dump(plan_testjob.get_job_definition(plan), default_flow_style=False))
                     })
     else:
-        qemu_runs = ["intel-corei7-64", "qemuarm64-secureboot", "qemuarm"]
-        if build.build_reason and build.schedule_tests:
-            # only schedule tests when build_reason is present
-            # at this point is should be filled in
-            templates.append(
-                {"name": "lava_template.yaml",
-                 "job_type": LAVAJob.JOB_LAVA,
-                 "build": build},
-            )
-            if previous_build and run_name not in qemu_runs:
-                templates = templates + [
-                    {"name": "lava_deploy_template.yaml",
-                     "job_type": LAVAJob.JOB_OTA,
-                     "build": previous_build},
-                ]
-            if run_name in ["imx8mmevk", "imx8mm-lpddr4-evk", "imx8mm-lpddr4-evk-sec"]:
-                templates.append(
-                    {"name": "lava_security_template.yaml",
-                     "job_type": LAVAJob.JOB_LAVA,
-                     "build": build},
-                )
-        if build.build_reason and not build.schedule_tests:
-            # for automatically triggered "upgrade builds"
-            # in this case previous build refers to the actual
-            # changes that need to be tested
-            if previous_build and run_name not in qemu_runs:
-                logger.info(f"Scheduling test jobs for run: {run_name}")
-                templates = templates + [
-                    {"name": "lava_aklite_interrupt_template.yaml",
-                     "job_type": LAVAJob.JOB_LAVA,
-                     "build": previous_build},
-                    {"name": "lava_aklite_interrupt_meta_template.yaml",
-                     "job_type": LAVAJob.JOB_LAVA,
-                     "build": previous_build},
-                    {"name": "lava_kernel_rollback_template.yaml",
-                     "job_type": LAVAJob.JOB_LAVA,
-                     "build": previous_build},
-                    {"name": "lava_deploy_template.yaml",
-                     "job_type": LAVAJob.JOB_OTA,
-                     "build": previous_build},
-                ]
-                # only imx8mm and imx6ull support u-boot OTA update
-                if run_name in ["imx8mmevk", "imx8mm-lpddr4-evk", "imx6ullevk", "imx8mp-lpddr4-evk", "imx8mmevk-sec", "imx8mm-lpddr4-evk-sec"]:
-                    templates.append(
-                        {"name": "lava_uboot_rollback_template.yaml",
-                         "job_type": LAVAJob.JOB_LAVA,
-                         "build": previous_build}
-                    )
-            # also create Run objects for checking the OTA status
-            run_url = f"{build.url}runs/{run_name}/"
-            ostree_hash=_get_os_tree_hash(run_url, build.project)
-            if ostree_hash:
-                run, _ = Run.objects.get_or_create(
-                    build=build,
-                    device_type=device_type,
-                    ostree_hash=ostree_hash,
-                    run_name=run_name
-                )
+        logger.info("Default test plan disabled")
 
     logger.debug(f"run_name: {run_name}")
     logger.debug(f"{templates}")

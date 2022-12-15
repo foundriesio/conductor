@@ -1127,29 +1127,6 @@ class TaskTest(TestCase):
     @patch('conductor.core.models.Project.watch_qa_reports_job')
     @patch('conductor.core.models.Project.submit_lava_job', return_value=[123])
     @patch('conductor.core.tasks.update_build_reason')
-    def test_create_build_run(self, update_build_reason_mock, submit_lava_job_mock, watch_qa_reports_mock, update_testjob_mock, get_hash_mock):
-        response_mock = MagicMock()
-        response_mock.status_code = 201
-        response_mock.text = "321"
-        watch_qa_reports_mock.return_value = response_mock
-        run_name = "imx8mmevk"
-        self.build.build_reason = "Hello world"
-        self.build.schedule_tests = True
-        self.build.save()
-        create_build_run(self.build.id, run_name)
-        update_build_reason_mock.assert_not_called()
-        submit_lava_job_mock.assert_called()
-        watch_qa_reports_mock.assert_called()
-        update_testjob_mock.assert_called()
-        assert 3 == submit_lava_job_mock.call_count
-        get_hash_mock.assert_called()
-        assert 3 == get_hash_mock.call_count
-
-    @patch('conductor.core.tasks._get_os_tree_hash', return_value="someHash1")
-    @patch('conductor.core.models.SQUADBackend.update_testjob')
-    @patch('conductor.core.models.Project.watch_qa_reports_job')
-    @patch('conductor.core.models.Project.submit_lava_job', return_value=[123])
-    @patch('conductor.core.tasks.update_build_reason')
     def test_create_build_run_testplan(self, update_build_reason_mock, submit_lava_job_mock, watch_qa_reports_mock, update_testjob_mock, get_hash_mock):
         response_mock = MagicMock()
         response_mock.status_code = 201
@@ -1192,183 +1169,23 @@ class TaskTest(TestCase):
         assert 1 == get_hash_mock.call_count
 
     @patch('conductor.core.tasks._get_os_tree_hash', return_value="someHash1")
-    @patch('conductor.core.models.SQUADBackend.update_testjob')
-    @patch('conductor.core.models.Project.watch_qa_reports_job')
-    @patch('conductor.core.models.Project.submit_lava_job', return_value=[123])
-    @patch('conductor.core.tasks.update_build_reason')
-    def test_create_build_run_imx8mp_lpddr4_evk(self, update_build_reason_mock, submit_lava_job_mock, watch_qa_reports_mock, update_testjob_mock, get_hash_mock):
-        response_mock = MagicMock()
-        response_mock.status_code = 201
-        response_mock.text = "321"
-        watch_qa_reports_mock.return_value = response_mock
-        run_name = "imx8mp-lpddr4-evk"
-        self.build.build_reason = "Hello world"
-        self.build.schedule_tests = True
-        self.build.save()
-        create_build_run(self.build.id, run_name)
-        update_build_reason_mock.assert_not_called()
-        submit_lava_job_mock.assert_called()
-        watch_qa_reports_mock.assert_called()
-        update_testjob_mock.assert_called()
-        assert 2 == submit_lava_job_mock.call_count
-        get_hash_mock.assert_called()
-        assert 2 == get_hash_mock.call_count
-
-    @patch('conductor.core.tasks._get_os_tree_hash', return_value="someHash1")
-    @patch('conductor.core.models.SQUADBackend.update_testjob')
-    @patch('conductor.core.models.Project.watch_qa_reports_job')
-    @patch('conductor.core.models.Project.submit_lava_job', return_value=[123])
-    @patch('conductor.core.tasks.update_build_reason')
-    def test_create_build_run_imx8mmevk_sec(self, update_build_reason_mock, submit_lava_job_mock, watch_qa_reports_mock, update_testjob_mock, get_hash_mock):
-        response_mock = MagicMock()
-        response_mock.status_code = 201
-        response_mock.text = "321"
-        watch_qa_reports_mock.return_value = response_mock
-        run_name = "imx8mmevk-sec"
-        self.build.build_reason = "Hello world"
-        self.build.schedule_tests = True
-        self.build.save()
-        create_build_run(self.build.id, run_name)
-        update_build_reason_mock.assert_not_called()
-        submit_lava_job_mock.assert_called()
-        watch_qa_reports_mock.assert_called()
-        update_testjob_mock.assert_called()
-        assert 2 == submit_lava_job_mock.call_count
-        get_hash_mock.assert_called()
-        assert 2 == get_hash_mock.call_count
-
-    @patch('conductor.core.tasks._get_os_tree_hash', return_value="someHash1")
-    @patch('conductor.core.models.SQUADBackend.update_testjob')
-    @patch('conductor.core.models.Project.watch_qa_reports_job')
-    @patch('conductor.core.models.Project.submit_lava_job', return_value=[123])
-    @patch('conductor.core.tasks.update_build_reason')
-    def test_create_build_run_imx6ullevk(self, update_build_reason_mock, submit_lava_job_mock, watch_qa_reports_mock, update_testjob_mock, get_hash_mock):
-        response_mock = MagicMock()
-        response_mock.status_code = 201
-        response_mock.text = "321"
-        watch_qa_reports_mock.return_value = response_mock
-        run_name = "imx6ullevk"
-        self.build.build_reason = "Hello world"
-        self.build.schedule_tests = True
-        self.build.save()
-        create_build_run(self.build.id, run_name)
-        update_build_reason_mock.assert_not_called()
-        submit_lava_job_mock.assert_called()
-        watch_qa_reports_mock.assert_called()
-        update_testjob_mock.assert_called()
-        assert 2 == submit_lava_job_mock.call_count
-        get_hash_mock.assert_called()
-        assert 2 == get_hash_mock.call_count
-
-    @patch('conductor.core.tasks._get_os_tree_hash', return_value="someHash1")
-    @patch('conductor.core.models.SQUADBackend.update_testjob')
-    @patch('conductor.core.models.Project.watch_qa_reports_job')
-    @patch('conductor.core.models.Project.submit_lava_job', return_value=[123])
-    @patch('conductor.core.tasks.update_build_reason')
-    def test_create_build_run_imx8mq_evk(self, update_build_reason_mock, submit_lava_job_mock, watch_qa_reports_mock, update_testjob_mock, get_hash_mock):
-        response_mock = MagicMock()
-        response_mock.status_code = 201
-        response_mock.text = "321"
-        watch_qa_reports_mock.return_value = response_mock
-        run_name = "imx8mq-evk"
-        self.build.build_reason = "Hello world"
-        self.build.schedule_tests = True
-        self.build.save()
-        create_build_run(self.build.id, run_name)
-        update_build_reason_mock.assert_not_called()
-        submit_lava_job_mock.assert_called()
-        watch_qa_reports_mock.assert_called()
-        update_testjob_mock.assert_called()
-        assert 2 == submit_lava_job_mock.call_count
-        get_hash_mock.assert_called()
-        assert 2 == get_hash_mock.call_count
-
-    @patch('conductor.core.tasks._get_os_tree_hash', return_value="someHash1")
     @patch('conductor.core.models.SQUADBackend.watch_lava_job', return_value=None)
     @patch('conductor.core.models.Project.submit_lava_job', return_value=[123])
     @patch('conductor.core.tasks.update_build_reason')
     def test_create_build_run_no_qareports(self, update_build_reason_mock, submit_lava_job_mock, watch_lava_job_mock, get_hash_mock):
-        self.project.squad_backend = None
-        self.project.save()
+        self.project_testplan.squad_backend = None
+        self.project_testplan.save()
         run_name = "imx8mmevk"
-        self.build.build_reason = "Hello world"
-        self.build.schedule_tests = True
-        self.build.save()
-        create_build_run(self.build.id, run_name)
+        self.build_testplan.build_reason = "Hello world"
+        self.build_testplan.schedule_tests = True
+        self.build_testplan.save()
+        create_build_run(self.build_testplan.id, run_name)
         update_build_reason_mock.assert_not_called()
         submit_lava_job_mock.assert_called()
         watch_lava_job_mock.assert_not_called()
-        assert 3 == submit_lava_job_mock.call_count
-        get_hash_mock.assert_called()
-        assert 3 == get_hash_mock.call_count
-
-    @patch('conductor.core.tasks._get_os_tree_hash', return_value="someHash1")
-    @patch('conductor.core.models.Project.watch_qa_reports_job', return_value=None)
-    @patch('conductor.core.models.Project.submit_lava_job', return_value=[123])
-    @patch('conductor.core.tasks.update_build_reason')
-    def test_create_build_run_rpi(self, update_build_reason_mock, submit_lava_job_mock, watch_qa_reports_mock, get_hash_mock):
-        run_name = "raspberrypi4-64"
-        self.build.build_reason = "Hello world"
-        self.build.schedule_tests = True
-        self.build.save()
-        create_build_run(self.build.id, run_name)
-        update_build_reason_mock.assert_not_called()
-        submit_lava_job_mock.assert_called()
-        watch_qa_reports_mock.assert_called()
-        assert 2 == submit_lava_job_mock.call_count
-        get_hash_mock.assert_called()
-        assert 2 == get_hash_mock.call_count
-
-    @patch('conductor.core.tasks._get_os_tree_hash', return_value="someHash1")
-    @patch('conductor.core.models.Project.watch_qa_reports_job', return_value=None)
-    @patch('conductor.core.models.Project.submit_lava_job', return_value=[123])
-    @patch('conductor.core.tasks.update_build_reason')
-    def test_create_build_run_qemu(self, update_build_reason_mock, submit_lava_job_mock, watch_qa_reports_mock, get_hash_mock):
-        run_name = "intel-corei7-64"
-        self.build.build_reason = "Hello world"
-        self.build.schedule_tests = True
-        self.build.save()
-        create_build_run(self.build.id, run_name)
-        update_build_reason_mock.assert_not_called()
-        submit_lava_job_mock.assert_called()
-        watch_qa_reports_mock.assert_called()
         assert 1 == submit_lava_job_mock.call_count
         get_hash_mock.assert_called()
         assert 1 == get_hash_mock.call_count
-
-    @patch('conductor.core.tasks._get_os_tree_hash', return_value="someHash1")
-    @patch('conductor.core.models.Project.watch_qa_reports_job', return_value=None)
-    @patch('conductor.core.models.Project.submit_lava_job', return_value=[123])
-    @patch('conductor.core.tasks.update_build_reason')
-    def test_create_build_run_upgrade_build(self, update_build_reason_mock, submit_lava_job_mock, watch_qa_reports_mock, get_hash_mock):
-        run_name = "imx8mmevk"
-        self.build.build_reason = settings.FIO_UPGRADE_ROLLBACK_MESSAGE
-        self.build.schedule_tests = False
-        self.build.save()
-        create_build_run(self.build.id, run_name)
-        update_build_reason_mock.assert_not_called()
-        submit_lava_job_mock.assert_called()
-        watch_qa_reports_mock.assert_called()
-        assert 5 == submit_lava_job_mock.call_count
-        get_hash_mock.assert_called()
-        assert 6 == get_hash_mock.call_count
-
-    @patch('conductor.core.tasks._get_os_tree_hash', return_value="someHash1")
-    @patch('conductor.core.models.Project.watch_qa_reports_job', return_value=None)
-    @patch('conductor.core.models.Project.submit_lava_job', return_value=[123])
-    @patch('conductor.core.tasks.update_build_reason')
-    def test_create_build_run_upgrade_build_rpi(self, update_build_reason_mock, submit_lava_job_mock, watch_qa_reports_mock, get_hash_mock):
-        run_name = "raspberrypi4-64"
-        self.build.build_reason = settings.FIO_UPGRADE_ROLLBACK_MESSAGE
-        self.build.schedule_tests = False
-        self.build.save()
-        create_build_run(self.build.id, run_name)
-        update_build_reason_mock.assert_not_called()
-        submit_lava_job_mock.assert_called()
-        watch_qa_reports_mock.assert_called()
-        assert 4 == submit_lava_job_mock.call_count
-        get_hash_mock.assert_called()
-        assert 5 == get_hash_mock.call_count
 
     @patch('conductor.core.tasks._get_os_tree_hash', return_value="someHash1")
     @patch('conductor.core.models.Project.watch_qa_reports_job', return_value=None)
@@ -1387,14 +1204,14 @@ class TaskTest(TestCase):
     @patch('conductor.core.models.Project.submit_lava_job', return_value=[123])
     def test_create_build_run_os_tree_hash_none(self, submit_lava_job_mock, watch_qa_reports_mock, get_hash_mock):
         run_name = "imx8mmevk"
-        self.build.build_reason = "Hello world"
-        self.build.schedule_tests = True
-        self.build.save()
-        create_build_run(self.build.id, run_name)
+        self.build_testplan.build_reason = "Hello world"
+        self.build_testplan.schedule_tests = True
+        self.build_testplan.save()
+        create_build_run(self.build_testplan.id, run_name)
         submit_lava_job_mock.assert_not_called()
         watch_qa_reports_mock.assert_not_called()
         get_hash_mock.assert_called()
-        assert 3 == get_hash_mock.call_count
+        assert 1 == get_hash_mock.call_count
 
     @patch("requests.get")
     @patch("conductor.core.models.PDUAgent.save")
