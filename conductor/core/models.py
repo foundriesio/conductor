@@ -149,6 +149,8 @@ class Project(models.Model):
         blank=True)
     squad_group = models.CharField(max_length=16, null=True, blank=True)
     create_ota_commit = models.BooleanField(default=False)
+    # if set to True, only lmp-manifest merges will trigger testing
+    test_on_merge_only = models.BooleanField(default=False)
     qa_reports_project_name = models.CharField(max_length=32, null=True, blank=True)
     el2go_product_id = models.CharField(max_length=32, null=True, blank=True)
 
@@ -201,6 +203,8 @@ class Build(models.Model):
     # set to True when commit is accompanied with a tag
     # this is filled by task run on regular interval
     is_release = models.BooleanField(default=False)
+    # set to True when build was triggered by lmp-manifest merge
+    is_merge_commit = models.BooleanField(default=False)
     # keeps track of build branch/tag
     tag = models.CharField(max_length=40, blank=True, null=True)
     # beginning of the commit message subject

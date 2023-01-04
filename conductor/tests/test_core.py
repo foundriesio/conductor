@@ -566,7 +566,7 @@ class ProjectTest(TestCase):
         self.assertEqual(squad_watch_job_response.status_code, 201)
 
     @patch('requests.post')
-    def test_squad_watch_job(self, post_mock):
+    def test_squad_watch_job_different_name(self, post_mock):
         self.project.qa_reports_project_name = "project_qa_reports"
         self.project.save()
         test_job_id = "123"
@@ -1150,6 +1150,30 @@ class TaskTest(TestCase):
     @patch('conductor.core.models.Project.watch_qa_reports_job')
     @patch('conductor.core.models.Project.submit_lava_job', return_value=[123])
     @patch('conductor.core.tasks.update_build_reason')
+    def test_create_build_run_testplan_no_merge_commit(self, update_build_reason_mock, submit_lava_job_mock, watch_qa_reports_mock, update_testjob_mock, get_hash_mock):
+        response_mock = MagicMock()
+        response_mock.status_code = 201
+        response_mock.text = "321"
+        watch_qa_reports_mock.return_value = response_mock
+        run_name = "imx8mmevk"
+        self.build_testplan.build_reason = "Hello world"
+        self.build_testplan.schedule_tests = True
+        self.build_testplan.is_merge_commit = False
+        self.build_testplan.save()
+        self.build_testplan.project.test_on_merge_only = True
+        self.build_testplan.project.save()
+        create_build_run(self.build_testplan.id, run_name)
+        update_build_reason_mock.assert_not_called()
+        submit_lava_job_mock.assert_not_called()
+        watch_qa_reports_mock.assert_not_called()
+        update_testjob_mock.assert_not_called()
+        get_hash_mock.assert_not_called()
+
+    @patch('conductor.core.tasks._get_os_tree_hash', return_value="someHash1")
+    @patch('conductor.core.models.SQUADBackend.update_testjob')
+    @patch('conductor.core.models.Project.watch_qa_reports_job')
+    @patch('conductor.core.models.Project.submit_lava_job', return_value=[123])
+    @patch('conductor.core.tasks.update_build_reason')
     def test_create_build_run_testplan_el2go(self, update_build_reason_mock, submit_lava_job_mock, watch_qa_reports_mock, update_testjob_mock, get_hash_mock):
         response_mock = MagicMock()
         response_mock.status_code = 201
@@ -1320,6 +1344,40 @@ class TaskTest(TestCase):
         commit_message.assert_called()
         self.build.refresh_from_db()
         self.assertEqual(self.build.build_reason, "abc")
+        self.assertEqual(self.build.is_merge_commit, False)
+        self.assertEqual(self.build.schedule_tests, True)
+
+    @patch.object(Repo, "remote")
+    @patch.object(Repo, "commit")
+    def test_update_build_reason_merge_commit(self, commit_mock, remote_mock):
+        remote = MagicMock()
+        remote.pull = MagicMock()
+        remote_mock.return_value = remote
+        commit = MagicMock()
+        commit_message = PropertyMock(return_value="abc")
+        type(commit).message = commit_message
+        commit_hexsha = PropertyMock(return_value="aaabbbcccddd")
+        type(commit).hexsha = commit_hexsha
+        commit_parent1 = MagicMock()
+        commit_parent1_hexsha = PropertyMock(return_value="bbbcccdddeee")
+        type(commit_parent1).hexsha = commit_parent1_hexsha
+        commit_parent2 = MagicMock()
+        commit_parent2_hexsha = PropertyMock(return_value="cccdddeeebbb")
+        type(commit_parent2).hexsha = commit_parent2_hexsha
+        parents = PropertyMock(return_value=[commit_parent1, commit_parent2])
+        type(commit).parents = parents
+        commit_mock.return_value = commit
+
+        self.build.commit_id = "aaabbbcccddd"
+        self.build.save()
+        update_build_reason(self.build.id)
+        remote_mock.assert_called()
+        remote.pull.assert_called()
+        commit_mock.assert_called()
+        commit_message.assert_called()
+        self.build.refresh_from_db()
+        self.assertEqual(self.build.build_reason, "abc")
+        self.assertEqual(self.build.is_merge_commit, True)
         self.assertEqual(self.build.schedule_tests, True)
 
     @patch.object(Repo, "remote")

@@ -260,6 +260,9 @@ def create_build_run(self, build_id, run_name):
         # retry the same task in 1 minute
         raise self.retry(countdown=60)
 
+    if not build.is_merge_commit and build.project.test_on_merge_only:
+        # don't schedule tests
+        return None
     previous_builds = build.project.build_set.filter(build_id__lt=build.build_id, tag=build.tag).order_by('-build_id')
     previous_build = None
     if previous_builds:
@@ -399,6 +402,7 @@ def _update_build_reason(build):
                 logger.debug(f"Commit message: {commit.message}")
                 build.build_reason = commit.message[:127]
                 if len(commit.parents) > 1:
+                    build.is_merge_commit = True
                     # this is merge commit
                     for parent in commit.parents:
                         if parent.hexsha == old_commit.hexsha:
