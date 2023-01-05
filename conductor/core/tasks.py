@@ -496,6 +496,10 @@ def create_upgrade_commit(build_id):
         # don't create upgrade commit
         logger.info(f"Project {project} does not require additional OTA commit")
         return
+    if not build.is_merge_commit and project.test_on_merge_only:
+        # don't create upgrade commit
+        logger.info(f"Project {project} only requires testing on merges. Skipping OTA commit")
+        return
     # check if repository DIR already exists
     repository_path = os.path.join(settings.FIO_REPOSITORY_HOME, project.name)
     if not __project_repository_exists(project):

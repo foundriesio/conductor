@@ -18,7 +18,7 @@ from datetime import datetime, timedelta
 from django.conf import settings
 from django.test import TestCase
 from git import Repo
-from unittest.mock import patch, MagicMock, PropertyMock
+from unittest.mock import call, patch, MagicMock, PropertyMock
 
 from conductor.core.models import (
     Project,
@@ -1308,6 +1308,40 @@ class TaskTest(TestCase):
         create_upgrade_commit(self.build.id)
         if not settings.DEBUG_FIO_SUBMIT:
             run_mock.assert_called_with(cmd, check=True)
+
+    @patch("subprocess.run")
+    def test_create_upgrade_commit_test_on_merge_only(self, run_mock):
+        repository_path = os.path.join(settings.FIO_REPOSITORY_HOME, self.project.name)
+        cmd = [os.path.join(settings.FIO_REPOSITORY_SCRIPT_PATH_PREFIX, "upgrade_commit.sh"),
+               "-d", repository_path,
+               "-r", settings.FIO_REPOSITORY_REMOTE_NAME,
+               "-m", settings.FIO_UPGRADE_ROLLBACK_MESSAGE,
+               "-b", self.project.default_branch]
+
+        self.project.test_on_merge_only = True
+        self.project.save()
+        self.build.is_merge_commit = True
+        self.build.save()
+        create_upgrade_commit(self.build.id)
+        if not settings.DEBUG_FIO_SUBMIT:
+            run_mock.assert_called_with(cmd, check=True)
+
+    @patch("subprocess.run")
+    def test_create_upgrade_commit_test_on_merge_only_false(self, run_mock):
+        repository_path = os.path.join(settings.FIO_REPOSITORY_HOME, self.project.name)
+        cmd = [os.path.join(settings.FIO_REPOSITORY_SCRIPT_PATH_PREFIX, "upgrade_commit.sh"),
+               "-d", repository_path,
+               "-r", settings.FIO_REPOSITORY_REMOTE_NAME,
+               "-m", settings.FIO_UPGRADE_ROLLBACK_MESSAGE,
+               "-b", self.project.default_branch]
+
+        self.project.test_on_merge_only = True
+        self.project.save()
+        self.build.is_merge_commit = False
+        self.build.save()
+        create_upgrade_commit(self.build.id)
+        if not settings.DEBUG_FIO_SUBMIT:
+            assert call(cmd, check=True) not in run_mock.mock_calls
 
     @patch("subprocess.run")
     def test_create_upgrade_commit_rolling(self, run_mock):
