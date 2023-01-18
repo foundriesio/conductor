@@ -49,7 +49,8 @@ def create_lava_templates(modeladmin, request, queryset):
         for index, testjob in enumerate(testjob_list):
             testjob_yaml = yaml.load(testjob, Loader=yaml.SafeLoader)
             filename = slugify(testjob_yaml.get("job_name", index))
-            archive.writestr(f"{filename}.yaml", testjob.encode())
+            devicetype = slugify(testjob_yaml.get("device_type", None))
+            archive.writestr(f"{index}-{filename}-{devicetype}.yaml", testjob.encode())
     response = HttpResponse(tmp.getvalue(), content_type='application/zip')
     response['Content-Disposition'] = 'attachment; filename="lava.zip"'
     return response
