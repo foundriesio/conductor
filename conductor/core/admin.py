@@ -13,10 +13,12 @@
 # limitations under the License.
 
 import io
+import yaml
 import zipfile
 
 from django.contrib import admin
 from django.http import HttpResponse
+from django.utils.text import slugify
 from . import models
 from .tasks import create_build_run
 
@@ -39,10 +41,15 @@ def create_lava_templates(modeladmin, request, queryset):
         for run in build.run_set.all():
             testjob_list = testjob_list + create_build_run(build.pk, run.run_name, False)
 
+    if not testjob_list:
+        # return early when the list is empty
+        return
     tmp = io.BytesIO()
     with zipfile.ZipFile(tmp, 'w', zipfile.ZIP_DEFLATED, False) as archive:
         for index, testjob in enumerate(testjob_list):
-            archive.writestr(f"{index}.yaml", testjob.encode())
+            testjob_yaml = yaml.load(testjob, Loader=yaml.SafeLoader)
+            filename = slugify(testjob_yaml.get("job_name", index))
+            archive.writestr(f"{filename}.yaml", testjob.encode())
     response = HttpResponse(tmp.getvalue(), content_type='application/zip')
     response['Content-Disposition'] = 'attachment; filename="lava.zip"'
     return response
