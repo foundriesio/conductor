@@ -12,8 +12,13 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import io
+import zipfile
+
 from django.contrib import admin
+from django.http import HttpResponse
 from . import models
+from .tasks import create_build_run
 
 class LAVABackendAdmin(admin.ModelAdmin):
     models = models.LAVABackend
@@ -27,8 +32,25 @@ class ProjectAdmin(admin.ModelAdmin):
     models = models.Project
 
 
+@admin.action(description='Create LAVA templates')
+def create_lava_templates(modeladmin, request, queryset):
+    testjob_list = []
+    for build in queryset:
+        for run in build.run_set.all():
+            testjob_list = testjob_list + create_build_run(build.pk, run.run_name, False)
+
+    tmp = io.BytesIO()
+    with zipfile.ZipFile(tmp, 'w', zipfile.ZIP_DEFLATED, False) as archive:
+        for index, testjob in enumerate(testjob_list):
+            archive.writestr(f"{index}.yaml", testjob.encode())
+    response = HttpResponse(tmp.getvalue(), content_type='application/zip')
+    response['Content-Disposition'] = 'attachment; filename="lava.zip"'
+    return response
+
+
 class BuildAdmin(admin.ModelAdmin):
     models = models.Build
+    actions = [create_lava_templates]
 
 
 class BuildTagAdmin(admin.ModelAdmin):

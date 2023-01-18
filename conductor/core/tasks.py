@@ -247,7 +247,7 @@ def _template_from_string(template_string, using=None):
 
 
 @celery.task(bind=True)
-def create_build_run(self, build_id, run_name):
+def create_build_run(self, build_id, run_name, submit_jobs=True):
     logger.debug("Received task for build: %s" % build_id)
     build = None
     try:
@@ -307,6 +307,7 @@ def create_build_run(self, build_id, run_name):
 
     logger.debug(f"run_name: {run_name}")
     logger.debug(f"{templates}")
+    lava_job_definitions = []
     for template in templates:
         lcl_build = template.get("build")
         if not lcl_build:
@@ -365,6 +366,9 @@ def create_build_run(self, build_id, run_name):
         if not lava_job_definition:
             # possibly raise exception
             return
+        lava_job_definitions.append(lava_job_definition)
+        if not submit_jobs:
+            continue
         job_ids = build.project.submit_lava_job(lava_job_definition)
         job_type=template.get("job_type")
         logger.debug(f"LAVA job IDs: {job_ids}")
@@ -384,6 +388,7 @@ def create_build_run(self, build_id, run_name):
                     job_definition_yaml = yaml.safe_load(lava_job_definition)
                     job_name = job_definition_yaml.get('job_name')
                     build.project.squad_backend.update_testjob(squad_job_id, job_name, lava_job_definition)
+    return lava_job_definitions
 
 
 def _update_build_reason(build):
