@@ -38,7 +38,16 @@ class ProjectAdmin(admin.ModelAdmin):
 def create_lava_templates(modeladmin, request, queryset):
     testjob_list = []
     for build in queryset:
-        for run in build.run_set.all():
+        runs = build.run_set.all()
+        if not runs.exists():
+            # upgrade build. Runs belong to 'previous build'
+
+            previous_builds = build.project.build_set.filter(build_id__lt=build.build_id, tag=build.tag).order_by('-build_id')
+            previous_build = None
+            if previous_builds:
+                previous_build = previous_builds[0]
+                runs = previous_build.run_set.all()
+        for run in runs:
             testjob_list = testjob_list + create_build_run(build.pk, run.run_name, False)
 
     if not testjob_list:
