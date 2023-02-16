@@ -473,16 +473,16 @@ class ProjectMisconfiguredError(Exception):
     pass
 
 
-def __project_repository_exists(project):
-    repository_path = os.path.join(settings.FIO_REPOSITORY_HOME, project.name)
+def __project_repository_exists(project, base_path=settings.FIO_REPOSITORY_HOME):
+    repository_path = os.path.join(base_path, project.name)
     if os.path.exists(repository_path):
         if os.path.isdir(repository_path):
-            logger.info(f"Project repository for {project} exists")
+            logger.info(f"Project repository for {project} exists in {base_path}")
             # do nothing, directory exists
             return True
         else:
             # raise exception, there should not be a file with this name
-            logger.error(f"Project repository for {project} missing")
+            logger.error(f"Project repository for {project} missing in {base_path}")
             raise ProjectMisconfiguredError()
     return False
 
@@ -551,6 +551,37 @@ def create_project_repository(project_id):
            "-w", settings.FIO_BASE_MANIFEST,
            "-t", fio_repository_token,
            "-b", project.default_branch]
+    logger.debug("Calling repository creation script")
+    logger.debug(" ".join(cmd))
+    try:
+        subprocess.run(cmd, check=True)
+    except subprocess.CalledProcessError:
+        pass
+
+@celery.task
+def create_project_containers_repository(project_id):
+    project = None
+    try:
+        project = Project.objects.get(pk=project_id)
+        fio_repository_token = project.fio_repository_token
+        if not fio_repository_token:
+            fio_repository_token = settings.FIO_REPOSITORY_TOKEN
+    except Project.DoesNotExist:
+        # do nothing if project is not found
+        return
+    # check if repository DIR already exists
+    repository_path = os.path.join(settings.FIO_REPOSITORY_CONTAINERS_HOME, project.name)
+    if not __project_repository_exists(project, settings.FIO_REPOSITORY_CONTAINERS_HOME):
+        # create repository DIR
+        os.makedirs(repository_path)
+    # call shell script to clone and configure repository
+    cmd = [os.path.join(settings.FIO_REPOSITORY_SCRIPT_PATH_PREFIX, "checkout_repository.sh"),
+           "-d", repository_path,
+           "-r", settings.FIO_REPOSITORY_REMOTE_NAME,
+           "-u", "%s/%s/containers.git" % (settings.FIO_REPOSITORY_BASE, project.name),
+           "-t", fio_repository_token,
+           "-b", project.default_container_branch,
+           "-c", "containers"]
     logger.debug("Calling repository creation script")
     logger.debug(" ".join(cmd))
     try:
