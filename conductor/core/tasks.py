@@ -497,7 +497,7 @@ def create_upgrade_commit(build_id):
     except Build.DoesNotExist:
         # do nothing if build is not found
         return
-    if not project.create_ota_commit:
+    if not project.create_ota_commit and not project.create_containers_commit:
         # don't create upgrade commit
         logger.info(f"Project {project} does not require additional OTA commit")
         return
@@ -505,25 +505,44 @@ def create_upgrade_commit(build_id):
         # don't create upgrade commit
         logger.info(f"Project {project} only requires testing on merges. Skipping OTA commit")
         return
-    # check if repository DIR already exists
-    repository_path = os.path.join(settings.FIO_REPOSITORY_HOME, project.name)
-    if not __project_repository_exists(project):
-        logger.error(f"Repository for {project} missing!")
-        return
-    if not settings.DEBUG_FIO_SUBMIT:
+    cmd = []
+    # produce containers commit if the setting is enabled
+    if project.create_containers_commit:
+        if not __project_repository_exists(project, settings.FIO_REPOSITORY_CONTAINERS_HOME):
+            logger.error(f"Containers repository for {project} missing!")
+            return
+        # change the content of the file and commit changes
+        repository_path = os.path.join(settings.FIO_REPOSITORY_CONTAINERS_HOME, project.name)
+        cmd = [os.path.join(settings.FIO_REPOSITORY_SCRIPT_PATH_PREFIX, "upgrade_containers_commit.sh"),
+               "-d", repository_path,
+               "-r", settings.FIO_REPOSITORY_REMOTE_NAME,
+               "-m", settings.FIO_UPGRADE_CONTAINER_MESSAGE,
+               "-b", project.default_container_branch,
+               "-f", f"{project.compose_app_name}/{project.compose_app_env_filename}"]
+        # exit.
+        logger.info(f"Processing project {project.name}")
+        logger.info("Containers commit created. Skipping manifest content")
+        # if containers_commit is enabled, there won't be manifest OTA
+    else:
+        # check if repository DIR already exists
+        repository_path = os.path.join(settings.FIO_REPOSITORY_HOME, project.name)
+        if not __project_repository_exists(project):
+            logger.error(f"Repository for {project} missing!")
+            return
         cmd = [os.path.join(settings.FIO_REPOSITORY_SCRIPT_PATH_PREFIX, "upgrade_commit.sh"),
                "-d", repository_path,
                "-r", settings.FIO_REPOSITORY_REMOTE_NAME,
                "-m", settings.FIO_UPGRADE_ROLLBACK_MESSAGE,
                "-b", project.default_branch]
-        logger.debug(f"cmd")
+    if not settings.DEBUG_FIO_SUBMIT and cmd:
+        logger.debug(f"{cmd}")
         try:
             subprocess.run(cmd, check=True)
         except subprocess.CalledProcessError:
             pass
     else:
         logger.debug("Debugging FIO submit")
-        logger.debug(f"cmd")
+        logger.debug(f"{cmd}")
 
 
 @celery.task
