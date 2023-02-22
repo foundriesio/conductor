@@ -399,7 +399,8 @@ def _update_build_reason(build):
     old_commit = repository.commit("HEAD")
     try:
         remote = repository.remote(name=settings.FIO_REPOSITORY_REMOTE_NAME)
-        remote.pull(refspec=build.project.default_branch)
+        remote.fetch()
+        repository.git.reset("--hard", f"{settings.FIO_REPOSITORY_REMOTE_NAME}/{build.project.default_branch}")
         if build.commit_id:
             try:
                 commit = repository.commit(rev=build.commit_id)

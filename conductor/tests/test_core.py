@@ -1358,9 +1358,10 @@ class TaskTest(TestCase):
 
     @patch.object(Repo, "remote")
     @patch.object(Repo, "commit")
-    def test_update_build_reason(self, commit_mock, remote_mock):
+    @patch("git.Repo.GitCommandWrapperType")
+    def test_update_build_reason(self, git_mock, commit_mock, remote_mock):
         remote = MagicMock()
-        remote.pull = MagicMock()
+        remote.fetch = MagicMock()
         remote_mock.return_value = remote
         commit = MagicMock()
         commit_message = PropertyMock(return_value="abc")
@@ -1373,7 +1374,8 @@ class TaskTest(TestCase):
         self.build.save()
         update_build_reason(self.build.id)
         remote_mock.assert_called()
-        remote.pull.assert_called()
+        remote.fetch.assert_called()
+        git_mock.assert_called()
         commit_mock.assert_called()
         commit_message.assert_called()
         self.build.refresh_from_db()
@@ -1383,9 +1385,10 @@ class TaskTest(TestCase):
 
     @patch.object(Repo, "remote")
     @patch.object(Repo, "commit")
-    def test_update_build_reason_merge_commit(self, commit_mock, remote_mock):
+    @patch("git.Repo.GitCommandWrapperType")
+    def test_update_build_reason_merge_commit(self, git_mock, commit_mock, remote_mock):
         remote = MagicMock()
-        remote.pull = MagicMock()
+        remote.fetch = MagicMock()
         remote_mock.return_value = remote
         commit = MagicMock()
         commit_message = PropertyMock(return_value="abc")
@@ -1406,7 +1409,8 @@ class TaskTest(TestCase):
         self.build.save()
         update_build_reason(self.build.id)
         remote_mock.assert_called()
-        remote.pull.assert_called()
+        remote.fetch.assert_called()
+        git_mock.assert_called()
         commit_mock.assert_called()
         commit_message.assert_called()
         self.build.refresh_from_db()
@@ -1416,9 +1420,10 @@ class TaskTest(TestCase):
 
     @patch.object(Repo, "remote")
     @patch.object(Repo, "commit")
-    def test_update_build_reason_upgrade(self, commit_mock, remote_mock):
+    @patch("git.Repo.GitCommandWrapperType")
+    def test_update_build_reason_upgrade(self, git_mock, commit_mock, remote_mock):
         remote = MagicMock()
-        remote.pull = MagicMock()
+        remote.fetch = MagicMock()
         remote_mock.return_value = remote
         commit = MagicMock()
         commit_message = PropertyMock(return_value=settings.FIO_UPGRADE_ROLLBACK_MESSAGE)
@@ -1431,7 +1436,8 @@ class TaskTest(TestCase):
         self.build.save()
         update_build_reason(self.build.id)
         remote_mock.assert_called()
-        remote.pull.assert_called()
+        remote.fetch.assert_called()
+        git_mock.assert_called()
         commit_mock.assert_called()
         commit_message.assert_called()
         self.build.refresh_from_db()
@@ -1440,9 +1446,10 @@ class TaskTest(TestCase):
 
     @patch.object(Repo, "remote")
     @patch.object(Repo, "commit")
-    def test_update_build_reason_missing_commit(self, commit_mock, remote_mock):
+    @patch("git.Repo.GitCommandWrapperType")
+    def test_update_build_reason_missing_commit(self, git_mock, commit_mock, remote_mock):
         remote = MagicMock()
-        remote.pull = MagicMock()
+        remote.fetch = MagicMock()
         remote_mock.return_value = remote
         def commit(rev):
             if rev == "HEAD":
@@ -1457,7 +1464,8 @@ class TaskTest(TestCase):
         self.build.save()
         update_build_reason(self.build.id)
         remote_mock.assert_called()
-        remote.pull.assert_called()
+        remote.fetch.assert_called()
+        git_mock.assert_called()
         commit_mock.assert_called()
         self.build.refresh_from_db()
         self.assertEqual(self.build.build_reason, "Trigerred from meta-sub")
@@ -1467,9 +1475,10 @@ class TaskTest(TestCase):
     @patch("requests.Session.get")
     @patch.object(Repo, "remote")
     @patch.object(Repo, "commit")
-    def test_update_commit_id(self, commit_mock, remote_mock, get_mock, upgrade_mock):
+    @patch("git.Repo.GitCommandWrapperType")
+    def test_update_commit_id(self, git_mock, commit_mock, remote_mock, get_mock, upgrade_mock):
         remote = MagicMock()
-        remote.pull = MagicMock()
+        remote.fetch = MagicMock()
         remote_mock.return_value = remote
         commit = MagicMock()
         commit_message = PropertyMock(return_value="abc")
@@ -1485,7 +1494,8 @@ class TaskTest(TestCase):
 
         update_build_commit_id(self.build.id, "https://foo.bar.com")
         remote_mock.assert_called()
-        remote.pull.assert_called()
+        remote.fetch.assert_called()
+        git_mock.assert_called()
         commit_mock.assert_called()
         commit_message.assert_called()
         self.build.refresh_from_db()
@@ -1504,7 +1514,7 @@ class TaskTest(TestCase):
         remote_mock.return_value = remote
         commit = MagicMock()
         commit_message = PropertyMock(return_value="abc")
-        type(commit).message = commit_message 
+        type(commit).message = commit_message
         commit_mock.return_value = commit
 
         request = MagicMock()
