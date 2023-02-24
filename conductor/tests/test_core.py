@@ -18,7 +18,7 @@ from datetime import datetime, timedelta
 from django.conf import settings
 from django.test import TestCase
 from git import Repo
-from unittest.mock import call, patch, MagicMock, PropertyMock
+from unittest.mock import call, patch, Mock, MagicMock, PropertyMock
 
 from conductor.core.models import (
     Project,
@@ -48,6 +48,16 @@ from conductor.core.tasks import (
     tag_build_runs,
     process_testjob_notification,
 )
+
+
+def assert_not_called_with(self, *args, **kwargs):
+    try:
+        self.assert_called_with(*args, **kwargs)
+    except AssertionError:
+        return
+    raise AssertionError('Expected %s to not have been called.' % self._format_mock_call_signature(args, kwargs))
+
+Mock.assert_not_called_with = assert_not_called_with
 
 
 DEVICE_DETAILS = """
@@ -1355,6 +1365,60 @@ class TaskTest(TestCase):
         create_upgrade_commit(self.build_rolling.id)
         if not settings.DEBUG_FIO_SUBMIT:
             run_mock.assert_not_called()
+
+    @patch("subprocess.run")
+    def test_create_upgrade_containers_commit(self, run_mock):
+        self.project.create_containers_commit = True
+        self.project.compose_app_name = "testapp"
+        self.project.compose_app_env_filename = "env"
+        self.project.save()
+        repository_path = os.path.join(settings.FIO_REPOSITORY_CONTAINERS_HOME, self.project.name)
+        cmd = [os.path.join(settings.FIO_REPOSITORY_SCRIPT_PATH_PREFIX, "upgrade_containers_commit.sh"),
+               "-d", repository_path,
+               "-r", settings.FIO_REPOSITORY_REMOTE_NAME,
+               "-m", settings.FIO_UPGRADE_CONTAINER_MESSAGE,
+               "-b", self.project.default_branch,
+               "-f", f"{self.project.compose_app_name}/{self.project.compose_app_env_filename}"]
+
+        create_upgrade_commit(self.build.id)
+        if not settings.DEBUG_FIO_SUBMIT:
+            run_mock.assert_called_with(cmd, check=True)
+
+    @patch("subprocess.run")
+    def test_create_upgrade_containers_commit_no_env_file(self, run_mock):
+        self.project.create_containers_commit = True
+        self.project.compose_app_name = "testapp"
+        self.project.compose_app_env_filename = None
+        self.project.save()
+        repository_path = os.path.join(settings.FIO_REPOSITORY_CONTAINERS_HOME, self.project.name)
+        cmd = [os.path.join(settings.FIO_REPOSITORY_SCRIPT_PATH_PREFIX, "upgrade_containers_commit.sh"),
+               "-d", repository_path,
+               "-r", settings.FIO_REPOSITORY_REMOTE_NAME,
+               "-m", settings.FIO_UPGRADE_CONTAINER_MESSAGE,
+               "-b", self.project.default_branch,
+               "-f", f"{self.project.compose_app_name}/{self.project.compose_app_env_filename}"]
+
+        create_upgrade_commit(self.build.id)
+        if not settings.DEBUG_FIO_SUBMIT:
+            run_mock.assert_not_called_with(cmd, check=True)
+
+    @patch("subprocess.run")
+    def test_create_upgrade_containers_commit_no_app_name(self, run_mock):
+        self.project.create_containers_commit = True
+        self.project.compose_app_name = None
+        self.project.compose_app_env_filename = "env"
+        self.project.save()
+        repository_path = os.path.join(settings.FIO_REPOSITORY_CONTAINERS_HOME, self.project.name)
+        cmd = [os.path.join(settings.FIO_REPOSITORY_SCRIPT_PATH_PREFIX, "upgrade_containers_commit.sh"),
+               "-d", repository_path,
+               "-r", settings.FIO_REPOSITORY_REMOTE_NAME,
+               "-m", settings.FIO_UPGRADE_CONTAINER_MESSAGE,
+               "-b", self.project.default_branch,
+               "-f", f"{self.project.compose_app_name}/{self.project.compose_app_env_filename}"]
+
+        create_upgrade_commit(self.build.id)
+        if not settings.DEBUG_FIO_SUBMIT:
+            run_mock.assert_not_called_with(cmd, check=True)
 
     @patch.object(Repo, "remote")
     @patch.object(Repo, "commit")
