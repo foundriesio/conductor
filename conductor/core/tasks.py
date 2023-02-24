@@ -512,6 +512,9 @@ def create_upgrade_commit(build_id):
         if not __project_repository_exists(project, settings.FIO_REPOSITORY_CONTAINERS_HOME):
             logger.error(f"Containers repository for {project} missing!")
             return
+        if not project.compose_app_name or not project.compose_app_env_filename:
+            logger.error(f"Container commit aborted. {project} not setup properly")
+            return
         # change the content of the file and commit changes
         repository_path = os.path.join(settings.FIO_REPOSITORY_CONTAINERS_HOME, project.name)
         cmd = [os.path.join(settings.FIO_REPOSITORY_SCRIPT_PATH_PREFIX, "upgrade_containers_commit.sh"),
