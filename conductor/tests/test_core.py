@@ -1366,8 +1366,9 @@ class TaskTest(TestCase):
         if not settings.DEBUG_FIO_SUBMIT:
             run_mock.assert_not_called()
 
+    @patch("conductor.core.tasks.__project_repository_exists", return_value=True)
     @patch("subprocess.run")
-    def test_create_upgrade_containers_commit(self, run_mock):
+    def test_create_upgrade_containers_commit(self, run_mock, exists_mock):
         self.project.create_containers_commit = True
         self.project.compose_app_name = "testapp"
         self.project.compose_app_env_filename = "env"
@@ -1384,8 +1385,9 @@ class TaskTest(TestCase):
         if not settings.DEBUG_FIO_SUBMIT:
             run_mock.assert_called_with(cmd, check=True)
 
+    @patch("conductor.core.tasks.__project_repository_exists", return_value=True)
     @patch("subprocess.run")
-    def test_create_upgrade_containers_commit_no_env_file(self, run_mock):
+    def test_create_upgrade_containers_commit_no_env_file(self, run_mock, exists_mock):
         self.project.create_containers_commit = True
         self.project.compose_app_name = "testapp"
         self.project.compose_app_env_filename = None
@@ -1402,8 +1404,9 @@ class TaskTest(TestCase):
         if not settings.DEBUG_FIO_SUBMIT:
             run_mock.assert_not_called_with(cmd, check=True)
 
+    @patch("conductor.core.tasks.__project_repository_exists", return_value=True)
     @patch("subprocess.run")
-    def test_create_upgrade_containers_commit_no_app_name(self, run_mock):
+    def test_create_upgrade_containers_commit_no_app_name(self, run_mock, exists_mock):
         self.project.create_containers_commit = True
         self.project.compose_app_name = None
         self.project.compose_app_env_filename = "env"
