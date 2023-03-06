@@ -41,7 +41,8 @@ cd "${REPOSITORY_DIR}"
 REMOTE_ORIGIN=$(git remote get-url "${REPOSITORY_REMOTE}")
 REMOTE_LMP=$(git remote get-url "${REPOSITORY_LMP_REMOTE}")
 if [ "${REMOTE_ORIGIN}" = "${REPOSITORY_URL}" ] && [ "${REMOTE_LMP}" = "${REPOSITORY_LMP_URL}" ]; then
-    # exit the script, nothing to do
+    # Update the repository token
+    git config http.https://source.foundries.io.extraheader "Authorization: basic $(echo -n $REPOSITORY_TOKEN | openssl base64)"
     exit 0
 fi
 git init
