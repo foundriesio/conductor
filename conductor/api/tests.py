@@ -288,8 +288,9 @@ class ApiViewTest(TestCase):
         # check if build was created
         merge_lmp_manifest_mock.assert_not_called()
 
+    @patch("conductor.core.tasks.schedule_lmp_pr_tests.delay")
     @patch("conductor.core.tasks.merge_lmp_manifest.delay")
-    def test_jobserv_lmp_webhook_wrong_target(self, merge_lmp_manifest_mock):
+    def test_jobserv_lmp_webhook_wrong_target(self, merge_lmp_manifest_mock, lmp_pr_tests_mock):
         request_body_dict = {
             "status": "PASSED",
             "build_id": 1,
@@ -307,9 +308,10 @@ class ApiViewTest(TestCase):
             content_type="application/json",
             **{"HTTP_X_JobServ_Sig":f"sha256: {sig.hexdigest()}"}
         )
-        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.status_code, 201)
         # check if build was created
         merge_lmp_manifest_mock.assert_not_called()
+        lmp_pr_tests_mock.assert_called()
 
     def test_jobserv_lmp_get(self):
         response = self.client.get(

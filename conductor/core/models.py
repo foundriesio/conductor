@@ -109,6 +109,63 @@ class SQUADBackend(models.Model):
             response._content = f"{job_id}".encode()
             return response
 
+    def submit_lava_job(self,
+            group,
+            project,
+            build,
+            environment,
+            job_definition):
+        if not settings.DEBUG_SQUAD_SUBMIT:
+            # authentication headers
+            authentication = {
+                "Auth-Token": self.squad_token,
+            }
+            return requests.post(
+                urljoin(self.squad_url, f"api/submitjob/{group}/{project}/{build}/{environment}"),
+                headers=authentication,
+                data={"definition": job_definition,
+                      "backend": self.name},
+                timeout=DEFAULT_TIMEOUT
+            )
+        else:
+            from requests.models import Response
+            job_id = 123456
+            response = Response()
+            response.status_code = 201
+            response._content = f"{job_id}".encode()
+            return response
+
+    def create_build(self,
+            group,
+            project,
+            build,
+            patch_source,
+            patch_id):
+        url_path = f"api/createbuild/{group}/{project}/{build}"
+        if not settings.DEBUG_SQUAD_SUBMIT:
+            # authentication headers
+            authentication = {
+                "Auth-Token": self.squad_token,
+            }
+            data = {}
+            if patch_id and patch_source:
+                data={"patch_id": patch_id,
+                      "patch_source": patch_source}
+            return requests.post(
+                urljoin(self.squad_url, f"api/createbuild/{group}/{project}/{build}"),
+                headers=authentication,
+                data=data,
+                timeout=DEFAULT_TIMEOUT
+            )
+        else:
+            from requests.models import Response
+
+            job_id = 123456
+            response = Response()
+            response.status_code = 201
+            response._content = f"{job_id}".encode()
+            return response
+
     def update_testjob(self, squad_job_id, name, job_definition):
         if not settings.DEBUG_SQUAD_SUBMIT:
             headers = {

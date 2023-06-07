@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import json
 import celery
 import os
 from datetime import datetime, timedelta
@@ -47,6 +48,7 @@ from conductor.core.tasks import (
     update_build_commit_id,
     tag_build_runs,
     process_testjob_notification,
+    schedule_lmp_pr_tests
 )
 
 
@@ -58,6 +60,55 @@ def assert_not_called_with(self, *args, **kwargs):
     raise AssertionError('Expected %s to not have been called.' % self._format_mock_call_signature(args, kwargs))
 
 Mock.assert_not_called_with = assert_not_called_with
+
+
+LMP_BUILD_JSON = """
+{
+      "build_id": 2225,
+      "completed": "2023-06-01T16:17:05+00:00",
+      "created": "2023-05-31T22:27:50+00:00",
+      "reason": "GitHub PR(337): pull_request, https://github.com/foundriesio/lmp-manifest/pull/337",
+      "runs": [
+        {
+          "completed": "2023-05-31T23:04:44+00:00",
+          "created": "2023-05-31T22:30:58+00:00",
+          "host_tag": "amd64-partner-gcp-nocache",
+          "log_url": "https://api.foundries.io/projects/lmp/builds/2225/runs/build-imx8mm-lpddr4-evk/console.log",
+          "name": "build-imx8mmevk",
+          "status": "PASSED",
+          "url": "https://api.foundries.io/projects/lmp/builds/2225/runs/build-imx8mm-lpddr4-evk/",
+          "web_url": "https://ci.foundries.io/projects/lmp/builds/2225/build-imx8mm-lpddr4-evk/"
+        }
+      ], 
+      "runs_url": "https://api.foundries.io/projects/lmp/builds/2225/runs/", 
+      "status": "PASSED", 
+      "status_events": [
+        {
+          "status": "QUEUED", 
+          "time": "2023-05-31T22:27:50+00:00"
+        }, 
+        {
+          "status": "RUNNING", 
+          "time": "2023-05-31T22:29:47+00:00"
+        }, 
+        {
+          "status": "FAILED", 
+          "time": "2023-06-01T11:06:21+00:00"
+        }, 
+        {
+          "status": "RUNNING", 
+          "time": "2023-06-01T14:06:24+00:00"
+        }, 
+        {
+          "status": "PASSED", 
+          "time": "2023-06-01T16:17:05+00:00"
+        }
+      ], 
+      "trigger_name": "Code Review", 
+      "url": "https://api.foundries.io/projects/lmp/builds/2225/", 
+      "web_url": "https://ci.foundries.io/projects/lmp/builds/2225"
+    }
+"""
 
 
 DEVICE_DETAILS = """
@@ -771,6 +822,15 @@ class TaskTest(TestCase):
             fio_api_token="fio_api_token3",
             fio_repository_token="fio_repository_token3"
         )
+        self.project_lmp = Project.objects.create(
+            name="lmp",
+            secret="webhooksecret",
+            lava_backend=self.lavabackend1,
+            squad_backend=self.squadbackend1,
+            squad_group="squadgroup",
+            fio_api_token="fio_api_token3",
+            fio_repository_token="fio_repository_token3"
+        )
         self.old_previous_build = Build.objects.create(
             url="https://example.com/build/1/",
             project=self.project,
@@ -897,6 +957,11 @@ class TaskTest(TestCase):
             net_interface="eth0",
             project=self.project_testplan,
         )
+        self.device_type_lmp1 = LAVADeviceType.objects.create(
+            name="imx8mmevk",
+            net_interface="eth0",
+            project=self.project_lmp,
+        )
 
         self.lava_device1 = LAVADevice.objects.create(
             device_type = self.device_type1,
@@ -988,6 +1053,7 @@ class TaskTest(TestCase):
         self.testplan2.testjobs.add(self.testjob_imx8mm2)
         self.testplan2.save()
         self.project_testplan.testplans.add(self.testplan2)
+        self.project_lmp.testplans.add(self.testplan1)
 
         # notifications
         self.lavajob1 = LAVAJob.objects.create(
@@ -1002,6 +1068,14 @@ class TaskTest(TestCase):
             project=self.project_testplan,
             job_type=LAVAJob.JOB_EL2GO
         )
+
+    @patch('conductor.core.models.SQUADBackend.create_build')
+    @patch('conductor.core.models.SQUADBackend.submit_lava_job')
+    def test_lmp_pr_boot_test(self, squad_submit_job_mock, squad_create_build_mock):
+        build_desc = json.loads(LMP_BUILD_JSON)
+        schedule_lmp_pr_tests(build_desc)
+        squad_create_build_mock.assert_called()
+        squad_submit_job_mock.assert_called()
 
     @patch('conductor.core.tasks.retrieve_lava_results')
     @patch('conductor.core.models.LAVADevice.add_to_el2go')

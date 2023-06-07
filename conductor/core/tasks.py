@@ -18,6 +18,7 @@ import gitdb
 import hashlib
 import json
 import os
+import re
 import requests
 import subprocess
 import yaml
@@ -951,3 +952,144 @@ def check_ota_completed():
     )
     for device in devices:
         __check_ota_status(device)
+
+
+@celery.task
+def schedule_lmp_pr_tests(lmp_build_description):
+    # This task will schedule boot test round on LmP PR
+    # coming from meta-lmp in github
+
+    # GitHub PR(338): pull_request, https://github.com/foundriesio/lmp-manifest/pull/338
+    # extract PR URL
+    reason = lmp_build_description.get("reason")
+    owner = None
+    repo = None
+    gh_git_sha = None
+    if reason:
+        httpre = re.compile("(?P<url>https:\/\/[a-z0-9-\/\.]+)")
+        results = httpre.search(reason)
+        if results:
+            gh_url = results.group("url")
+            url_parts = gh_url.split("/")
+            owner = url_parts[3]
+            repo = url_parts[4]
+            pr_num = url_parts[6]
+            headers = {
+                "Content-Type": "application/json",
+            #    "Authorization": "token " + settings.META_LMP_GH_TOKEN,
+            }
+            pr_api_url = f"https://api.github.com/repos/{owner}/{repo}/pulls/{pr_num}"
+            r = requests.get(pr_api_url, headers=headers)
+            if r.status_code == 200:
+                try:
+                    data = r.json()
+                    gh_git_sha = data["head"]["sha"]
+                except Exception:
+                    logger.error("Error finding SHA: %d - %s", r.status_code, r.text)
+
+    # compose test jobs from lmp project
+    # lmp project is special
+    # build object won't be created (maybe it should?)
+
+    # schedule tests through qa-reports with patch-source
+    # this will allow to post a status on a PR
+
+    project = None
+    try:
+        project = Project.objects.get(name="lmp")
+    except Project.DoesNotExist:
+        logger.error("Project lmp doesn't exist")
+        return None
+
+    # create qa-reports build with patch source
+    project.squad_backend.create_build(
+        "lmp",
+        f"{project.name}",
+        f"{gh_git_sha}",
+        settings.GH_LMP_PATCH_SOURCE,
+        f"{owner}/{repo}/{gh_git_sha}"
+    )
+
+    build_url = lmp_build_description.get("url")
+    build_id = lmp_build_description.get("id")
+    runs = lmp_build_description.get("runs")
+    for run in runs:
+        run_name = run.get("name")
+        # all names in lmp "factory" start with "build-"
+        #run_name_device_type = run_name.split("-", 1)[1]
+        run_name = run_name.split("-", 1)[1]
+        device_type = None
+        try:
+            device_type = LAVADeviceType.objects.get(name=run_name, project=project)
+        except LAVADeviceType.DoesNotExist:
+            logger.debug(f"Device type {run_name} not found for {project}")
+            continue
+
+        templates = []
+        if project.testplans.all():
+            for plan in project.testplans.filter(lava_device_type=run_name):
+                for plan_testjob in plan.testjobs.filter(is_ota_job=False):
+                    job_type = LAVAJob.JOB_LAVA
+                    templates.append({
+                        "name": plan_testjob.name,
+                        "job_type": job_type,
+                        "build": None,
+                        "template": _template_from_string(yaml.dump(plan_testjob.get_job_definition(plan), default_flow_style=False))
+                    })
+        else:
+            logger.info("Default test plan disabled")
+
+        logger.debug(f"run_name: {run_name}")
+        logger.debug(f"{templates}")
+        lava_job_definitions = []
+        for template in templates:
+            run_url = run.get("url")
+
+            context = {
+                "device_type": run_name,
+                "build_url": build_url,
+                "build_id": build_id,
+                "build_commit": gh_git_sha,
+                "build_reason": reason,
+
+                "IMAGE_URL": "%slmp-base-console-image-%s.wic.gz" % (run_url, run_name),
+                "BOOTLOADER_URL": "%simx-boot-%s" % (run_url, run_name),
+                "BOOTLOADER_NOHDMI_URL": "%simx-boot-%s-nohdmi" % (run_url, run_name),
+                "SPLIMG_URL": "%sSPL-%s" % (run_url, run_name),
+                "MFGTOOL_URL": f"{build_url}runs/build-mfgtool-{run_name}/mfgtool-files.tar.gz",
+                "prompts": ["fio@%s" % run_name, "Password:", "root@%s" % run_name],
+                "net_interface": device_type.net_interface,
+            }
+            if run_name == "raspberrypi4-64":
+                context["BOOTLOADER_URL"] = "%sother/u-boot-%s.bin" % (run_url, run_name)
+            if run_name == "stm32mp1-disco":
+                context["BOOTLOADER_URL"] = "%sother/boot.itb" % (run_url)
+            dt_settings = device_type.get_settings()
+            for key, value in dt_settings.items():
+                try:
+                    context.update({key: value.format(run_url=run_url, run_name=run_name)})
+                except KeyError:
+                    # ignore KeyError in case of misformatted string
+                    pass
+                except AttributeError:
+                    # ignore values that are not strings
+                    pass
+
+            lava_job_definition = None
+            if not template.get("template", None):
+                lava_job_definition = get_template(template["name"]).render(context)
+            else:
+                lava_job_definition = template["template"].render(context)
+            if not lava_job_definition:
+                # possibly raise exception
+                return
+            lava_job_definitions.append(lava_job_definition)
+
+            # submit jobs though qa-reports
+            project.squad_backend.submit_lava_job(
+                "lmp",
+                f"{project.name}",
+                f"{gh_git_sha}",
+                f"{run_name}",
+                lava_job_definition
+            )

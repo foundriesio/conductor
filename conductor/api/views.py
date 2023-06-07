@@ -29,7 +29,7 @@ from django.http import (
 from django.views.decorators.csrf import csrf_exempt
 
 from conductor.core.models import Project, Build, LAVADevice, Run
-from conductor.core.tasks import create_build_run, merge_lmp_manifest, update_build_commit_id, check_device_ota_completed, tag_build_runs
+from conductor.core.tasks import create_build_run, merge_lmp_manifest, update_build_commit_id, check_device_ota_completed, tag_build_runs, schedule_lmp_pr_tests
 from conductor.core.utils import ISO8601_JSONEncoder
 
 
@@ -170,15 +170,17 @@ def process_lmp_build(request):
     if isinstance(request_body_json, HttpResponse):
         return request_body_json
     else:
-        # check if the build has trigger_name "build-release"
-        if not request_body_json.get("trigger_name") in ["build-release", "build-release-stable"]:
-            logger.warning("trigger_name not set to build-release")
-            return HttpResponse("OK")
         # check if build is successful
         if not request_body_json.get("status") == "PASSED":
             logger.warning("status not set to PASSED")
             return HttpResponse("OK")
-        merge_lmp_manifest.delay()
+        # check if the build has trigger_name "build-release"
+        if request_body_json.get("trigger_name") in ["build-release", "build-release-stable"]:
+            merge_lmp_manifest.delay()
+            return HttpResponse("Created", status=201)
+        if request_body_json.get("trigger_name") in ["Code Review"]:
+            schedule_lmp_pr_tests.delay(request_body_json)
+            return HttpResponse("Created", status=201)
     return HttpResponse("Created", status=201)
 
 
