@@ -202,6 +202,10 @@ def tag_build_runs(self, build_id):
     except Build.DoesNotExist:
         return None
 
+    if build.skip_qa:
+        logger.debug("Skipping testing. [skip qa] found in commit message")
+        return None
+
     if not build.project.apply_testing_tag_on_callback:
         logger.info(f"Not setting tag on build {build}. Disabled in project settings")
         return None
@@ -463,6 +467,10 @@ def update_build_commit_id(build_id, run_url):
             build.save()
             _update_build_reason(build)
             build.refresh_from_db()
+            if build.skip_qa:
+                logger.debug("Skipping testing. [skip qa] found in commit message")
+                return None
+
             if settings.FIO_UPGRADE_ROLLBACK_MESSAGE not in build.build_reason:
                 create_upgrade_commit.delay(build_id)
 
