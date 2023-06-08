@@ -1069,13 +1069,66 @@ class TaskTest(TestCase):
             job_type=LAVAJob.JOB_EL2GO
         )
 
+    @patch('requests.get')
     @patch('conductor.core.models.SQUADBackend.create_build')
     @patch('conductor.core.models.SQUADBackend.submit_lava_job')
-    def test_lmp_pr_boot_test(self, squad_submit_job_mock, squad_create_build_mock):
+    def test_lmp_pr_boot_test(self, squad_submit_job_mock, squad_create_build_mock, get_mock):
+        get_response_dict = {
+            "head": {"sha": "deadbeef"},
+            "labels": [
+            ]
+        }
+        get_response = MagicMock()
+        type(get_response).status_code = PropertyMock(return_value=200)
+        get_response.json = MagicMock(return_value=get_response_dict)
+        get_mock.return_value = get_response
+
         build_desc = json.loads(LMP_BUILD_JSON)
         schedule_lmp_pr_tests(build_desc)
+        get_mock.assert_called()
         squad_create_build_mock.assert_called()
         squad_submit_job_mock.assert_called()
+    @patch('requests.get')
+
+    @patch('conductor.core.models.SQUADBackend.create_build')
+    @patch('conductor.core.models.SQUADBackend.submit_lava_job')
+    def test_lmp_pr_boot_test_labels(self, squad_submit_job_mock, squad_create_build_mock, get_mock):
+        get_response_dict = {
+            "head": {"sha": "deadbeef"},
+            "labels": [
+                {"name": "foobar"}
+            ]
+        }
+        get_response = MagicMock()
+        type(get_response).status_code = PropertyMock(return_value=200)
+        get_response.json = MagicMock(return_value=get_response_dict)
+        get_mock.return_value = get_response
+
+        build_desc = json.loads(LMP_BUILD_JSON)
+        schedule_lmp_pr_tests(build_desc)
+        get_mock.assert_called()
+        squad_create_build_mock.assert_called()
+        squad_submit_job_mock.assert_called()
+
+    @patch('requests.get')
+    @patch('conductor.core.models.SQUADBackend.create_build')
+    @patch('conductor.core.models.SQUADBackend.submit_lava_job')
+    def test_lmp_pr_boot_test_skip_qa(self, squad_submit_job_mock, squad_create_build_mock, get_mock):
+        get_response_dict = {
+            "head": {"sha": "deadbeef"},
+            "labels": [
+                {"name": "skip-qa"}
+            ]
+        }
+        get_response = MagicMock()
+        type(get_response).status_code = PropertyMock(return_value=200)
+        get_response.json = MagicMock(return_value=get_response_dict)
+        get_mock.return_value = get_response
+        build_desc = json.loads(LMP_BUILD_JSON)
+        schedule_lmp_pr_tests(build_desc)
+        get_mock.assert_called()
+        squad_create_build_mock.assert_not_called()
+        squad_submit_job_mock.assert_not_called()
 
     @patch('conductor.core.tasks.retrieve_lava_results')
     @patch('conductor.core.models.LAVADevice.add_to_el2go')
@@ -1320,6 +1373,20 @@ class TaskTest(TestCase):
         watch_qa_reports_mock.assert_not_called()
         get_hash_mock.assert_called()
         assert 1 == get_hash_mock.call_count
+
+    @patch('conductor.core.tasks._get_os_tree_hash', return_value=None)
+    @patch('conductor.core.models.Project.watch_qa_reports_job', return_value=None)
+    @patch('conductor.core.models.Project.submit_lava_job', return_value=[123])
+    def test_create_build_run_skip_qa(self, submit_lava_job_mock, watch_qa_reports_mock, get_hash_mock):
+        run_name = "imx8mmevk"
+        self.build_testplan.build_reason = "Hello world"
+        self.build_testplan.schedule_tests = True
+        self.build_testplan.skip_qa = True
+        self.build_testplan.save()
+        create_build_run(self.build_testplan.id, run_name)
+        submit_lava_job_mock.assert_not_called()
+        watch_qa_reports_mock.assert_not_called()
+        get_hash_mock.assert_not_called()
 
     @patch("requests.get")
     @patch("conductor.core.models.PDUAgent.save")

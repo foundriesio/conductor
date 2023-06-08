@@ -280,6 +280,9 @@ class Build(models.Model):
     # lmp_commit is the head of lmp-manifest tree
     # before commit. It will be used as build version in qa-reports
     lmp_commit = models.CharField(max_length=40, blank=True, null=True)
+    # shit flag is set to true when there is
+    # [skip qa] or [skip-qa] string in the commit message
+    skip_qa = models.BooleanField(default=False)
 
     def __str__(self):
         return f"{self.build_id} ({self.project.name})"

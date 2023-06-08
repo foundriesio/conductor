@@ -156,6 +156,8 @@ FIO_UPGRADE_CONTAINER_MESSAGE = "Force container rebuild"
 
 GH_LMP_PATCH_SOURCE = "fio-github"
 
+SKIP_QA_MESSAGES = ["[skip qa]", "[skip-qa]", "skip-qa"]
+
 LOGGING = {
     'version': 1,
     'disable_existing_loggers': False,

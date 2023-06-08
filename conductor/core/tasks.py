@@ -261,6 +261,10 @@ def create_build_run(self, build_id, run_name, submit_jobs=True):
         # retry the same task in 1 minute
         raise self.retry(countdown=60)
 
+    if build.skip_qa:
+        logger.debug("Skipping testing. [skip qa] found in commit message")
+        return None
+
     if not build.is_merge_commit and build.schedule_tests and build.project.test_on_merge_only:
         # don't schedule tests
         return None
@@ -408,6 +412,9 @@ def _update_build_reason(build):
                 logger.debug(f"Commit: {build.commit_id}")
                 logger.debug(f"Commit message: {commit.message}")
                 build.build_reason = commit.message[:127]
+                for skip_message in settings.SKIP_QA_MESSAGES:
+                    if skip_message in commit.message:
+                        build.skip_qa = True
                 if len(commit.parents) > 1:
                     build.is_merge_commit = True
                     # this is merge commit
@@ -984,6 +991,10 @@ def schedule_lmp_pr_tests(lmp_build_description):
                 try:
                     data = r.json()
                     gh_git_sha = data["head"]["sha"]
+                    for label in data["labels"]:
+                        if label["name"] in settings.SKIP_QA_MESSAGES:
+                            logger.info("Skipping testing. %s label found", label["name"])
+                            return
                 except Exception:
                     logger.error("Error finding SHA: %d - %s", r.status_code, r.text)
 
