@@ -83,9 +83,32 @@ class LAVADeviceTypeAdmin(admin.ModelAdmin):
     list_filter = ('project',)
 
 
+@admin.action(description="Remove from factory")
+def remove_device_from_factory(modeladmin, request, queryset):
+    for device in queryset:
+        if device.auto_register_name is not None:
+            factory_name = device.project.name
+            device.remove_from_factory(factory=factory_name)
+
+
+@admin.action(description="Remove from EL2GO")
+def remove_device_from_el2go(modeladmin, request, queryset):
+    for device in queryset:
+        if device.el2go_name is not None:
+            device.remove_from_el2go()
+
+
+@admin.action(description="Add to EL2GO")
+def add_device_to_el2go(modeladmin, request, queryset):
+    for device in queryset:
+        if device.el2go_name is not None:
+            device.remove_from_el2go()
+
+
 class LAVADeviceAdmin(admin.ModelAdmin):
     models = models.LAVADevice
     list_filter = ('project', 'device_type')
+    actions = [remove_device_from_factory, remove_device_from_el2go, add_device_to_el2go]
 
 
 class LAVAJobAdmin(admin.ModelAdmin):
