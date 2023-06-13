@@ -28,6 +28,8 @@ from cryptography.hazmat.primitives.serialization import (
     load_pem_private_key,
 )
 from cryptography.hazmat.primitives.asymmetric import padding, rsa
+from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PrivateKey
+from cryptography.hazmat.primitives.asymmetric.rsa import RSAPrivateKey
 from cryptography.hazmat.backends import default_backend
 
 from conductor.celery import app as celery
@@ -167,11 +169,22 @@ def _change_tag(build, new_tag, add=True):
 
     # now sign data
     canonical = canonicaljson.encode_canonical_json(meta["signed"])
-    sig = key.sign(
-        canonical,
-        padding.PSS(mgf=padding.MGF1(hashes.SHA256()), salt_length=32),
-        hashes.SHA256(),
-    )
+    sig = None
+    if isinstance(key, Ed25519PrivateKey):
+        meta["signatures"][0]["method"] = "ed25519"
+        sig = key.sign(
+            canonical,
+        )
+    if isinstance(key, RSAPrivateKey):
+        meta["signatures"][0]["method"] = "rsassa-pss-sha256"
+        sig = key.sign(
+            canonical,
+            padding.PSS(mgf=padding.MGF1(hashes.SHA256()), salt_length=32),
+            hashes.SHA256(),
+        )
+    if sig is None:
+        logger.error("targets.json is not signed.")
+        return
     assert len(meta["signatures"]) == 1
     meta["signatures"][0]["sig"] = base64.b64encode(sig).decode()
     if not settings.DEBUG_FIO_SUBMIT:
