@@ -1887,6 +1887,78 @@ class TaskTest(TestCase):
         tagged_builds = Build.objects.filter(buildtag=project_buildtag)
         self.assertEqual(len(tagged_builds), 2)
 
+    @patch('requests.put')
+    @patch('requests.get')
+    def test_tag_build_runs_first_build_only(self, get_mock, put_mock):
+        targets_json = {
+          "signatures": [
+            {
+              "keyid": "c567cbb9576c9cb2d94554c9bdf230fe9fc84f43bfc773a74d3451cc05716171",
+              "method": "rsassa-pss-sha256",
+              "sig": "fmkTP2o9D+lATkmhEoBBH5tomhvYkXTtbe7z13wEQW1VkBdStlYwvciIfxPElh2wVWLUUofmoxar/91blEmjhHH3Lnup5hXwbTRM1NQb8LjLxrjOyk7YAewNPd7GahyVI6aUo2npjTiC7X3n0OA4eRbBqIVJ0nCojSAwWREFcFZYNVVCoGIkOz4F/eFAPONIp0r+e7Hd+0uUrKHY4RvNvRMD81uSG91vjB/ngTE0++0YOgqo54Xf0uHeBnDLpw8YjBqssmV+BhigIKHmOmBbMp2M25BKyV+oCABLmpySL2Fgp4b2HHw405uIGhn4E2sz2Cw4dtuoa/qBA7CWy5xelw=="
+            }
+          ],
+          "signed": {
+            "_type": "Targets",
+            "expires": "2022-03-22T12:52:29Z",
+            "version": 1197,
+            "targets": {
+              "am64xx-evm-lmp-268": {
+                "hashes": {
+                  "sha256": "16c74d7813f9cda8164e7eb31d718db11615e90f63a8fab880b97512be455b36"
+                },
+                "length": 0,
+                "custom": {
+                  "cliUploaded": False,
+                  "name": "am64xx-evm-lmp",
+                  "version": "268",
+                  "hardwareIds": [
+                    "am64xx-evm"
+                  ],
+                  "targetFormat": "OSTREE",
+                  "uri": "https://ci.foundries.io/projects/milosz-rpi3/lmp/builds/268",
+                  "createdAt": "2022-02-14T19:44:56Z",
+                  "updatedAt": "2022-02-14T19:44:56Z",
+                  "lmp-manifest-sha": "97a9416598fe20b46b36448527d9832f181b038d",
+                  "arch": "aarch64",
+                  "image-file": "lmp-factory-image-am64xx-evm.wic.gz",
+                  "meta-subscriber-overrides-sha": "6bfeb94ef4bfffd1afe4b58187b1c81a5e39cc12",
+                  "tags": [
+                    "master"
+                  ]
+                }
+              }
+            }
+          }
+        }
+        get_response = MagicMock()
+        get_response.json = MagicMock(return_value=targets_json)
+        get_mock.return_value = get_response
+
+        self.project.testing_tag = "testing1"
+        self.project.privkey = PEM_PRIV_KEY_ED25519
+        self.project.keyid = "abcdefghi123456789"
+        self.project.apply_testing_tag_on_callback = True
+        self.project.apply_tag_to_first_build_only = True
+        self.project.save()
+        self.build.build_reason = "FooBar"
+        self.build.save()
+        tag_build_runs(self.old_previous_build.pk)
+        bt = BuildTag.objects.filter(builds=self.old_previous_build)
+        self.assertEqual(len(bt), 1)
+        if not settings.DEBUG_FIO_SUBMIT:
+            get_mock.assert_called()
+            put_mock.assert_called()
+        tag_build_runs(self.previous_build.pk)
+        project_buildtag = BuildTag.objects.get(name=self.project.testing_tag)
+        tagged_builds = Build.objects.filter(buildtag=project_buildtag)
+        self.assertEqual(len(tagged_builds), 2)
+        if not settings.DEBUG_FIO_SUBMIT:
+            get_mock.assert_called()
+            put_mock.assert_called()
+        tag_build_runs(self.build.pk)
+        tagged_builds = Build.objects.filter(buildtag=project_buildtag)
+        self.assertEqual(len(tagged_builds), 2)
 
     def test_tag_build_runs_no_build(self):
         ret = tag_build_runs(99999)
@@ -1904,3 +1976,11 @@ class TaskTest(TestCase):
         ret = tag_build_runs(self.build.pk)
         self.assertEqual(ret, None)
 
+    def test_tag_build_runs_apply_on_first_ota_build(self):
+        self.project.testing_tag = "testing"
+        self.project.apply_tag_to_first_build_only = True
+        self.project.save()
+        self.build.build_reason = settings.FIO_UPGRADE_ROLLBACK_MESSAGE
+        self.build.save()
+        ret = tag_build_runs(self.build.pk)
+        self.assertEqual(ret, None)

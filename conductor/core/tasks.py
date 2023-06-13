@@ -227,6 +227,13 @@ def tag_build_runs(self, build_id):
         logger.debug("Nothing to do as project doesn't have testing tag")
         return None
 
+    if build.build_reason and \
+            settings.FIO_UPGRADE_ROLLBACK_MESSAGE in build.build_reason and \
+            build.project.apply_tag_to_first_build_only:
+        logger.debug("Nothing to do as tag only applies to 1st build")
+        logger.debug("This is OTA build")
+        return None
+
     testing_buildtag, _ = BuildTag.objects.get_or_create(name=build.project.testing_tag)
 
     previous_builds = build.project.build_set.filter(build_id__lt=build.build_id, tag=build.tag).order_by('-build_id')
@@ -448,6 +455,11 @@ def _update_build_reason(build):
                 build.build_reason = "Trigerred from meta-sub"
             if settings.FIO_UPGRADE_ROLLBACK_MESSAGE in build.build_reason:
                 build.schedule_tests = False
+            else:
+                if build.project.apply_tag_to_first_build_only:
+                    # apply tags to 1st build
+                    # this action depends on other project settings
+                    tag_build_runs.delay(build.pk)
 
             build.save()
     except gitdb.exc.BadName:

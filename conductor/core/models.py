@@ -221,6 +221,8 @@ class Project(models.Model):
 
     # name of the tag applied to devices and targets
     testing_tag = models.CharField(max_length=16, null=True, blank=True)
+    # apply testing tag to 1st build only. This is done to prevent OTA
+    apply_tag_to_first_build_only = models.BooleanField(default=False)
     # set to True to apply testing_tag to target
     apply_testing_tag_on_callback = models.BooleanField(default=False)
     # name of the default branch in the lmp-manifest project
