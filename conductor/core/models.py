@@ -214,6 +214,8 @@ class Project(models.Model):
     compose_app_name = models.CharField(max_length=64, null=True, blank=True)
     compose_app_env_filename = models.CharField(max_length=64, null=True, blank=True)
     default_container_branch = models.CharField(max_length=64, default="master")
+    # meta-subscribers branch name
+    default_meta_branch = models.CharField(max_length=64, default="master")
     # if set to True, only lmp-manifest merges will trigger testing
     test_on_merge_only = models.BooleanField(default=False)
     qa_reports_project_name = models.CharField(max_length=32, null=True, blank=True)

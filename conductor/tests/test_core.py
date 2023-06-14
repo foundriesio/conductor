@@ -1660,6 +1660,7 @@ class TaskTest(TestCase):
     @patch.object(Repo, "commit")
     @patch("git.Repo.GitCommandWrapperType")
     def test_update_build_reason_missing_commit(self, git_mock, commit_mock, remote_mock):
+        # commit is missing from lmp-manifest and meta-sub repositories
         remote = MagicMock()
         remote.fetch = MagicMock()
         remote_mock.return_value = remote
@@ -1680,7 +1681,7 @@ class TaskTest(TestCase):
         git_mock.assert_called()
         commit_mock.assert_called()
         self.build.refresh_from_db()
-        self.assertEqual(self.build.build_reason, "Trigerred from meta-sub")
+        self.assertEqual(self.build.build_reason, "Trigerred from unknown source")
         self.assertEqual(self.build.schedule_tests, True)
 
     @patch("conductor.core.tasks.create_upgrade_commit.delay")

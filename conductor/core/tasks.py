@@ -452,7 +452,28 @@ def _update_build_reason(build):
             except ValueError:
                 # commit was not found in the repository
                 # this usually means build was triggered from meta-sub
-                build.build_reason = "Trigerred from meta-sub"
+                if build.project.default_meta_branch:
+                    meta_repository_path = os.path.join(settings.FIO_REPOSITORY_META_HOME, build.project.name)
+                    meta_repository = Repo(meta_repository_path)
+                    old_meta_commit = meta_repository.commit("HEAD")
+                    # there should only be one remote in this repository
+                    remote = repository.remote(name="origin")
+                    remote.fetch()
+                    repository.git.reset("--hard", f"origin/{build.project.default_meta_branch}")
+                    try:
+                        meta_commit = meta_repository.commit(rev=build.commit_id)
+                        logger.debug(f"Meta Commit: {build.commit_id}")
+                        logger.debug(f"Commit message: {meta_commit.message}")
+                        build.build_reason = meta_commit.message[:127]
+                        build.lmp_commit = meta_commit.hexsha
+                        for skip_message in settings.SKIP_QA_MESSAGES:
+                            if skip_message in meta_commit.message:
+                                build.skip_qa = True
+                    except ValueError:
+                        build.build_reason = "Trigerred from unknown source"
+                else:
+                    build.build_reason = "Trigerred from meta-sub"
+
             if settings.FIO_UPGRADE_ROLLBACK_MESSAGE in build.build_reason:
                 build.schedule_tests = False
             else:
@@ -653,6 +674,36 @@ def create_project_containers_repository(project_id):
     except subprocess.CalledProcessError:
         pass
 
+@celery.task
+def create_project_meta_repository(project_id):
+    project = None
+    try:
+        project = Project.objects.get(pk=project_id)
+        fio_repository_token = project.fio_repository_token
+        if not fio_repository_token:
+            fio_repository_token = settings.FIO_REPOSITORY_TOKEN
+    except Project.DoesNotExist:
+        # do nothing if project is not found
+        return
+    # check if repository DIR already exists
+    repository_path = os.path.join(settings.FIO_REPOSITORY_META_HOME, project.name)
+    if not __project_repository_exists(project, settings.FIO_REPOSITORY_META_HOME):
+        # create repository DIR
+        os.makedirs(repository_path)
+    # call shell script to clone and configure repository
+    cmd = [os.path.join(settings.FIO_REPOSITORY_SCRIPT_PATH_PREFIX, "checkout_repository.sh"),
+           "-d", repository_path,
+           "-r", settings.FIO_REPOSITORY_REMOTE_NAME,
+           "-u", "%s/%s/meta-subscriber-overrides.git" % (settings.FIO_REPOSITORY_BASE, project.name),
+           "-t", fio_repository_token,
+           "-b", project.default_meta_branch,
+           "-c", "meta"]
+    logger.debug("Calling repository creation script")
+    logger.debug(" ".join(cmd))
+    try:
+        subprocess.run(cmd, check=True)
+    except subprocess.CalledProcessError:
+        pass
 
 @celery.task
 def merge_lmp_manifest():

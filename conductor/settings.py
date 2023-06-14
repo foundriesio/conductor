@@ -148,6 +148,7 @@ FIO_REPOSITORY_TOKEN = os.getenv("FIO_REPOSITORY_TOKEN")
 FIO_REPOSITORY_BASE = "https://source.foundries.io/factories/"
 FIO_REPOSITORY_HOME = "%s/repositories/" % BASE_DIR
 FIO_REPOSITORY_CONTAINERS_HOME = "%s/containers/" % BASE_DIR
+FIO_REPOSITORY_META_HOME = "%s/meta-sub/" % BASE_DIR
 FIO_REPOSITORY_REMOTE_NAME = "origin"
 FIO_BASE_MANIFEST = "https://github.com/foundriesio/lmp-manifest"
 FIO_BASE_REMOTE_NAME = "lmp"
