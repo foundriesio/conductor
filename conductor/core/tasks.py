@@ -457,9 +457,9 @@ def _update_build_reason(build):
                     meta_repository = Repo(meta_repository_path)
                     old_meta_commit = meta_repository.commit("HEAD")
                     # there should only be one remote in this repository
-                    remote = repository.remote(name="origin")
+                    remote = meta_repository.remote(name="origin")
                     remote.fetch()
-                    repository.git.reset("--hard", f"origin/{build.project.default_meta_branch}")
+                    meta_repository.git.reset("--hard", f"origin/{build.project.default_meta_branch}")
                     try:
                         meta_commit = meta_repository.commit(rev=build.commit_id)
                         logger.debug(f"Meta Commit: {build.commit_id}")
