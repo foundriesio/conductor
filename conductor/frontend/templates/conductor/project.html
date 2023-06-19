@@ -6,6 +6,48 @@
             <h2>Name: {{ project.name }}</h2>
         </div>
         <div class="col-md-12 col-sm-12">
+            <h3>Recent Builds:</h3>
+            {% for build in project.build_set.all|dictsortreversed:"id"|slice:":10" %}
+            <a href="{{ build.url }}">{{ build.url }}</a><br/>
+            {% endfor %}
+        </div>
+        <div class="col-md-12 col-sm-12">
+            <h3>Recent CI Builds:</h3>
+            {% for build in api_builds.builds %}
+                    {% if build.status == "RUNNING" %}
+            <div class="row container-border bg-primary">
+                <div class="col-md-1">
+                        <span class="label label-primary">
+                    {% elif build.status == "FAILED" %}
+            <div class="row container-border bg-danger">
+                <div class="col-md-1">
+                        <span class="label label-danger">
+                    {% elif build.status == "PASSED" %}
+            <div class="row container-border bg-success">
+                <div class="col-md-1">
+                        <span class="label label-success">
+                    {% else %}
+            <div class="row container-border bg-info">
+                <div class="col-md-1">
+                        <span class="label label-info">
+                    {% endif %}
+                    {{ build.status }}</span>
+                </div>
+                <div class="col-md-6">
+                    <a href="{{ build.web_url }}">{{ build.web_url }}</a>
+                </div>
+                <div class="col-md-2">
+                    {{ build.trigger_name }}
+                </div>
+                <div class="col-md-3">
+                    {% if build.trigger_name == "Code Review" %}
+                        <a class="btn btn-xs btn-success" href="{% url 'projectstartqa' project_id=project.id ci_id=build.build_id %}">Start QA run</a>
+                    {% endif %}
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+        <div class="col-md-12 col-sm-12">
             <a href="{{ project.lava_url }}">{{ project.lava_url }}</a>
         </div>
         <div class="col-md-12 col-sm-12">
@@ -15,12 +57,6 @@
                 <pre>
                 {{ devtype.device_type_settings }}
                 </pre>
-            {% endfor %}
-        </div>
-        <div class="col-md-12 col-sm-12">
-            <h3>Recent Builds:</h3>
-            {% for build in project.build_set.all|dictsortreversed:"id"|slice:":10" %}
-            <a href="{{ build.url }}">{{ build.url }}</a><br/>
             {% endfor %}
         </div>
     </div>

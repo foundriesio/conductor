@@ -19,7 +19,9 @@ import yaml
 from django.conf import settings
 from django.db import models
 from django.utils import timezone
+from http import HTTPStatus
 from urllib.parse import urljoin
+from requests.exceptions import HTTPError
 
 from conductor.testplan.models import TestPlan
 
@@ -258,6 +260,49 @@ class Project(models.Model):
             return self.lava_backend.submit_lava_job(definition)
         return []
 
+    def _retrieve_api_request(self, url):
+        token = self.fio_api_token
+        if token is None:
+            token = getattr(settings, "FIO_API_TOKEN", None)
+        authentication = {
+            "OSF-TOKEN": token,
+        }
+        retries = 3
+        retry_codes = [
+            HTTPStatus.TOO_MANY_REQUESTS,
+            HTTPStatus.INTERNAL_SERVER_ERROR,
+            HTTPStatus.BAD_GATEWAY,
+            HTTPStatus.SERVICE_UNAVAILABLE,
+            HTTPStatus.GATEWAY_TIMEOUT,
+        ]
+
+        for n in range(retries):
+            try:
+                build_request = requests.get(url, headers=authentication)
+                build_request.raise_for_status()
+                return build_request.json()["data"] 
+            except HTTPError as exc:
+                code = exc.response.status_code
+                if code in retry_codes:
+                    # retry after n seconds
+                    time.sleep(n)
+                    continue
+                raise
+
+    def get_api_builds(self):
+        url = f"https://api.foundries.io/projects/{self.name}/lmp/builds/"
+        if self.name == "lmp":
+            # lmp is not a real factory and the URL is different
+            url = f"https://api.foundries.io/projects/lmp/builds/"
+        return self._retrieve_api_request(url)
+
+    def ci_build_details(self, ci_id):
+        url = f"https://api.foundries.io/projects/{self.name}/lmp/builds/{ci_id}"
+        if self.name == "lmp":
+            # lmp is not a real factory and the URL is different
+            url = f"https://api.foundries.io/projects/lmp/builds/{ci_id}"
+        return self._retrieve_api_request(url)
+            
     def __str__(self):
         return self.name
 
