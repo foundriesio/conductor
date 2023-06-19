@@ -19,7 +19,7 @@
         </div>
         <div class="col-md-12 col-sm-12">
             <h3>Recent Builds:</h3>
-            {% for build in project.build_set.all reversed %}
+            {% for build in project.build_set.all|dictsortreversed:"id"|slice:":10" %}
             <a href="{{ build.url }}">{{ build.url }}</a><br/>
             {% endfor %}
         </div>
