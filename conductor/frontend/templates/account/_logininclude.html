@@ -1,0 +1,12 @@
+{% load conductor %}
+      {% if providers %}
+      <div id='social-login'>
+      Or login with these social accounts:
+        <div style="margin-top: 10px;">
+          {% for provider in providers %}
+              <a class='btn btn-default' href='{% provider_login provider.id %}'>{{ provider.name }}</a>
+              &nbsp;
+          {% endfor %}
+        </div>
+      </div>
+      {% endif %}

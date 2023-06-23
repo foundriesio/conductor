@@ -28,6 +28,10 @@ DEBUG_LAVA_SUBMIT = False
 DEBUG_SQUAD_SUBMIT = False
 DEBUG_FIO_SUBMIT = False
 
+SITE_ID = 1  # required by allauth
+ACCOUNT_EMAIL_VERIFICATION = 'none'
+LOGIN_URL = '/login/'
+LOGIN_REDIRECT_URL = '/'
 ALLOWED_HOSTS = []
 CSRF_TRUSTED_ORIGINS = ['https://conductor.infra.foundries.io']
 INSTALLED_APPS = [
@@ -39,6 +43,7 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
     'django_celery_results',
+
     'sortedm2m',
     'conductor.core',
     'conductor.api',
@@ -46,6 +51,14 @@ INSTALLED_APPS = [
     'conductor.frontend',
     'conductor.listener',
     'conductor.testplan',
+
+    # google authentication
+    'django.contrib.sites',
+    'allauth',
+    'allauth.account',
+    'allauth.socialaccount',
+    'allauth.socialaccount.providers.google',
+    'allauth.socialaccount.providers.github',
 ]
 
 MIDDLEWARE = [
@@ -58,6 +71,12 @@ MIDDLEWARE = [
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
 ]
+
+AUTHENTICATION_BACKENDS = [
+    'django.contrib.auth.backends.ModelBackend',
+#    'allauth.account.auth_backends.AuthenticationBackend',
+]
+
 
 ROOT_URLCONF = 'conductor.urls'
 

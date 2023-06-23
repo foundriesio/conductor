@@ -16,24 +16,24 @@
             {% for build in api_builds.builds %}
                     {% if build.status == "RUNNING" %}
             <div class="row container-border bg-primary">
-                <div class="col-md-1">
+                <div class="col-md-2">
                         <span class="label label-primary">
                     {% elif build.status == "FAILED" %}
             <div class="row container-border bg-danger">
-                <div class="col-md-1">
+                <div class="col-md-2">
                         <span class="label label-danger">
                     {% elif build.status == "PASSED" %}
             <div class="row container-border bg-success">
-                <div class="col-md-1">
+                <div class="col-md-2">
                         <span class="label label-success">
                     {% else %}
             <div class="row container-border bg-info">
-                <div class="col-md-1">
+                <div class="col-md-2">
                         <span class="label label-info">
                     {% endif %}
                     {{ build.status }}</span>
                 </div>
-                <div class="col-md-6">
+                <div class="col-md-5">
                     <a href="{{ build.web_url }}">{{ build.web_url }}</a>
                 </div>
                 <div class="col-md-2">

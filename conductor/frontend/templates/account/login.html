@@ -1,0 +1,55 @@
+{% extends "conductor/base.html" %}
+
+{% load conductor %}
+
+{% block content %}
+{% if form.errors and not form.non_field_errors %}
+<p class="errornote">
+"Please correct the errors below."
+{% for e in form.errors %}
+{{ e }}
+{% endfor %}
+</p>
+{% endif %}
+
+{% if form.non_field_errors %}
+<div class='col-md-4 col-md-offset-4'>
+{% for error in form.non_field_errors %}
+<p class="alert alert-warning">
+{{ error }}
+</p>
+{% endfor %}
+</div>
+{% endif %}
+
+<div class='col-md-4 col-md-offset-4'>
+  <div class='panel panel-default'>
+    <div class='panel-heading'>
+      <h3 class="panel-title">Log in</h3>
+    </div>
+    <div class='panel-body'>
+      <div id='plain-old-login'>
+        <form action="/login/" method="post" id="login-form">
+          {% csrf_token %}
+          <div class="form-group">
+            {{ form.username.errors }}
+            <label for="id_username" class="sr-only">Username</label>
+            <input type="text" id="id_username" name="username" class="form-control" placeholder="Username" required autofocus>
+          </div>
+          <div class="form-group">
+            {{ form.password.errors }}
+            <label for="id_password" class="sr-only">Password</label>
+            <input type="password" id="id_password" name="password" class="form-control" placeholder="Password" required>
+            <input type="hidden" name="next" value="{{ next }}" />
+          </div>
+          <div class="form-group">
+            <input class='btn btn-default' type="submit" value="Log in" />
+          </div>
+        </form>
+      </div>
+      {% socialaccount_providers %}
+    </div>
+  </div>
+</div>
+
+{% endblock %}

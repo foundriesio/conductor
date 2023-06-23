@@ -6,6 +6,7 @@ celery
 contextlib2
 cryptography
 Django==4.0.4
+django-allauth
 django-celery-results
 django-polymorphic
 django-sortedm2m
