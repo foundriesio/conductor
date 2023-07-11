@@ -868,6 +868,28 @@ def retrieve_lava_results(device_id, job_id):
     for suite_name, result in lava_results.items():
         __report_test_result(lava_db_device, result)
 
+def _find_lava_device(lava_job, device_name, project):
+    lava_devices = LAVADevice.objects.filter(name=device_name, project=project)
+    # find prompts
+    # prompt should correspond to the MACHINE name from OE build
+    definition = yaml.safe_load(lava_job.definition)
+    if definition is None:
+        return None
+    for action in definition.get("actions"):
+        if "boot" in action.keys():
+            boot_action = action.get("boot")
+            if boot_action is None:
+                return None
+            selected_prompt = None
+            for prompt in boot_action.get("prompts"):
+                if "@" in prompt:
+                    selected_prompt = prompt.split("@")[1]
+                    break
+            for device in lava_devices:
+                if selected_prompt in device.auto_register_name:
+                    return device
+    return None
+
 
 @celery.task
 def process_testjob_notification(event_data):
@@ -879,7 +901,10 @@ def process_testjob_notification(event_data):
         logger.debug(f"Processing job: {job_id}")
         logger.debug(f"LAVA device name: {device_name}")
         if device_name:
-            lava_db_device = LAVADevice.objects.get(name=device_name, project=lava_job.project)
+            lava_db_device = _find_lava_device(lava_job, device_name, lava_job.project)
+            if lava_db_device is None:
+                logger.warning(f"Device from {job_id} not found in {lava_job.project}") 
+                return
             lava_job.device = lava_db_device
             lava_job.save()
             logger.debug(f"LAVA device is: {lava_db_device.id}")

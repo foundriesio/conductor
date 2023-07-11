@@ -15,6 +15,7 @@
 import json
 import celery
 import os
+import yaml
 from datetime import datetime, timedelta
 from django.conf import settings
 from django.test import TestCase
@@ -977,7 +978,7 @@ class TaskTest(TestCase):
         self.lava_device2 = LAVADevice.objects.create(
             device_type = self.device_type2,
             name = "raspberrypi4-64-1",
-            auto_register_name = "ota_device_1",
+            auto_register_name = "ota_device_2",
             project = self.project,
             pduagent=self.pduagent1
         )
@@ -1027,7 +1028,7 @@ class TaskTest(TestCase):
         self.lava_device_testplan2 = LAVADevice.objects.create(
             device_type = self.device_type_testplan2,
             name = "imx8mmevk-sec-1",
-            auto_register_name = "ota_device_1",
+            auto_register_name = "ota_device_2",
             project = self.project_testplan,
             pduagent=self.pduagent1
         )
@@ -1060,17 +1061,21 @@ class TaskTest(TestCase):
         self.project_lmp.testplans.add(self.testplan1)
 
         # notifications
+        definition_lavajob1 = yaml.dump({"actions": [{"boot": {"prompts": ["root@ota_device_1"]}}]})
         self.lavajob1 = LAVAJob.objects.create(
             job_id=1,
             device=self.lava_device_testplan1,
             project=self.project_testplan,
-            job_type=LAVAJob.JOB_LAVA
+            job_type=LAVAJob.JOB_LAVA,
+            definition=definition_lavajob1
         )
+        definition_lavajob2 = yaml.dump({"actions": [{"boot": {"prompts": ["root@ota_device_2"]}}]})
         self.lavajob2 = LAVAJob.objects.create(
             job_id=2,
             device=self.lava_device_testplan2,
             project=self.project_testplan,
-            job_type=LAVAJob.JOB_EL2GO
+            job_type=LAVAJob.JOB_EL2GO,
+            definition=definition_lavajob2
         )
 
     @patch('requests.get')
@@ -1232,7 +1237,7 @@ class TaskTest(TestCase):
             retrieve_mock):
         event_data = {
             "job": self.lavajob2.job_id,
-            "device": self.lava_device_testplan1.name,
+            "device": self.lava_device_testplan2.name,
             "state": "Running"
         }
         process_testjob_notification(event_data)
@@ -1253,7 +1258,7 @@ class TaskTest(TestCase):
             retrieve_mock):
         event_data = {
             "job": self.lavajob2.job_id,
-            "device": self.lava_device_testplan1.name,
+            "device": self.lava_device_testplan2.name,
             "state": "Finished",
             "health": "Complete"
         }
