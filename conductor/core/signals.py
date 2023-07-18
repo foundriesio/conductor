@@ -19,7 +19,7 @@ import time
 import uuid
 import zmq
 from conductor.core.models import PDUAgent, Project
-from conductor.core.tasks import create_project_repository
+from conductor.core.tasks import create_project_repository, create_project_containers_repository, create_project_meta_repository
 from django.conf import settings
 from django.db.models.signals import post_save
 from django.dispatch import receiver
@@ -69,3 +69,5 @@ def on_project_save(sender, instance, created, **kwargs):
     #if created:
     #    create_project_repository.delay(instance.id)
     create_project_repository.delay(instance.id)
+    create_project_containers_repository.delay(instance.id)
+    create_project_meta_repository.delay(instance.id)
