@@ -809,6 +809,17 @@ class TaskTest(TestCase):
             fio_repository_token="fio_repository_token1",
             create_ota_commit=True
         )
+        self.project_meds = Project.objects.create(
+            name="testProjectMeds1",
+            secret="webhooksecret",
+            lava_backend=self.lavabackend1,
+            squad_backend=self.squadbackend1,
+            squad_group="squadgroup",
+            fio_api_token="fio_api_token_meds1",
+            fio_repository_token="fio_repository_token_meds1",
+            create_ota_commit=True,
+            fio_meds_domain="meds.com"
+        )
         self.project_rolling = Project.objects.create(
             name="testProject2",
             secret="webhooksecret",
@@ -1456,6 +1467,55 @@ class TaskTest(TestCase):
         # it is created when creating project
         makedirs_mock.assert_not_called()
         run_mock.assert_called_with(cmd, check=True)
+
+    @patch("subprocess.run")
+    @patch("os.makedirs")
+    def test_create_project_repository_meds(self, makedirs_mock, run_mock):
+        repository_path = os.path.join(settings.FIO_REPOSITORY_HOME, self.project_meds.name)
+        repository_base = settings.FIO_REPOSITORY_BASE % self.project_meds.fio_meds_domain
+        cmd = [os.path.join(settings.FIO_REPOSITORY_SCRIPT_PATH_PREFIX, "checkout_repository.sh"),
+               "-d", repository_path,
+               "-r", settings.FIO_REPOSITORY_REMOTE_NAME,
+               "-u", "%s/%s/lmp-manifest.git" % (repository_base, self.project_meds.name),
+               "-l", settings.FIO_BASE_REMOTE_NAME,
+               "-w", settings.FIO_BASE_MANIFEST,
+               "-t", self.project_meds.fio_repository_token,
+               "-b", self.project_meds.default_branch]
+        create_project_repository(self.project_meds.id)
+        # at this stage repository should already exist
+        # it is created when creating project
+        makedirs_mock.assert_not_called()
+        run_mock.assert_called_with(cmd, check=True)
+
+    @patch("subprocess.run")
+    @patch("os.makedirs")
+    def test_create_project(self, makedirs_mock, run_mock):
+        project_meds2_name = "testProjectMeds2"
+        project_meds2_domain = "meds2.com"
+        repository_path = os.path.join(settings.FIO_REPOSITORY_HOME, project_meds2_name)
+        repository_base = settings.FIO_REPOSITORY_BASE % project_meds2_domain
+        project_meds2 = Project.objects.create(
+            name=project_meds2_name,
+            secret="webhooksecret",
+            lava_backend=self.lavabackend1,
+            squad_backend=self.squadbackend1,
+            squad_group="squadgroup",
+            fio_api_token="fio_api_token_meds2",
+            fio_repository_token="fio_repository_token_meds2",
+            create_ota_commit=True,
+            fio_meds_domain=project_meds2_domain
+        )
+        cmd = [os.path.join(settings.FIO_REPOSITORY_SCRIPT_PATH_PREFIX, "checkout_repository.sh"),
+               "-d", repository_path,
+               "-r", settings.FIO_REPOSITORY_REMOTE_NAME,
+               "-u", "%s/%s/lmp-manifest.git" % (repository_base, project_meds2.name),
+               "-l", settings.FIO_BASE_REMOTE_NAME,
+               "-w", settings.FIO_BASE_MANIFEST,
+               "-t", project_meds2.fio_repository_token,
+               "-b", project_meds2.default_branch]
+        makedirs_mock.assert_called()
+        assert 3 == run_mock.call_count
+        run_mock.assert_any_call(cmd, check=True)
 
     @patch("subprocess.run")
     def test_create_upgrade_commit(self, run_mock):
