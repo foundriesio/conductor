@@ -1461,7 +1461,8 @@ class TaskTest(TestCase):
                "-l", settings.FIO_BASE_REMOTE_NAME,
                "-w", settings.FIO_BASE_MANIFEST,
                "-t", self.project.fio_repository_token,
-               "-b", self.project.default_branch]
+               "-b", self.project.default_branch,
+               "-D", settings.FIO_DOMAIN]
         create_project_repository(self.project.id)
         # at this stage repository should already exist
         # it is created when creating project
@@ -1480,7 +1481,8 @@ class TaskTest(TestCase):
                "-l", settings.FIO_BASE_REMOTE_NAME,
                "-w", settings.FIO_BASE_MANIFEST,
                "-t", self.project_meds.fio_repository_token,
-               "-b", self.project_meds.default_branch]
+               "-b", self.project_meds.default_branch,
+               "-D", self.project_meds.fio_meds_domain]
         create_project_repository(self.project_meds.id)
         # at this stage repository should already exist
         # it is created when creating project
@@ -1512,7 +1514,8 @@ class TaskTest(TestCase):
                "-l", settings.FIO_BASE_REMOTE_NAME,
                "-w", settings.FIO_BASE_MANIFEST,
                "-t", project_meds2.fio_repository_token,
-               "-b", project_meds2.default_branch]
+               "-b", project_meds2.default_branch,
+               "-D", project_meds2_domain]
         makedirs_mock.assert_called()
         assert 3 == run_mock.call_count
         run_mock.assert_any_call(cmd, check=True)

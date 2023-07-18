@@ -639,7 +639,8 @@ def create_project_repository(project_id):
            "-l", settings.FIO_BASE_REMOTE_NAME,
            "-w", settings.FIO_BASE_MANIFEST,
            "-t", fio_repository_token,
-           "-b", project.default_branch]
+           "-b", project.default_branch,
+           "-D", domain]
     logger.debug("Calling repository creation script")
     logger.debug(" ".join(cmd))
     try:
@@ -674,6 +675,7 @@ def create_project_containers_repository(project_id):
            "-u", "%s/%s/containers.git" % (repository_base, project.name),
            "-t", fio_repository_token,
            "-b", project.default_container_branch,
+           "-D", domain,
            "-c", "containers"]
     logger.debug("Calling repository creation script")
     logger.debug(" ".join(cmd))
@@ -709,6 +711,7 @@ def create_project_meta_repository(project_id):
            "-u", "%s/%s/meta-subscriber-overrides.git" % (repository_base, project.name),
            "-t", fio_repository_token,
            "-b", project.default_meta_branch,
+           "-D", domain,
            "-c", "meta"]
     logger.debug("Calling repository creation script")
     logger.debug(" ".join(cmd))
