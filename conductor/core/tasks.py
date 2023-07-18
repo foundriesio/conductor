@@ -629,7 +629,7 @@ def create_project_repository(project_id):
         os.makedirs(repository_path)
     domain = settings.FIO_DOMAIN
     if project.fio_meds_domain is not None:
-        domain = projects.fio_meds_domain
+        domain = project.fio_meds_domain
     repository_base = settings.FIO_REPOSITORY_BASE % domain
     # call shell script to clone and configure repository
     cmd = [os.path.join(settings.FIO_REPOSITORY_SCRIPT_PATH_PREFIX, "checkout_repository.sh"),
@@ -665,7 +665,7 @@ def create_project_containers_repository(project_id):
         os.makedirs(repository_path)
     domain = settings.FIO_DOMAIN
     if project.fio_meds_domain is not None:
-        domain = projects.fio_meds_domain
+        domain = project.fio_meds_domain
     repository_base = settings.FIO_REPOSITORY_BASE % domain
     # call shell script to clone and configure repository
     cmd = [os.path.join(settings.FIO_REPOSITORY_SCRIPT_PATH_PREFIX, "checkout_repository.sh"),
@@ -700,7 +700,7 @@ def create_project_meta_repository(project_id):
         os.makedirs(repository_path)
     domain = settings.FIO_DOMAIN
     if project.fio_meds_domain is not None:
-        domain = projects.fio_meds_domain
+        domain = project.fio_meds_domain
     repository_base = settings.FIO_REPOSITORY_BASE % domain
     # call shell script to clone and configure repository
     cmd = [os.path.join(settings.FIO_REPOSITORY_SCRIPT_PATH_PREFIX, "checkout_repository.sh"),
