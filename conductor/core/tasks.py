@@ -627,11 +627,15 @@ def create_project_repository(project_id):
     if not __project_repository_exists(project):
         # create repository DIR
         os.makedirs(repository_path)
+    domain = settings.FIO_DOMAIN
+    if project.fio_meds_domain is not None:
+        domain = projects.fio_meds_domain
+    repository_base = settings.FIO_REPOSITORY_BASE % domain
     # call shell script to clone and configure repository
     cmd = [os.path.join(settings.FIO_REPOSITORY_SCRIPT_PATH_PREFIX, "checkout_repository.sh"),
            "-d", repository_path,
            "-r", settings.FIO_REPOSITORY_REMOTE_NAME,
-           "-u", "%s/%s/lmp-manifest.git" % (settings.FIO_REPOSITORY_BASE, project.name),
+           "-u", "%s/%s/lmp-manifest.git" % (repository_base, project.name),
            "-l", settings.FIO_BASE_REMOTE_NAME,
            "-w", settings.FIO_BASE_MANIFEST,
            "-t", fio_repository_token,
@@ -659,11 +663,15 @@ def create_project_containers_repository(project_id):
     if not __project_repository_exists(project, settings.FIO_REPOSITORY_CONTAINERS_HOME):
         # create repository DIR
         os.makedirs(repository_path)
+    domain = settings.FIO_DOMAIN
+    if project.fio_meds_domain is not None:
+        domain = projects.fio_meds_domain
+    repository_base = settings.FIO_REPOSITORY_BASE % domain
     # call shell script to clone and configure repository
     cmd = [os.path.join(settings.FIO_REPOSITORY_SCRIPT_PATH_PREFIX, "checkout_repository.sh"),
            "-d", repository_path,
            "-r", settings.FIO_REPOSITORY_REMOTE_NAME,
-           "-u", "%s/%s/containers.git" % (settings.FIO_REPOSITORY_BASE, project.name),
+           "-u", "%s/%s/containers.git" % (repository_base, project.name),
            "-t", fio_repository_token,
            "-b", project.default_container_branch,
            "-c", "containers"]
@@ -690,11 +698,15 @@ def create_project_meta_repository(project_id):
     if not __project_repository_exists(project, settings.FIO_REPOSITORY_META_HOME):
         # create repository DIR
         os.makedirs(repository_path)
+    domain = settings.FIO_DOMAIN
+    if project.fio_meds_domain is not None:
+        domain = projects.fio_meds_domain
+    repository_base = settings.FIO_REPOSITORY_BASE % domain
     # call shell script to clone and configure repository
     cmd = [os.path.join(settings.FIO_REPOSITORY_SCRIPT_PATH_PREFIX, "checkout_repository.sh"),
            "-d", repository_path,
            "-r", settings.FIO_REPOSITORY_REMOTE_NAME,
-           "-u", "%s/%s/meta-subscriber-overrides.git" % (settings.FIO_REPOSITORY_BASE, project.name),
+           "-u", "%s/%s/meta-subscriber-overrides.git" % (repository_base, project.name),
            "-t", fio_repository_token,
            "-b", project.default_meta_branch,
            "-c", "meta"]

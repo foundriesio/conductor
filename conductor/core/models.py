@@ -235,6 +235,8 @@ class Project(models.Model):
     fio_api_token = models.CharField(max_length=40, blank=True, null=True)
     # token to allow source code operations
     fio_repository_token = models.CharField(max_length=40, blank=True, null=True)
+    # domain of the MEDS instance. If empty defaults to "foundries.io"
+    fio_meds_domain = models.CharField(max_length=64, blank=True, null=True)
 
     # test plans
     testplans = models.ManyToManyField(TestPlan, blank=True)

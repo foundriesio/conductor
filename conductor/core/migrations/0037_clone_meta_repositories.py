@@ -6,7 +6,7 @@ from conductor.core.tasks import create_project_meta_repository
 
 
 def initialize_meta_repositories(apps, schema_editor):
-    for project in Project.objects.all():
+    for project in Project.objects.all().only("id"):
         create_project_meta_repository(project.pk)
 
 

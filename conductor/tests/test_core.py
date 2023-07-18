@@ -1442,10 +1442,11 @@ class TaskTest(TestCase):
     @patch("os.makedirs")
     def test_create_project_repository(self, makedirs_mock, run_mock):
         repository_path = os.path.join(settings.FIO_REPOSITORY_HOME, self.project.name)
+        repository_base = settings.FIO_REPOSITORY_BASE % settings.FIO_DOMAIN
         cmd = [os.path.join(settings.FIO_REPOSITORY_SCRIPT_PATH_PREFIX, "checkout_repository.sh"),
                "-d", repository_path,
                "-r", settings.FIO_REPOSITORY_REMOTE_NAME,
-               "-u", "%s/%s/lmp-manifest.git" % (settings.FIO_REPOSITORY_BASE, self.project.name),
+               "-u", "%s/%s/lmp-manifest.git" % (repository_base, self.project.name),
                "-l", settings.FIO_BASE_REMOTE_NAME,
                "-w", settings.FIO_BASE_MANIFEST,
                "-t", self.project.fio_repository_token,
