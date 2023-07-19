@@ -250,7 +250,7 @@ class Project(models.Model):
         if self.qa_reports_project_name:
             qa_reports_project_name = self.qa_reports_project_name
         if self.squad_backend:
-            build_version = build.build_id
+            build_version = build.commit_id
             if build.lmp_commit:
                 build_version = build.lmp_commit
             return self.squad_backend.watch_lava_job(

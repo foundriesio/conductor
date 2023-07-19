@@ -451,8 +451,6 @@ def _update_build_reason(build):
                             # this is previous HEAD
                             continue
                         build.lmp_commit = parent.hexsha
-                else:
-                    build.lmp_commit = commit.hexsha
             except ValueError:
                 # commit was not found in the repository
                 # this usually means build was triggered from meta-sub
@@ -469,7 +467,6 @@ def _update_build_reason(build):
                         logger.debug(f"Meta Commit: {build.commit_id}")
                         logger.debug(f"Commit message: {meta_commit.message}")
                         build.build_reason = meta_commit.message[:127]
-                        build.lmp_commit = meta_commit.hexsha
                         for skip_message in settings.SKIP_QA_MESSAGES:
                             if skip_message in meta_commit.message:
                                 build.skip_qa = True
