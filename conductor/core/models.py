@@ -201,6 +201,10 @@ class Project(models.Model):
         on_delete=models.SET_NULL,
         null=True,
         blank=True)
+    # name of the header variable in LAVA inscance
+    # the variable is used to authenticate downloads from 
+    # FoundriesFactory CI
+    lava_header = models.CharField(max_length=23, null=True, blank=True)
     squad_backend = models.ForeignKey(
         SQUADBackend,
         on_delete=models.SET_NULL,

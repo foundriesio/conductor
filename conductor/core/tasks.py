@@ -337,6 +337,9 @@ def create_build_run(self, build_id, run_name, submit_jobs=True):
     logger.debug(f"run_name: {run_name}")
     logger.debug(f"{templates}")
     lava_job_definitions = []
+    lava_header = settings.FIO_LAVA_HEADER
+    if build.project.lava_header:
+        lava_header = build.project.lava_header
     for template in templates:
         lcl_build = template.get("build")
         if not lcl_build:
@@ -366,6 +369,7 @@ def create_build_run(self, build_id, run_name, submit_jobs=True):
             "BOOTLOADER_NOHDMI_URL": "%simx-boot-%s-nohdmi" % (run_url, run_name),
             "SPLIMG_URL": "%sSPL-%s" % (run_url, run_name),
             "MFGTOOL_URL": f"{lcl_build.url}runs/{run_name}-mfgtools/mfgtool-files.tar.gz",
+            "LAVA_HEADER": lava_header,
             "prompts": ["fio@%s" % run_name, "Password:", "root@%s" % run_name],
             "net_interface": device_type.net_interface,
             "os_tree_hash": run.ostree_hash,
