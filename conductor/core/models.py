@@ -296,14 +296,20 @@ class Project(models.Model):
                 raise
 
     def get_api_builds(self):
-        url = f"https://api.foundries.io/projects/{self.name}/lmp/builds/"
+        domain = settings.FIO_DOMAIN
+        if self.fio_meds_domain:
+            domain = self.fio_meds_domain
+        url = f"https://api.{domain}/projects/{self.name}/lmp/builds/"
         if self.name == "lmp":
             # lmp is not a real factory and the URL is different
             url = f"https://api.foundries.io/projects/lmp/builds/"
         return self._retrieve_api_request(url)
 
     def ci_build_details(self, ci_id):
-        url = f"https://api.foundries.io/projects/{self.name}/lmp/builds/{ci_id}"
+        domain = settings.FIO_DOMAIN
+        if self.fio_meds_domain:
+            domain = self.fio_meds_domain
+        url = f"https://api.{domain}/projects/{self.name}/lmp/builds/{ci_id}"
         if self.name == "lmp":
             # lmp is not a real factory and the URL is different
             url = f"https://api.foundries.io/projects/lmp/builds/{ci_id}"
@@ -352,6 +358,19 @@ class Build(models.Model):
             "OSTREE_HASH": run.ostree_hash,
             "TARGET": f"{self.build_id}",
         }
+
+    def get_lmp_commit_url(self):
+        if not self.commit_id:
+            return ""
+        return f"{settings.FIO_BASE_MANIFEST}/commit/{self.lmp_commit}"
+
+    def get_commit_url(self):
+        if not self.commit_id:
+            return ""
+        domain = settings.FIO_DOMAIN
+        if self.project.fio_meds_domain:
+            domain = self.project.fio_meds_domain
+        return f"https://source.{domain}/factories/{self.project.name}/lmp-manifest.git/commit/?id={self.commit_id}"
 
 
 class BuildTag(models.Model):
@@ -492,9 +511,12 @@ class LAVADevice(models.Model):
     def get_current_target(self):
         # checks the current target reported by FIO API
         authentication = self._get_auth_dict()
+        domain = settings.FIO_DOMAIN
+        if self.project.fio_meds_domain:
+            domain = self.project.fio_meds_domain
         if self.auto_register_name:
             params = {"factory": self.project.name}
-            url = f"https://api.foundries.io/ota/devices/{self.auto_register_name}/"
+            url = f"https://api.{domain}/ota/devices/{self.auto_register_name}/"
             device_details_request = requests.get(url, headers=authentication, params=params)
             if device_details_request.status_code == 200:
                 return device_details_request.json()
@@ -507,10 +529,13 @@ class LAVADevice(models.Model):
         if not factory:
             logger.error("Factory name is required when removing device")
             return {}
+        domain = settings.FIO_DOMAIN
+        if self.project.fio_meds_domain:
+            domain = self.project.fio_meds_domain
         authentication = self._get_auth_dict()
         if self.auto_register_name:
             params = {"factory": factory}
-            url = f"https://api.foundries.io/ota/devices/{self.auto_register_name}/"
+            url = f"https://api.{domain}/ota/devices/{self.auto_register_name}/"
             device_remove_request = requests.delete(url, headers=authentication, params=params)
             if device_remove_request.status_code == 200:
                 return device_remove_request.json()
@@ -521,13 +546,16 @@ class LAVADevice(models.Model):
 
     def _el2go_operation(self, requests_method):
         authentication = self._get_auth_dict()
+        domain = settings.FIO_DOMAIN
+        if self.fio_meds_domain:
+            domain = self.project.fio_meds_domain
         if self.el2go_name:
             params = {
                 "product-id": self.project.el2go_product_id,
                 "devices": [self.el2go_name],
                 "production": False
             }
-            url = f"https://api.foundries.io/ota/factories/{self.project.name}/el2g/devices/"
+            url = f"https://api.{domain}/ota/factories/{self.project.name}/el2g/devices/"
             device_operation_request = requests_method(url, headers=authentication, json=params)
             if device_operation_request.status_code == 200:
                 return device_operation_request.json()

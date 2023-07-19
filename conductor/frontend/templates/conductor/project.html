@@ -5,12 +5,52 @@
         <div class="col-md-12 col-sm-12">
             <h2>Name: {{ project.name }}</h2>
         </div>
+    </div>
+    <div class="row">
         <div class="col-md-12 col-sm-12">
             <h3>Recent Builds:</h3>
+            <div class="row container-border">
+                <div class="col-md-4">
+                    <strong>Commit ID</strong>
+                </div>
+                <div class="col-md-4">
+                    <strong>LmP Commit ID</strong>
+                </div>
+                <div class="col-md-2">
+                    <strong>Build URL</strong>
+                </div>
+                <div class="col-md-1">
+                    <strong>Tests scheduled</strong>
+                </div>
+            </div>
+
             {% for build in project.build_set.all|dictsortreversed:"id"|slice:":10" %}
-            <a href="{{ build.url }}">{{ build.url }}</a><br/>
+            <div class="row container-border">
+                <div class="col-md-4">
+                    {% if build.commit_id != None %}
+                    <a href="{{ build.get_commit_url }}">{{ build.commit_id }}</a>
+                    {% endif %}
+                </div>
+                <div class="col-md-4">
+                    {% if build.lmp_commit != None %}
+                    <a href="{{ build.get_lmp_commit_url }}">{{ build.lmp_commit }}</a>
+                    {% endif %}
+                </div>
+                <div class="col-md-2">
+                    <a href="{{ build.url }}">{{ build.build_id }}</a><br/>
+                </div>
+                <div class="col-md-1">
+                    {% if build.schedule_tests %}
+                    <span class="badge alert-success"><span class="glyphicon glyphicon-ok"></span></span>
+                    {% else %}
+                    <span class="badge alert-danger"><span class="glyphicon glyphicon-remove"></span></span>
+                    {% endif %}
+                </div>
+            </div>
             {% endfor %}
         </div>
+    </div>
+    <div class="row">
         <div class="col-md-12 col-sm-12">
             <h3>Recent CI Builds:</h3>
             {% for build in api_builds.builds %}
@@ -47,9 +87,21 @@
             </div>
             {% endfor %}
         </div>
+    </div>
+    <div class="row">
         <div class="col-md-12 col-sm-12">
             <a href="{{ project.lava_url }}">{{ project.lava_url }}</a>
         </div>
+    </div>
+    <div class="row">
+        <div class="col-md-12 col-sm-12">
+            <h3>Test plan</h3>
+            {% for testplan in project.testplans.all %}
+                <h4>{{ testplan.name }}</h4>
+            {% endfor %}
+        </div>
+    </div>
+    <div class="row">
         <div class="col-md-12 col-sm-12">
             <h3>Device Types:</h3>
             {% for devtype in project.lavadevicetype_set.all %}
@@ -57,6 +109,14 @@
                 <pre>
                 {{ devtype.device_type_settings }}
                 </pre>
+            {% endfor %}
+        </div>
+    </div>
+    <div class="row">
+        <div class="col-md-12 col-sm-12">
+            <h3>Devices:</h3>
+            {% for device in project.lavadevice_set.all %}
+                <h4>{{ device.name }}</h4>
             {% endfor %}
         </div>
     </div>
