@@ -467,6 +467,7 @@ def _update_build_reason(build):
                         logger.debug(f"Meta Commit: {build.commit_id}")
                         logger.debug(f"Commit message: {meta_commit.message}")
                         build.build_reason = meta_commit.message[:127]
+                        build.build_trigger = Build.BUILD_META_SUB
                         for skip_message in settings.SKIP_QA_MESSAGES:
                             if skip_message in meta_commit.message:
                                 build.skip_qa = True

@@ -32,7 +32,7 @@
                     {% endif %}
                 </div>
                 <div class="col-md-4">
-                    {% if build.lmp_commit != None %}
+                    {% if build.get_lmp_commit_url != "" %}
                     <a href="{{ build.get_lmp_commit_url }}">{{ build.lmp_commit }}</a>
                     {% endif %}
                 </div>

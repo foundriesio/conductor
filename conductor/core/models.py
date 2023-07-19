@@ -335,6 +335,13 @@ class Build(models.Model):
     tag = models.CharField(max_length=40, blank=True, null=True)
     # beginning of the commit message subject
     build_reason = models.CharField(max_length=128, blank=True, null=True)
+    BUILD_LMP_MANIFEST = "LMP"
+    BUILD_META_SUB = "MET"
+    BUILD_TRIGGER_CHOICES = [
+        (BUILD_LMP_MANIFEST, "LmP Manifest"),
+        (BUILD_META_SUB, "Meta Subscriber Overrides"),
+    ]
+    build_trigger = models.CharField(max_length=3, choices=BUILD_TRIGGER_CHOICES, default=BUILD_LMP_MANIFEST)
     # for some builds tests don't need to be scheduled
     # these are builds that are used for update/rollback testing
     schedule_tests = models.BooleanField(default=True)
@@ -360,7 +367,7 @@ class Build(models.Model):
         }
 
     def get_lmp_commit_url(self):
-        if not self.commit_id:
+        if not self.lmp_commit or self.lmp_commit == self.commit_id:
             return ""
         return f"{settings.FIO_BASE_MANIFEST}/commit/{self.lmp_commit}"
 
@@ -370,6 +377,8 @@ class Build(models.Model):
         domain = settings.FIO_DOMAIN
         if self.project.fio_meds_domain:
             domain = self.project.fio_meds_domain
+        if self.build_trigger == Build.BUILD_META_SUB:
+            return f"https://source.{domain}/factories/{self.project.name}/meta-subscriber-overrides.git/commit/?id={self.commit_id}"
         return f"https://source.{domain}/factories/{self.project.name}/lmp-manifest.git/commit/?id={self.commit_id}"
 
 
