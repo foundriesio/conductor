@@ -163,11 +163,11 @@
             {% for devtype in project.lavadevicetype_set.all %}
                 <div class="panel panel-default">
                     <div class="panel-heading">
-                        <h4 class="panel-title" data-toggle="collapse" data-target="#dt{{ devicetype.id }}">
+                        <h4 class="panel-title" data-toggle="collapse" data-target="#dt{{ devtype.id }}">
                         {{ devtype.name }}
                         </h4>
                     </div>
-                    <div id="dt{{ devicetype.id }}" class="panel-collapse collapse">
+                    <div id="dt{{ devtype.id }}" class="panel-collapse collapse">
                         <div class="panel-body">
                             <pre>
                            {{ devtype.device_type_settings }}
