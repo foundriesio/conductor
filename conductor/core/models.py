@@ -253,6 +253,8 @@ class Project(models.Model):
             build_version = build.commit_id
             if build.lmp_commit:
                 build_version = build.lmp_commit
+            if not build_version:
+                build_version = build.build_id
             return self.squad_backend.watch_lava_job(
                     self.squad_group,
                     qa_reports_project_name,
@@ -380,6 +382,15 @@ class Build(models.Model):
         if self.build_trigger == Build.BUILD_META_SUB:
             return f"https://source.{domain}/factories/{self.project.name}/meta-subscriber-overrides.git/commit/?id={self.commit_id}"
         return f"https://source.{domain}/factories/{self.project.name}/lmp-manifest.git/commit/?id={self.commit_id}"
+
+    def get_qa_reports_url(self):
+        commit = self.commit_id
+        if self.lmp_commit:
+            commit = self.lmp_commit
+        project = self.project.name
+        if self.project.qa_reports_project_name:
+            project = self.project.qa_reports_project_name
+        return f"https://qa-reports.foundries.io/{self.project.squad_group}/{project}/build/{commit}"
 
 
 class BuildTag(models.Model):

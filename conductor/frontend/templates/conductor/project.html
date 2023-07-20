@@ -1,5 +1,11 @@
 {% extends "conductor/base.html" %}
 
+{% block styleheader %}
+.panel {
+  cursor: pointer;
+}
+{% endblock %}
+
 {% block content %}
     <div class="row">
         <div class="col-md-12 col-sm-12">
@@ -21,6 +27,9 @@
                 </div>
                 <div class="col-md-1">
                     <strong>Tests scheduled</strong>
+                </div>
+                <div class="col-md-1">
+                    <strong>Results</strong>
                 </div>
             </div>
 
@@ -44,6 +53,11 @@
                     <span class="badge alert-success"><span class="glyphicon glyphicon-ok"></span></span>
                     {% else %}
                     <span class="badge alert-danger"><span class="glyphicon glyphicon-remove"></span></span>
+                    {% endif %}
+                </div>
+                <div class="col-md-1">
+                    {% if build.schedule_tests %}
+                    <a href="{{ build.get_qa_reports_url}}">Results</a><br/>
                     {% endif %}
                 </div>
             </div>
@@ -97,7 +111,49 @@
         <div class="col-md-12 col-sm-12">
             <h3>Test plan</h3>
             {% for testplan in project.testplans.all %}
-                <h4>{{ testplan.name }}</h4>
+                <div class="panel panel-default">
+                    <div class="panel-heading">
+                        <h4 class="panel-title" data-toggle="collapse" data-target="#tp{{ testplan.id }}">
+                        {{ testplan.name }}
+                        </h4>
+                    </div>
+                    <div id="tp{{ testplan.id }}" class="panel-collapse collapse">
+                        <div class="panel-body">
+                            <div class="row container-border">
+                                <div class="col-md-8">
+                                    <strong>Name</strong>
+                                </div>
+                                <div class="col-md-2">
+                                    <strong>OTA job</strong>
+                                </div>
+                                <div class="col-md-2">
+                                    <strong>EL2GO job</strong>
+                                </div>
+                            </div>
+                            {% for testjob in testplan.testjobs.all %}
+                            <div class="row container-border">
+                                <div class="col-md-8">
+                                    {{ testjob.name }}
+                                </div>
+                                <div class="col-md-2">
+                                    {% if testjob.is_ota_job %}
+                                    <span class="badge alert-success"><span class="glyphicon glyphicon-ok"></span></span>
+                                    {% else %}
+                                    <span class="badge alert-danger"><span class="glyphicon glyphicon-remove"></span></span>
+                                    {% endif %}
+                                </div>
+                                <div class="col-md-2">
+                                    {% if testjob.is_el2go_job %}
+                                    <span class="badge alert-success"><span class="glyphicon glyphicon-ok"></span></span>
+                                    {% else %}
+                                    <span class="badge alert-danger"><span class="glyphicon glyphicon-remove"></span></span>
+                                    {% endif %}
+                                </div>
+                            </div>
+                            {% endfor %}
+                        </div>
+                    </div>
+                </div>
             {% endfor %}
         </div>
     </div>
@@ -105,10 +161,20 @@
         <div class="col-md-12 col-sm-12">
             <h3>Device Types:</h3>
             {% for devtype in project.lavadevicetype_set.all %}
-                <h4>{{ devtype.name }}</h4>
-                <pre>
-                {{ devtype.device_type_settings }}
-                </pre>
+                <div class="panel panel-default">
+                    <div class="panel-heading">
+                        <h4 class="panel-title" data-toggle="collapse" data-target="#dt{{ devicetype.id }}">
+                        {{ devtype.name }}
+                        </h4>
+                    </div>
+                    <div id="dt{{ devicetype.id }}" class="panel-collapse collapse">
+                        <div class="panel-body">
+                            <pre>
+                           {{ devtype.device_type_settings }}
+                           </pre>
+                        </div>
+                    </div>
+                </div>
             {% endfor %}
         </div>
     </div>
@@ -116,7 +182,21 @@
         <div class="col-md-12 col-sm-12">
             <h3>Devices:</h3>
             {% for device in project.lavadevice_set.all %}
-                <h4>{{ device.name }}</h4>
+                 <div class="panel panel-default">
+                    <div class="panel-heading">
+                        <h4 class="panel-title" data-toggle="collapse" data-target="#dev{{ device.id }}">
+                        {{ device.name }}
+                        </h4>
+                    </div>
+                    <div id="dev{{ device.id }}" class="panel-collapse collapse">
+                        <div class="panel-body">
+                            <p><strong>Type: </strong>{{ device.device_type.name }}</p>
+                            <p><strong>Auto register name: </strong>{{ device.auto_register_name }}</p>
+                            <p><strong>EL2GO 12NC: </strong>{{ device.project.el2go_product_id }}</p>
+                            <p><strong>EL2GO ID: </strong>{{ device.el2go_name }}</p>
+                        </div>
+                    </div>
+                </div>
             {% endfor %}
         </div>
     </div>
