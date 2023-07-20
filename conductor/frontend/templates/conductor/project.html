@@ -49,14 +49,14 @@
                     <a href="{{ build.url }}">{{ build.build_id }}</a><br/>
                 </div>
                 <div class="col-md-1">
-                    {% if build.schedule_tests %}
+                    {% if build.schedule_tests and not build.skip_qa %}
                     <span class="badge alert-success"><span class="glyphicon glyphicon-ok"></span></span>
                     {% else %}
                     <span class="badge alert-danger"><span class="glyphicon glyphicon-remove"></span></span>
                     {% endif %}
                 </div>
                 <div class="col-md-1">
-                    {% if build.schedule_tests %}
+                    {% if build.schedule_tests and not build.skip_qa %}
                     <a href="{{ build.get_qa_reports_url}}">Results</a><br/>
                     {% endif %}
                 </div>
