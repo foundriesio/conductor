@@ -15,6 +15,7 @@
 import hmac
 import json
 from django.test import TestCase, Client
+from django.conf import settings
 from conductor.api.models import APICallback
 from conductor.core.models import Project, LAVABackend, LAVADeviceType, LAVADevice, Build, Run
 from conductor.core.utils import ISO8601_JSONEncoder
@@ -91,6 +92,89 @@ class ApiViewTest(TestCase):
         self.assertEqual(build.build_id, 1)
         cbr_mock.assert_called()
         ubci_mock.assert_called()
+
+    @patch("conductor.core.tasks._get_ci_url", return_value="abc")
+    @patch("conductor.core.tasks.restart_ci_run")
+    @patch("conductor.core.tasks.create_build_run.si")
+    @patch("conductor.core.tasks.update_build_commit_id.si")
+    def test_jobserv_webhook_failed(self, ubci_mock, cbr_mock, restart_mock, get_mock):
+        request_body_dict = {
+            "status": "FAILED",
+            "build_id": 1,
+            "url": "https://api.foundries.io/projects/testProject1/lmp/builds/73/",
+            "trigger_name": "platform-master",
+            "runs": [
+                {"url": "http://example.com/name2/", "log_url": "http://example.com/name2/log", "name": "name2", "status": "PASSED"},
+                {"url": "http://example.com/name1/", "log_url": "http://example.com/name1/log", "name": "name1", "status": "FAILED"}
+            ]
+        }
+        data = json.dumps(request_body_dict, cls=ISO8601_JSONEncoder)
+        sig = hmac.new(self.project.secret.encode(), msg=data.encode(), digestmod="sha256")
+        response = self.client.post(
+            "/api/jobserv/",
+            request_body_dict,
+            content_type="application/json",
+            **{"HTTP_X_JobServ_Sig":f"sha256: {sig.hexdigest()}"}
+        )
+        self.assertEqual(response.status_code, 200)
+        # check if build was created
+        build = self.project.build_set.last()
+        apicallback = APICallback.objects.first()
+        self.assertEqual(request_body_dict, json.loads(apicallback.content))
+        self.assertIsNotNone(build)
+        self.assertEqual(build.build_id, 1)
+        cbr_mock.assert_not_called()
+        ubci_mock.assert_not_called()
+        restart_mock.assert_called_with(build.project, "http://example.com/name1/")
+        build.refresh_from_db()
+        self.assertEqual(build.restart_counter, 1)
+
+    @patch("conductor.core.tasks._get_ci_url", return_value="abc")
+    @patch("conductor.core.tasks.restart_ci_run")
+    @patch("conductor.core.tasks.create_build_run.si")
+    @patch("conductor.core.tasks.update_build_commit_id.si")
+    def test_jobserv_webhook_failed_3times(self, ubci_mock, cbr_mock, restart_mock, get_mock):
+        request_body_dict = {
+            "status": "FAILED",
+            "build_id": 1,
+            "url": "https://api.foundries.io/projects/testProject1/lmp/builds/73/",
+            "trigger_name": "platform-master",
+            "runs": [
+                {"url": "http://example.com/name2/", "log_url": "http://example.com/name2/log", "name": "name2", "status": "PASSED"},
+                {"url": "http://example.com/name1/", "log_url": "http://example.com/name1/log", "name": "name1", "status": "FAILED"}
+            ]
+        }
+        data = json.dumps(request_body_dict, cls=ISO8601_JSONEncoder)
+        sig = hmac.new(self.project.secret.encode(), msg=data.encode(), digestmod="sha256")
+        response = self.client.post(
+            "/api/jobserv/",
+            request_body_dict,
+            content_type="application/json",
+            **{"HTTP_X_JobServ_Sig":f"sha256: {sig.hexdigest()}"}
+        )
+        self.assertEqual(response.status_code, 200)
+        # check if build was created
+        build = self.project.build_set.last()
+        apicallback = APICallback.objects.first()
+        self.assertEqual(request_body_dict, json.loads(apicallback.content))
+        self.assertIsNotNone(build)
+        self.assertEqual(build.build_id, 1)
+        cbr_mock.assert_not_called()
+        ubci_mock.assert_not_called()
+        restart_mock.assert_called_with(build.project, "http://example.com/name1/")
+        build.refresh_from_db()
+        self.assertEqual(build.restart_counter, 1)
+        build.restart_counter = settings.MAX_BUILD_RESTARTS
+        build.save()
+        restart_mock.reset_mock()
+        response = self.client.post(
+            "/api/jobserv/",
+            request_body_dict,
+            content_type="application/json",
+            **{"HTTP_X_JobServ_Sig":f"sha256: {sig.hexdigest()}"}
+        )
+        self.assertEqual(response.status_code, 200)
+        restart_mock.assert_not_called()
 
     def test_jobserv_webhook_incorrect_header(self):
         request_body_dict = {

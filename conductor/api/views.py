@@ -30,7 +30,15 @@ from django.views.decorators.csrf import csrf_exempt
 
 from conductor.api.models import APICallback
 from conductor.core.models import Project, Build, LAVADevice, Run
-from conductor.core.tasks import create_build_run, merge_lmp_manifest, update_build_commit_id, check_device_ota_completed, tag_build_runs, schedule_lmp_pr_tests
+from conductor.core.tasks import (
+    create_build_run,
+    merge_lmp_manifest,
+    update_build_commit_id,
+    check_device_ota_completed,
+    tag_build_runs,
+    schedule_lmp_pr_tests,
+    restart_failed_runs
+)
 from conductor.core.utils import ISO8601_JSONEncoder
 
 
@@ -119,9 +127,6 @@ def process_jobserv_webhook(request):
         endpoint="jobserv",
         content=json.dumps(request_body_json)
     )
-    if request_body_json.get("status") != "PASSED":
-        # nothing to do with failed build
-        return HttpResponse("OK")
     build_id = request_body_json.get("build_id")
     if not build_id:
         return HttpResponseBadRequest()
@@ -148,6 +153,10 @@ def process_jobserv_webhook(request):
             tag=build_branch)
     if not build:
         # in case build is not created, exit gracefully
+        return HttpResponse("OK")
+
+    if request_body_json.get("status") != "PASSED":
+        restart_failed_runs.delay(build.pk, request_body_json)
         return HttpResponse("OK")
 
     if "containers" in trigger_name:

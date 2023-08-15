@@ -179,6 +179,7 @@ FIO_LAVA_HEADER = "OSF-TOKEN"
 GH_LMP_PATCH_SOURCE = "fio-github"
 
 SKIP_QA_MESSAGES = ["[skip qa]", "[skip-qa]", "skip-qa"]
+MAX_BUILD_RESTARTS = 3
 
 LOGGING = {
     'version': 1,

@@ -288,7 +288,7 @@ class Project(models.Model):
             try:
                 build_request = requests.get(url, headers=authentication)
                 build_request.raise_for_status()
-                return build_request.json()["data"] 
+                return build_request.json()["data"]
             except HTTPError as exc:
                 code = exc.response.status_code
                 if code in retry_codes:
@@ -316,7 +316,7 @@ class Project(models.Model):
             # lmp is not a real factory and the URL is different
             url = f"https://api.foundries.io/projects/lmp/builds/{ci_id}"
         return self._retrieve_api_request(url)
-            
+
     def __str__(self):
         return self.name
 
@@ -353,6 +353,8 @@ class Build(models.Model):
     # shit flag is set to true when there is
     # [skip qa] or [skip-qa] string in the commit message
     skip_qa = models.BooleanField(default=False)
+    # keeps track of restarts in the build
+    restart_counter = models.IntegerField(default=0)
 
     def __str__(self):
         return f"{self.build_id} ({self.project.name})"

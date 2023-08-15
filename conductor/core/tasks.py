@@ -77,9 +77,22 @@ def requests_retry_session(
     return session
 
 
-def _get_os_tree_hash(url, project):
-    logger.debug("Retrieving ostree hash with base url: %s" % url)
-    # ToDo: add headers for authentication
+def restart_ci_run(project, run_url):
+    token = project.fio_api_token
+    if token is None:
+        token = getattr(settings, "FIO_API_TOKEN", None)
+    authentication = {
+        "OSF-TOKEN": token,
+    }
+    url = run_url + "rerun"
+    post_request = requests.post(url, headers=authentication)
+    if post_request.status_code == 200:
+        if post_request.json().get("status") == "success":
+            return True
+    return False
+
+
+def _get_ci_url(url, project):
     token = project.fio_api_token
     if token is None:
         token = getattr(settings, "FIO_API_TOKEN", None)
@@ -88,10 +101,16 @@ def _get_os_tree_hash(url, project):
     }
     session = requests.Session()
     session.headers.update(authentication)
-    os_tree_hash_request = requests_retry_session(session=session).get(urljoin(url, "other/ostree.sha.txt"))
-    if os_tree_hash_request.status_code == 200:
-        return os_tree_hash_request.text.strip()
+    url_request = requests_retry_session(session=session).get(url)
+    if url_request.status_code == 200:
+        return url_request.text.strip()
     return None
+
+
+def _get_os_tree_hash(url, project):
+    logger.debug("Retrieving ostree hash with base url: %s" % url)
+    ostree_url = urljoin(url, "other/ostree.sha.txt")
+    return _get_ci_url(ostree_url, project)
 
 
 def _get_factory_targets(factory: str, token: str) -> dict:
@@ -204,6 +223,35 @@ def _remove_tag(build, tag):
     if oldtags:
         for oldtag in oldtags:
             build.buildtag_set.remove(oldtag)
+
+
+@celery.task(bind=True)
+def restart_failed_runs(self, build_id, request_json):
+    # restarts failed runs in a build
+    # only restarts when detected infrastructure issue
+    # genuine build failures should not be restarted
+    restarted = False
+    try:
+        build = Build.objects.get(pk=build_id)
+    except Build.DoesNotExist:
+        logger.error(f"No Build with ID {build_id} for failed CI job.")
+        return
+    for run in request_json.get("runs"):
+        if run.get("status") != "PASSED":
+            # get the log and try to assess the situation
+            log_url = run.get("log_url")
+            run_log = _get_ci_url(log_url, build.project)
+            # if there is no "ERROR" string
+            # the run is likely to be infra failure
+            if run_log.find("ERROR") < 0:
+            # ToDo: add more heuristics
+                # restart the run
+                if build.restart_counter < settings.MAX_BUILD_RESTARTS:
+                    if restart_ci_run(build.project, run.get("url")):
+                        restarted = True
+    if restarted:
+        build.restart_counter = build.restart_counter + 1
+        build.save()
 
 
 @celery.task(bind=True)
