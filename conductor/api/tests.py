@@ -15,6 +15,7 @@
 import hmac
 import json
 from django.test import TestCase, Client
+from conductor.api.models import APICallback
 from conductor.core.models import Project, LAVABackend, LAVADeviceType, LAVADevice, Build, Run
 from conductor.core.utils import ISO8601_JSONEncoder
 from unittest.mock import MagicMock, patch
@@ -84,6 +85,8 @@ class ApiViewTest(TestCase):
         self.assertEqual(response.status_code, 201)
         # check if build was created
         build = self.project.build_set.last()
+        apicallback = APICallback.objects.first()
+        self.assertEqual(request_body_dict, json.loads(apicallback.content))
         self.assertIsNotNone(build)
         self.assertEqual(build.build_id, 1)
         cbr_mock.assert_called()
@@ -143,6 +146,8 @@ class ApiViewTest(TestCase):
             content_type="application/json",
             **{"HTTP_X_JobServ_Sig":f"sha256: {sig.hexdigest()}"}
         )
+        apicallback = APICallback.objects.first()
+        self.assertEqual(request_body_dict, json.loads(apicallback.content))
         self.assertEqual(response.status_code, 201)
         tag_mock.assert_called()
 
@@ -239,6 +244,8 @@ class ApiViewTest(TestCase):
             content_type="application/json",
             **{"HTTP_X_JobServ_Sig":f"sha256: {sig.hexdigest()}"}
         )
+        apicallback = APICallback.objects.first()
+        self.assertEqual(request_body_dict, json.loads(apicallback.content))
         self.assertEqual(response.status_code, 201)
         # check if build was created
         merge_lmp_manifest_mock.assert_called()
@@ -262,6 +269,8 @@ class ApiViewTest(TestCase):
             content_type="application/json",
             **{"HTTP_X_JobServ_Sig":f"sha256: {sig.hexdigest()}"}
         )
+        apicallback = APICallback.objects.first()
+        self.assertEqual(request_body_dict, json.loads(apicallback.content))
         self.assertEqual(response.status_code, 201)
         # check if build was created
         merge_lmp_manifest_mock.assert_called()
@@ -284,6 +293,8 @@ class ApiViewTest(TestCase):
             content_type="application/json",
             **{"HTTP_X_JobServ_Sig":f"sha256: {sig.hexdigest()}"}
         )
+        apicallback = APICallback.objects.first()
+        self.assertEqual(request_body_dict, json.loads(apicallback.content))
         self.assertEqual(response.status_code, 200)
         # check if build was created
         merge_lmp_manifest_mock.assert_not_called()
@@ -334,6 +345,8 @@ class ApiViewTest(TestCase):
             content_type="application/json",
             **{"HTTP_X_DeviceOta_Sig":f"sha256: {sig.hexdigest()}"}
         )
+        apicallback = APICallback.objects.first()
+        self.assertEqual(request_body_dict, json.loads(apicallback.content))
         self.assertEqual(response.status_code, 200)
         check_device_ota_completed_mock.assert_called()
 

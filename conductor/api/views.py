@@ -28,6 +28,7 @@ from django.http import (
 )
 from django.views.decorators.csrf import csrf_exempt
 
+from conductor.api.models import APICallback
 from conductor.core.models import Project, Build, LAVADevice, Run
 from conductor.core.tasks import create_build_run, merge_lmp_manifest, update_build_commit_id, check_device_ota_completed, tag_build_runs, schedule_lmp_pr_tests
 from conductor.core.utils import ISO8601_JSONEncoder
@@ -92,6 +93,10 @@ def process_device_webhook(request):
     request_body_json = __verify_header_auth(request, header_name="X-DeviceOta-Sig")
     if isinstance(request_body_json, HttpResponse):
         return request_body_json
+    APICallback.objects.create(
+        endpoint="device",
+        content=json.dumps(request_body_json)
+    )
     project_name = request_body_json.get("project")
     device_name = request_body_json.get("name")
     logger.info(f"Checking device: {device_name} from {project_name}")
@@ -110,6 +115,10 @@ def process_jobserv_webhook(request):
     request_body_json = __verify_header_auth(request)
     if isinstance(request_body_json, HttpResponse):
         return request_body_json
+    APICallback.objects.create(
+        endpoint="jobserv",
+        content=json.dumps(request_body_json)
+    )
     if request_body_json.get("status") != "PASSED":
         # nothing to do with failed build
         return HttpResponse("OK")
@@ -170,6 +179,10 @@ def process_lmp_build(request):
     if isinstance(request_body_json, HttpResponse):
         return request_body_json
     else:
+        APICallback.objects.create(
+            endpoint="lmp",
+            content=json.dumps(request_body_json)
+        )
         # check if build is successful
         if not request_body_json.get("status") == "PASSED":
             logger.warning("status not set to PASSED")
