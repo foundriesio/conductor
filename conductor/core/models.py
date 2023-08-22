@@ -344,9 +344,6 @@ class Build(models.Model):
         (BUILD_META_SUB, "Meta Subscriber Overrides"),
     ]
     build_trigger = models.CharField(max_length=3, choices=BUILD_TRIGGER_CHOICES, default=BUILD_LMP_MANIFEST)
-    # for some builds tests don't need to be scheduled
-    # these are builds that are used for update/rollback testing
-    schedule_tests = models.BooleanField(default=True)
     # Build type will replace schedule_tests field
     # It will change how the test schedulling behaves in case of different
     # CI builds. Build type also needs to be taken into account in test jobs
@@ -405,6 +402,11 @@ class Build(models.Model):
         if self.project.qa_reports_project_name:
             project = self.project.qa_reports_project_name
         return f"https://qa-reports.foundries.io/{self.project.squad_group}/{project}/build/{commit}"
+
+    def is_scheduled_tests(self):
+        if self.build_type == Build.BUILD_TYPE_REGULAR and not self.skip_qa:
+            return True
+        return False
 
 
 class BuildTag(models.Model):

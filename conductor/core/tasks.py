@@ -337,7 +337,7 @@ def create_build_run(self, build_id, run_name, submit_jobs=True):
         logger.debug("Skipping testing. [skip qa] found in commit message")
         return None
 
-    if not build.is_merge_commit and build.schedule_tests and build.project.test_on_merge_only:
+    if not build.is_merge_commit and build.build_type == Build.BUILD_TYPE_REGULAR and build.project.test_on_merge_only:
         # don't schedule tests
         return None
     previous_builds = build.project.build_set.filter(build_id__lt=build.build_id, tag=build.tag).order_by('-build_id')
@@ -357,7 +357,7 @@ def create_build_run(self, build_id, run_name, submit_jobs=True):
     # below
     if build.project.testplans.all():
         for plan in build.project.testplans.filter(lava_device_type=run_name):
-            if build.build_reason and build.schedule_tests:
+            if build.build_reason and build.build_type == Build.BUILD_TYPE_REGULAR:
                 for plan_testjob in plan.testjobs.filter(is_ota_job=False):
                     job_type = LAVAJob.JOB_LAVA
                     if plan_testjob.is_el2go_job:
@@ -368,7 +368,7 @@ def create_build_run(self, build_id, run_name, submit_jobs=True):
                         "build": build,
                         "template": _template_from_string(yaml.dump(plan_testjob.get_job_definition(plan), default_flow_style=False))
                     })
-            if build.build_reason and not build.schedule_tests:
+            if build.build_reason and not build.build_type != Build.BUILD_TYPE_REGULAR:
                 for plan_testjob in plan.testjobs.filter(is_ota_job=True):
                     job_type = LAVAJob.JOB_LAVA
                     if plan_testjob.is_el2go_job:
@@ -525,7 +525,7 @@ def _update_build_reason(build):
                     build.build_reason = "Trigerred from meta-sub"
 
             if settings.FIO_UPGRADE_ROLLBACK_MESSAGE in build.build_reason:
-                build.schedule_tests = False
+                build.build_type = Build.BUILD_TYPE_OTA
             else:
                 if build.project.apply_tag_to_first_build_only:
                     # apply tags to 1st build

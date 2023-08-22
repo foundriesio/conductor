@@ -1291,7 +1291,7 @@ class TaskTest(TestCase):
         watch_qa_reports_mock.return_value = response_mock
         run_name = "imx8mmevk"
         self.build_testplan.build_reason = "Hello world"
-        self.build_testplan.schedule_tests = True
+        self.build_testplan.build_type = Build.BUILD_TYPE_REGULAR
         self.build_testplan.save()
         create_build_run(self.build_testplan.id, run_name)
         update_build_reason_mock.assert_not_called()
@@ -1314,7 +1314,7 @@ class TaskTest(TestCase):
         watch_qa_reports_mock.return_value = response_mock
         run_name = "imx8mmevk"
         self.build_testplan.build_reason = "Hello world"
-        self.build_testplan.schedule_tests = True
+        self.build_testplan.build_type = Build.BUILD_TYPE_REGULAR
         self.build_testplan.is_merge_commit = False
         self.build_testplan.save()
         self.build_testplan.project.test_on_merge_only = True
@@ -1338,7 +1338,7 @@ class TaskTest(TestCase):
         watch_qa_reports_mock.return_value = response_mock
         run_name = "imx8mmevk-sec"
         self.build_testplan.build_reason = "Hello world"
-        self.build_testplan.schedule_tests = True
+        self.build_testplan.build_type = Build.BUILD_TYPE_REGULAR
         self.build_testplan.save()
         create_build_run(self.build_testplan.id, run_name)
         update_build_reason_mock.assert_not_called()
@@ -1358,7 +1358,7 @@ class TaskTest(TestCase):
         self.project_testplan.save()
         run_name = "imx8mmevk"
         self.build_testplan.build_reason = "Hello world"
-        self.build_testplan.schedule_tests = True
+        self.build_testplan.build_type = Build.BUILD_TYPE_REGULAR
         self.build_testplan.save()
         create_build_run(self.build_testplan.id, run_name)
         update_build_reason_mock.assert_not_called()
@@ -1386,7 +1386,7 @@ class TaskTest(TestCase):
     def test_create_build_run_os_tree_hash_none(self, submit_lava_job_mock, watch_qa_reports_mock, get_hash_mock):
         run_name = "imx8mmevk"
         self.build_testplan.build_reason = "Hello world"
-        self.build_testplan.schedule_tests = True
+        self.build_testplan.build_type = Build.BUILD_TYPE_REGULAR
         self.build_testplan.save()
         create_build_run(self.build_testplan.id, run_name)
         submit_lava_job_mock.assert_not_called()
@@ -1400,7 +1400,7 @@ class TaskTest(TestCase):
     def test_create_build_run_skip_qa(self, submit_lava_job_mock, watch_qa_reports_mock, get_hash_mock):
         run_name = "imx8mmevk"
         self.build_testplan.build_reason = "Hello world"
-        self.build_testplan.schedule_tests = True
+        self.build_testplan.build_type = Build.BUILD_TYPE_REGULAR
         self.build_testplan.skip_qa = True
         self.build_testplan.save()
         create_build_run(self.build_testplan.id, run_name)
@@ -1662,7 +1662,7 @@ class TaskTest(TestCase):
         self.build.refresh_from_db()
         self.assertEqual(self.build.build_reason, "abc")
         self.assertEqual(self.build.is_merge_commit, False)
-        self.assertEqual(self.build.schedule_tests, True)
+        self.assertEqual(self.build.build_type, Build.BUILD_TYPE_REGULAR)
 
     @patch.object(Repo, "remote")
     @patch.object(Repo, "commit")
@@ -1697,7 +1697,7 @@ class TaskTest(TestCase):
         self.build.refresh_from_db()
         self.assertEqual(self.build.build_reason, "abc")
         self.assertEqual(self.build.is_merge_commit, True)
-        self.assertEqual(self.build.schedule_tests, True)
+        self.assertEqual(self.build.build_type, Build.BUILD_TYPE_REGULAR)
 
     @patch.object(Repo, "remote")
     @patch.object(Repo, "commit")
@@ -1723,7 +1723,7 @@ class TaskTest(TestCase):
         commit_message.assert_called()
         self.build.refresh_from_db()
         self.assertEqual(self.build.build_reason, settings.FIO_UPGRADE_ROLLBACK_MESSAGE)
-        self.assertEqual(self.build.schedule_tests, False)
+        self.assertEqual(self.build.build_type, Build.BUILD_TYPE_OTA)
 
     @patch.object(Repo, "remote")
     @patch.object(Repo, "commit")
@@ -1751,7 +1751,7 @@ class TaskTest(TestCase):
         commit_mock.assert_called()
         self.build.refresh_from_db()
         self.assertEqual(self.build.build_reason, "Trigerred from unknown source")
-        self.assertEqual(self.build.schedule_tests, True)
+        self.assertEqual(self.build.build_type, Build.BUILD_TYPE_REGULAR)
 
     @patch("conductor.core.tasks.create_upgrade_commit.delay")
     @patch("requests.Session.get")
@@ -1783,7 +1783,7 @@ class TaskTest(TestCase):
         self.build.refresh_from_db()
         self.assertEqual(self.build.commit_id, "8d52c43b2ee7f15ba6300db4e37f31db80e9cc06")
         self.assertEqual(self.build.build_reason, "abc")
-        self.assertEqual(self.build.schedule_tests, True)
+        self.assertEqual(self.build.build_type, Build.BUILD_TYPE_REGULAR)
         upgrade_mock.assert_called()
 
     @patch("conductor.core.tasks.create_upgrade_commit.delay")
@@ -1812,7 +1812,7 @@ class TaskTest(TestCase):
         self.build.refresh_from_db()
         self.assertEqual(self.build.commit_id, None)
         self.assertEqual(self.build.build_reason, None)
-        self.assertEqual(self.build.schedule_tests, True)
+        self.assertEqual(self.build.build_type, Build.BUILD_TYPE_REGULAR)
         upgrade_mock.assert_not_called()
 
 
