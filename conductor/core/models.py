@@ -347,6 +347,18 @@ class Build(models.Model):
     # for some builds tests don't need to be scheduled
     # these are builds that are used for update/rollback testing
     schedule_tests = models.BooleanField(default=True)
+    # Build type will replace schedule_tests field
+    # It will change how the test schedulling behaves in case of different
+    # CI builds. Build type also needs to be taken into account in test jobs
+    BUILD_TYPE_REGULAR = "REG"
+    BUILD_TYPE_OTA = "OTA"
+    BUILD_TYPE_STATIC_DELTA = "SDE"
+    BUILD_TYPE_CHOICES = [
+        (BUILD_TYPE_REGULAR, "Ordinary build (manifest or meta-sub)"),
+        (BUILD_TYPE_OTA, "OTA build"),
+        (BUILD_TYPE_STATIC_DELTA, "Create static delta between targets"),
+    ]
+    build_type = models.CharField(max_length=3, choices=BUILD_TYPE_CHOICES, default=BUILD_TYPE_REGULAR)
     # lmp_commit is the head of lmp-manifest tree
     # before commit. It will be used as build version in qa-reports
     lmp_commit = models.CharField(max_length=40, blank=True, null=True)

@@ -123,6 +123,7 @@ class TestJob(models.Model):
     tags = models.ManyToManyField(TestJobTag, blank=True)
     actions = SortedManyToManyField(LAVAAction)
     is_ota_job = models.BooleanField(default=False)
+    is_static_delta_job = models.BooleanField(default=False)
     is_el2go_job = models.BooleanField(default=False)
 
     def get_job_definition(self, testplan):
