@@ -143,14 +143,21 @@ def process_jobserv_webhook(request):
     trigger_name = request_body_json.get("trigger_name")
     project = get_object_or_404(Project, name=project_name)
     build = None
-    if "containers" in trigger_name or "platform" in trigger_name:
+    if "containers" in trigger_name or \
+            "platform" in trigger_name or \
+            "generate-static-deltas" in trigger_name:
         # create new Build
-        build_branch = trigger_name.split("-")[1]
+        build_branch = None
+        build_type = Build.BUILD_TYPE_REGULAR
+        if not "generate-static-deltas" in trigger_name:
+            build_branch = trigger_name.split("-")[1]
+            build_type = Build.BUILD_TYPE_STATIC_DELTA
         build, _ = Build.objects.get_or_create(
             url=build_url,
             project=project,
             build_id=build_id,
-            tag=build_branch)
+            tag=build_branch,
+            build_type=build_type)
     if not build:
         # in case build is not created, exit gracefully
         return HttpResponse("OK")
@@ -158,6 +165,12 @@ def process_jobserv_webhook(request):
     if request_body_json.get("status") != "PASSED":
         restart_failed_runs.delay(build.pk, request_body_json)
         return HttpResponse("OK")
+
+    if "generate-static-deltas" in trigger_name:
+        build.reason = request_body_json.get("reason")
+        build.save()
+        schedule_static_delta.delay(build.pk)
+        return HttpResponse("Created", status=201)
 
     if "containers" in trigger_name:
         # only create build and tag it

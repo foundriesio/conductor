@@ -368,7 +368,7 @@ def create_build_run(self, build_id, run_name, submit_jobs=True):
                         "build": build,
                         "template": _template_from_string(yaml.dump(plan_testjob.get_job_definition(plan), default_flow_style=False))
                     })
-            if build.build_reason and not build.build_type != Build.BUILD_TYPE_REGULAR:
+            if build.build_reason and not build.build_type == Build.BUILD_TYPE_OTA:
                 for plan_testjob in plan.testjobs.filter(is_ota_job=True):
                     job_type = LAVAJob.JOB_LAVA
                     if plan_testjob.is_el2go_job:
@@ -384,6 +384,11 @@ def create_build_run(self, build_id, run_name, submit_jobs=True):
 
     logger.debug(f"run_name: {run_name}")
     logger.debug(f"{templates}")
+    return _submit_lava_templates(templates, build, device_type, submit_jobs)
+
+
+def _submit_lava_templates(templates, build, device_type, submit_jobs):
+    run_name = device_type.name
     lava_job_definitions = []
     lava_header = settings.FIO_LAVA_HEADER
     if build.project.lava_header:
@@ -472,6 +477,65 @@ def create_build_run(self, build_id, run_name, submit_jobs=True):
     return lava_job_definitions
 
 
+@celery.task(bind=True)
+def create_static_delta_build(self, build_id):
+    build = None
+    try:
+        build = Build.objects.get(pk=build_id)
+    except Build.DoesNotExist:
+        return None
+
+    previous_builds = build.project.build_set.filter(build_id__lt=build.build_id, tag=build.tag).order_by('-build_id')
+    previous_build = None
+    if previous_builds:
+        previous_build = previous_builds[0]
+    if not previous_build:
+        # no previous build found
+        return None
+    # create static delta CI build from previous_build to build
+    result_json = build.project.create_static_delta(previous_build.build_id, build.build_id)
+    # {"jobserv-url": "https://api.foundries.io/projects/milosz-rpi3/lmp/builds/581/", "web-url": "https://ci.foundries.io/projects/milosz-rpi3/lmp/builds/581"}
+    build_url = result_json.get("jobserv-url")
+    build, _ = Build.objects.get_or_create(
+        url=build_url,
+        project=build.project,
+        build_id=build_url.rsplit("/", 2)[1],  # assuming url ends with /
+        tag=None,
+        build_type=Build.BUILD_TYPE_STATIC_DELTA,
+        static_from=previous_build,
+        static_to=build)
+
+
+@celery.task(bind=True)
+def schedule_static_delta(self, build_id):
+    build = None
+    try:
+        build = Build.objects.get(pk=build_id)
+    except Build.DoesNotExist:
+        return None
+    # build.static_from - original build from git change
+    # build.static_to - OTA build created by conductor
+    # tests should be scheduled with static_from for flashing and static_to as final target
+    # static delta build doesn't have MACHINE specific runs.
+    # let's use static_from runs to determine the MACHINES
+    if not build.from_build:
+        return None
+    for run in build.from_build.run_set.all():
+        templates = []
+        for plan in build.project.testplans.filter(lava_device_type=run.device_type):
+            for plan_testjob in plan.testjobs.filter(is_static_delta_job=True):
+                job_type = LAVAJob.JOB_LAVA
+                if plan_testjob.is_el2go_job:
+                    job_type = LAVAJob.JOB_EL2GO
+                templates.append({
+                    "name": plan_testjob.name,
+                    "job_type": job_type,
+                    "build": build.from_build,
+                    "template": _template_from_string(yaml.dump(plan_testjob.get_job_definition(plan), default_flow_style=False))
+                })
+        _submit_lava_templates(templates, build, run.device_type, True)
+
+
 def _update_build_reason(build):
     if build.build_reason:
         return None
@@ -558,7 +622,7 @@ def update_build_commit_id(build_id, run_url):
     if run_json_request.status_code == 200:
         with transaction.atomic():
             run_json = run_json_request.json()
-            commit_id = run_json['env']['GIT_SHA']
+            commit_id = run_json['env'].get('GIT_SHA')
             build.commit_id = commit_id
             build.save()
             _update_build_reason(build)
@@ -569,6 +633,9 @@ def update_build_commit_id(build_id, run_url):
 
             if settings.FIO_UPGRADE_ROLLBACK_MESSAGE not in build.build_reason:
                 create_upgrade_commit.delay(build_id)
+            else: 
+                # create static delta for OTA build and it's previous build
+                create_static_delta.delay(build_id)
 
 
 @celery.task

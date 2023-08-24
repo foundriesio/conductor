@@ -202,7 +202,7 @@ class Project(models.Model):
         null=True,
         blank=True)
     # name of the header variable in LAVA inscance
-    # the variable is used to authenticate downloads from 
+    # the variable is used to authenticate downloads from
     # FoundriesFactory CI
     lava_header = models.CharField(max_length=23, null=True, blank=True)
     squad_backend = models.ForeignKey(
@@ -233,6 +233,8 @@ class Project(models.Model):
     apply_tag_to_first_build_only = models.BooleanField(default=False)
     # set to True to apply testing_tag to target
     apply_testing_tag_on_callback = models.BooleanField(default=False)
+    # produce static deltas for OTA builds
+    test_static_delta = models.BooleanField(default=True)
     # name of the default branch in the lmp-manifest project
     default_branch = models.CharField(max_length=16, default="master")
     # token to allow FoundriesFactory backend operations
@@ -268,7 +270,7 @@ class Project(models.Model):
             return self.lava_backend.submit_lava_job(definition)
         return []
 
-    def _retrieve_api_request(self, url):
+    def _retrieve_api_request(self, url, method="get", **kwargs):
         token = self.fio_api_token
         if token is None:
             token = getattr(settings, "FIO_API_TOKEN", None)
@@ -284,11 +286,17 @@ class Project(models.Model):
             HTTPStatus.GATEWAY_TIMEOUT,
         ]
 
+        requests_method = getattr(requests, method)
+        call_kwargs = {
+            "headers": authentication
+        }
+        call_kwargs.update(kwargs)
+
         for n in range(retries):
             try:
-                build_request = requests.get(url, headers=authentication)
+                build_request = requests_method(url, **call_kwargs)
                 build_request.raise_for_status()
-                return build_request.json()["data"]
+                return build_request.json()
             except HTTPError as exc:
                 code = exc.response.status_code
                 if code in retry_codes:
@@ -305,7 +313,7 @@ class Project(models.Model):
         if self.name == "lmp":
             # lmp is not a real factory and the URL is different
             url = f"https://api.foundries.io/projects/lmp/builds/"
-        return self._retrieve_api_request(url)
+        return self._retrieve_api_request(url).get("data")
 
     def ci_build_details(self, ci_id):
         domain = settings.FIO_DOMAIN
@@ -315,7 +323,24 @@ class Project(models.Model):
         if self.name == "lmp":
             # lmp is not a real factory and the URL is different
             url = f"https://api.foundries.io/projects/lmp/builds/{ci_id}"
-        return self._retrieve_api_request(url)
+        return self._retrieve_api_request(url).get("data")
+
+    def create_static_delta(self, from_build_id, to_build_id):
+        domain = settings.FIO_DOMAIN
+        if self.fio_meds_domain:
+            domain = self.fio_meds_domain
+        try:
+            from_build = self.builds.get(pk=from_build_id)
+            to_build = self.builds.get(pk=to_build_id)
+        except Build.DoesNotExist:
+            logger("Build doesn't exist in the database")
+            return None
+        url = f"https://api.{domain}/factories/{self.name}/targets/{to_build.build_id}"
+        parameters = {
+            "from_versions": [from_build.build_id]
+        }
+        return self._retrieve_api_request(url, method="post", json=parameters)
+
 
     def __str__(self):
         return self.name
@@ -364,6 +389,9 @@ class Build(models.Model):
     skip_qa = models.BooleanField(default=False)
     # keeps track of restarts in the build
     restart_counter = models.IntegerField(default=0)
+    # static delta build references
+    static_from = models.ForeignKey('self', on_delete=models.CASCADE, blank=True, null=True, related_name="staticfrom")
+    static_to = models.ForeignKey('self', on_delete=models.CASCADE, blank=True, null=True, related_name="staticto")
 
     def __str__(self):
         return f"{self.build_id} ({self.project.name})"
