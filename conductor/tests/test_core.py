@@ -1449,6 +1449,7 @@ class TaskTest(TestCase):
         device_pdu_action_mock.assert_called()
         report_test_results_mock.assert_called()
 
+    @patch("django.conf.settings.DEBUG_REPOSITORY_SCRIPTS", True)
     @patch("subprocess.run")
     @patch("os.makedirs")
     def test_create_project_repository(self, makedirs_mock, run_mock):
@@ -1462,13 +1463,15 @@ class TaskTest(TestCase):
                "-w", settings.FIO_BASE_MANIFEST,
                "-t", self.project.fio_repository_token,
                "-b", self.project.default_branch,
-               "-D", settings.FIO_DOMAIN]
+               "-D", settings.FIO_DOMAIN,
+               "-f", "True"]
         create_project_repository(self.project.id)
         # at this stage repository should already exist
         # it is created when creating project
         makedirs_mock.assert_not_called()
         run_mock.assert_called_with(cmd, check=True)
 
+    @patch("django.conf.settings.DEBUG_REPOSITORY_SCRIPTS", True)
     @patch("subprocess.run")
     @patch("os.makedirs")
     def test_create_project_repository_meds(self, makedirs_mock, run_mock):
@@ -1482,13 +1485,15 @@ class TaskTest(TestCase):
                "-w", settings.FIO_BASE_MANIFEST,
                "-t", self.project_meds.fio_repository_token,
                "-b", self.project_meds.default_branch,
-               "-D", self.project_meds.fio_meds_domain]
+               "-D", self.project_meds.fio_meds_domain,
+               "-f", "True"]
         create_project_repository(self.project_meds.id)
         # at this stage repository should already exist
         # it is created when creating project
         makedirs_mock.assert_not_called()
         run_mock.assert_called_with(cmd, check=True)
 
+    @patch("django.conf.settings.DEBUG_REPOSITORY_SCRIPTS", True)
     @patch("subprocess.run")
     @patch("os.makedirs")
     def test_create_project(self, makedirs_mock, run_mock):
@@ -1515,7 +1520,8 @@ class TaskTest(TestCase):
                "-w", settings.FIO_BASE_MANIFEST,
                "-t", project_meds2.fio_repository_token,
                "-b", project_meds2.default_branch,
-               "-D", project_meds2_domain]
+               "-D", project_meds2_domain,
+               "-f", "True"]
         makedirs_mock.assert_called()
         assert 3 == run_mock.call_count
         run_mock.assert_any_call(cmd, check=True)

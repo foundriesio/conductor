@@ -9,6 +9,7 @@ REPOSITORY_TOKEN=""
 REPOSITORY_DEFAULT_BRANCH=master
 REPOSITORY_TYPE=manifest
 REPOSITORY_DOMAIN="foundries.io"
+UNIT_TEST=""
 
 usage() {
     echo "Usage: $0 [-d <repository_dir>]
@@ -21,7 +22,7 @@ usage() {
     exit 1
 }
 
-while getopts "d:r:l:u:w:t:b:c:D:" o; do
+while getopts "d:r:l:u:w:t:b:c:D:f:" o; do
   case "$o" in
     # The current working directory will be used by default.
     # Use '-p' specify partition that used for fio test.
@@ -34,6 +35,7 @@ while getopts "d:r:l:u:w:t:b:c:D:" o; do
     b) REPOSITORY_DEFAULT_BRANCH="${OPTARG}";;
     c) REPOSITORY_TYPE="${OPTARG}";;
 	D) REPOSITORY_DOMAIN="${OPTARG}";;
+	f) UNIT_TEST="${OPTARG}";;
     *) usage ;;
   esac
 done
@@ -47,6 +49,10 @@ if [ "${REMOTE_ORIGIN}" = "${REPOSITORY_URL}" ]; then
     exit 0
 fi
 git init
+if [ -n "${UNIT_TEST}" ]; then
+    # only run git init for unit tests
+    exit 0
+fi
 git config "http.https://source.${REPOSITORY_DOMAIN}.extraheader" "Authorization: basic $(echo -n $REPOSITORY_TOKEN | openssl base64)"
 git config user.email "testbot@foundries.io"
 git config user.name "Testbot"

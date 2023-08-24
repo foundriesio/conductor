@@ -758,6 +758,8 @@ def create_project_repository(project_id):
            "-t", fio_repository_token,
            "-b", project.default_branch,
            "-D", domain]
+    if settings.DEBUG_REPOSITORY_SCRIPTS:
+        cmd = cmd + ["-f", str(settings.DEBUG_REPOSITORY_SCRIPTS)]
     logger.debug("Calling repository creation script")
     logger.debug(" ".join(cmd))
     try:
@@ -794,6 +796,8 @@ def create_project_containers_repository(project_id):
            "-b", project.default_container_branch,
            "-D", domain,
            "-c", "containers"]
+    if settings.DEBUG_REPOSITORY_SCRIPTS:
+        cmd = cmd + ["-f", str(settings.DEBUG_REPOSITORY_SCRIPTS)]
     logger.debug("Calling repository creation script")
     logger.debug(" ".join(cmd))
     try:
@@ -830,6 +834,8 @@ def create_project_meta_repository(project_id):
            "-b", project.default_meta_branch,
            "-D", domain,
            "-c", "meta"]
+    if settings.DEBUG_REPOSITORY_SCRIPTS:
+        cmd = cmd + ["-f", str(settings.DEBUG_REPOSITORY_SCRIPTS)]
     logger.debug("Calling repository creation script")
     logger.debug(" ".join(cmd))
     try:
