@@ -37,7 +37,8 @@ from conductor.core.tasks import (
     check_device_ota_completed,
     tag_build_runs,
     schedule_lmp_pr_tests,
-    restart_failed_runs
+    restart_failed_runs,
+    schedule_static_delta
 )
 from conductor.core.utils import ISO8601_JSONEncoder
 

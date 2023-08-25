@@ -451,6 +451,7 @@ def _submit_lava_templates(templates, build, device_type, submit_jobs):
             lava_job_definition = template["template"].render(context)
         if not lava_job_definition:
             # possibly raise exception
+            logger.debug("LAVA test deifinition missing")
             return
         lava_job_definitions.append(lava_job_definition)
         if not submit_jobs:
@@ -496,7 +497,7 @@ def create_static_delta_build(self, build_id):
     result_json = build.project.create_static_delta(previous_build.build_id, build.build_id)
     # {"jobserv-url": "https://api.foundries.io/projects/milosz-rpi3/lmp/builds/581/", "web-url": "https://ci.foundries.io/projects/milosz-rpi3/lmp/builds/581"}
     build_url = result_json.get("jobserv-url")
-    build, _ = Build.objects.get_or_create(
+    s_build, _ = Build.objects.get_or_create(
         url=build_url,
         project=build.project,
         build_id=build_url.rsplit("/", 2)[1],  # assuming url ends with /
@@ -518,11 +519,20 @@ def schedule_static_delta(self, build_id):
     # tests should be scheduled with static_from for flashing and static_to as final target
     # static delta build doesn't have MACHINE specific runs.
     # let's use static_from runs to determine the MACHINES
-    if not build.from_build:
+    if not build.static_from:
         return None
-    for run in build.from_build.run_set.all():
+    if build.static_from.skip_qa:
+        # don't schedule any tests
+        return None
+    for run in build.static_from.run_set.all():
         templates = []
-        for plan in build.project.testplans.filter(lava_device_type=run.device_type):
+        device_type = None
+        try:
+            device_type = build.project.lavadevicetype_set.get(name=run.run_name)
+        except LAVADeviceType.DoesNotExist:
+            logger.warning(f"No device type {run.device_type} in project {build.project}")
+            continue
+        for plan in build.project.testplans.filter(lava_device_type=run.run_name):
             for plan_testjob in plan.testjobs.filter(is_static_delta_job=True):
                 job_type = LAVAJob.JOB_LAVA
                 if plan_testjob.is_el2go_job:
@@ -530,10 +540,10 @@ def schedule_static_delta(self, build_id):
                 templates.append({
                     "name": plan_testjob.name,
                     "job_type": job_type,
-                    "build": build.from_build,
+                    "build": build.static_from,
                     "template": _template_from_string(yaml.dump(plan_testjob.get_job_definition(plan), default_flow_style=False))
                 })
-        _submit_lava_templates(templates, build, run.device_type, True)
+        _submit_lava_templates(templates, build, device_type, True)
 
 
 def _update_build_reason(build):
@@ -635,7 +645,7 @@ def update_build_commit_id(build_id, run_url):
                 create_upgrade_commit.delay(build_id)
             else: 
                 # create static delta for OTA build and it's previous build
-                create_static_delta.delay(build_id)
+                create_static_delta_build.delay(build_id)
 
 
 @celery.task
