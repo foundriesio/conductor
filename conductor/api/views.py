@@ -152,6 +152,7 @@ def process_jobserv_webhook(request):
         build_type = Build.BUILD_TYPE_REGULAR
         if not "generate-static-deltas" in trigger_name:
             build_branch = trigger_name.split("-")[1]
+        else:
             build_type = Build.BUILD_TYPE_STATIC_DELTA
         build, _ = Build.objects.get_or_create(
             url=build_url,

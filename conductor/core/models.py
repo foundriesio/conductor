@@ -326,16 +326,17 @@ class Project(models.Model):
         return self._retrieve_api_request(url).get("data")
 
     def create_static_delta(self, from_build_id, to_build_id):
+        logger.debug(f"Creating static delta in {self.name} from {from_build_id} to {to_build_id}")
         domain = settings.FIO_DOMAIN
         if self.fio_meds_domain:
             domain = self.fio_meds_domain
         try:
-            from_build = self.builds.get(pk=from_build_id)
-            to_build = self.builds.get(pk=to_build_id)
+            from_build = self.build_set.get(pk=from_build_id)
+            to_build = self.build_set.get(pk=to_build_id)
         except Build.DoesNotExist:
-            logger("Build doesn't exist in the database")
+            logger.warning("Build doesn't exist in the database")
             return None
-        url = f"https://api.{domain}/factories/{self.name}/targets/{to_build.build_id}"
+        url = f"https://api.{domain}/ota/factories/{self.name}/targets/{to_build.build_id}/static-deltas/"
         parameters = {
             "from_versions": [from_build.build_id]
         }

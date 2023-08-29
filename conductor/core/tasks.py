@@ -358,7 +358,7 @@ def create_build_run(self, build_id, run_name, submit_jobs=True):
     if build.project.testplans.all():
         for plan in build.project.testplans.filter(lava_device_type=run_name):
             if build.build_reason and build.build_type == Build.BUILD_TYPE_REGULAR:
-                for plan_testjob in plan.testjobs.filter(is_ota_job=False):
+                for plan_testjob in plan.testjobs.filter(is_ota_job=False, is_static_delta_job=False):
                     job_type = LAVAJob.JOB_LAVA
                     if plan_testjob.is_el2go_job:
                         job_type = LAVAJob.JOB_EL2GO
@@ -369,7 +369,7 @@ def create_build_run(self, build_id, run_name, submit_jobs=True):
                         "template": _template_from_string(yaml.dump(plan_testjob.get_job_definition(plan), default_flow_style=False))
                     })
             if build.build_reason and not build.build_type == Build.BUILD_TYPE_OTA:
-                for plan_testjob in plan.testjobs.filter(is_ota_job=True):
+                for plan_testjob in plan.testjobs.filter(is_ota_job=True, is_static_delta_job=False):
                     job_type = LAVAJob.JOB_LAVA
                     if plan_testjob.is_el2go_job:
                         job_type = LAVAJob.JOB_EL2GO
@@ -494,7 +494,7 @@ def create_static_delta_build(self, build_id):
         # no previous build found
         return None
     # create static delta CI build from previous_build to build
-    result_json = build.project.create_static_delta(previous_build.build_id, build.build_id)
+    result_json = build.project.create_static_delta(previous_build.id, build.id)
     # {"jobserv-url": "https://api.foundries.io/projects/milosz-rpi3/lmp/builds/581/", "web-url": "https://ci.foundries.io/projects/milosz-rpi3/lmp/builds/581"}
     build_url = result_json.get("jobserv-url")
     s_build, _ = Build.objects.get_or_create(
