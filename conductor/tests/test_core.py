@@ -49,7 +49,8 @@ from conductor.core.tasks import (
     update_build_commit_id,
     tag_build_runs,
     process_testjob_notification,
-    schedule_lmp_pr_tests
+    schedule_lmp_pr_tests,
+    schedule_static_delta
 )
 
 
@@ -921,6 +922,12 @@ class TaskTest(TestCase):
             project=self.project_testplan,
             build_id="3"
         )
+        self.build_testplan_static = Build.objects.create(
+            url="https://example.com/build/3/",
+            project=self.project_testplan,
+            static_from=self.build_testplan,
+            build_id="5"
+        )
         self.build_run_testplan1 = Run.objects.create(
             build=self.build_testplan,
             device_type="imx8mmevk",
@@ -1053,6 +1060,14 @@ class TaskTest(TestCase):
         )
         self.testjob_imx8mm1.save()
         self.testplan1.testjobs.add(self.testjob_imx8mm1)
+        self.testjob_imx8mm3 = TestJob.objects.create(
+            priority=50,
+            is_static_delta_job=True
+        )
+        self.testjob_imx8mm3.save()
+        self.testplan1.testjobs.add(self.testjob_imx8mm3)
+        self.testplan1.save()
+
         self.testplan1.save()
         self.project_testplan.testplans.add(self.testplan1)
 
@@ -1792,6 +1807,41 @@ class TaskTest(TestCase):
         self.assertEqual(self.build.build_type, Build.BUILD_TYPE_REGULAR)
         upgrade_mock.assert_called()
 
+    @patch("conductor.core.tasks.create_static_delta_build.delay")
+    @patch("conductor.core.tasks.create_upgrade_commit.delay")
+    @patch("requests.Session.get")
+    @patch.object(Repo, "remote")
+    @patch.object(Repo, "commit")
+    @patch("git.Repo.GitCommandWrapperType")
+    def test_update_commit_id_ota_build(self, git_mock, commit_mock, remote_mock, get_mock, upgrade_mock, static_delta_mock):
+        remote = MagicMock()
+        remote.fetch = MagicMock()
+        remote_mock.return_value = remote
+        commit = MagicMock()
+        commit_message = PropertyMock(return_value=settings.FIO_UPGRADE_ROLLBACK_MESSAGE)
+        type(commit).message = commit_message
+        commit_hexsha = PropertyMock(return_value="aaabbbcccddd")
+        type(commit).hexsha = commit_hexsha
+        commit_mock.return_value = commit
+
+        request = MagicMock()
+        type(request).status_code = PropertyMock(return_value=200)
+        request.json = MagicMock(return_value=RUNDEF_JSON)
+        get_mock.return_value=request
+
+        update_build_commit_id(self.build.id, "https://foo.bar.com")
+        remote_mock.assert_called()
+        remote.fetch.assert_called()
+        git_mock.assert_called()
+        commit_mock.assert_called()
+        commit_message.assert_called()
+        self.build.refresh_from_db()
+        self.assertEqual(self.build.commit_id, "8d52c43b2ee7f15ba6300db4e37f31db80e9cc06")
+        self.assertEqual(self.build.build_reason, settings.FIO_UPGRADE_ROLLBACK_MESSAGE)
+        self.assertEqual(self.build.build_type, Build.BUILD_TYPE_OTA)
+        upgrade_mock.assert_not_called()
+        static_delta_mock.assert_called()
+
     @patch("conductor.core.tasks.create_upgrade_commit.delay")
     @patch("requests.Session.get")
     @patch.object(Repo, "remote")
@@ -2060,3 +2110,46 @@ class TaskTest(TestCase):
         self.build.save()
         ret = tag_build_runs(self.build.pk)
         self.assertEqual(ret, None)
+
+    def test_schedule_static_delta_no_build(self):
+        ret = schedule_static_delta(999)
+        self.assertEqual(ret, None)
+
+    def test_schedule_static_delta_no_from(self):
+        ret = schedule_static_delta(self.build.id)
+        self.assertEqual(ret, None)
+
+    def test_schedule_static_delta_skip_qa(self):
+        self.previous_build.skip_qa = True
+        self.previous_build.save()
+        self.build.static_from = self.previous_build
+        self.build.save()
+        ret = schedule_static_delta(self.build.id)
+        self.assertEqual(ret, None)
+
+    @patch('conductor.core.tasks._get_os_tree_hash', return_value="someHash1")
+    @patch('conductor.core.models.SQUADBackend.update_testjob')
+    @patch('conductor.core.models.Project.watch_qa_reports_job')
+    @patch('conductor.core.models.Project.submit_lava_job', return_value=[123])
+    @patch('conductor.core.tasks.update_build_reason')
+    def test_schedule_static_delta(self, update_build_reason_mock, submit_lava_job_mock, watch_qa_reports_mock, update_testjob_mock, get_hash_mock):
+
+        response_mock = MagicMock()
+        response_mock.status_code = 201
+        response_mock.text = "321"
+        watch_qa_reports_mock.return_value = response_mock
+        #run_name = "imx8mmevk"
+        #self.build_testplan.build_reason = "Hello world"
+        #self.build_testplan.build_type = Build.BUILD_TYPE_REGULAR
+        #self.build_testplan.save()
+
+        schedule_static_delta(self.build_testplan_static.pk)
+
+        #create_build_run(self.build_testplan.id, run_name)
+        #update_build_reason_mock.assert_not_called()
+        submit_lava_job_mock.assert_called()
+        watch_qa_reports_mock.assert_called()
+        update_testjob_mock.assert_called()
+        assert 1 == submit_lava_job_mock.call_count
+        get_hash_mock.assert_called()
+        assert 1 == get_hash_mock.call_count
