@@ -142,6 +142,7 @@ def process_jobserv_webhook(request):
         return HttpResponseBadRequest()
 
     trigger_name = request_body_json.get("trigger_name")
+    build_status = request_body_json.get("status")
     project = get_object_or_404(Project, name=project_name)
     build = None
     if "containers" in trigger_name or \
@@ -159,12 +160,13 @@ def process_jobserv_webhook(request):
             project=project,
             build_id=build_id,
             tag=build_branch,
-            build_type=build_type)
+            defaults={"build_status": build_status,
+                      "build_type": build_type})
     if not build:
         # in case build is not created, exit gracefully
         return HttpResponse("OK")
 
-    if request_body_json.get("status") != "PASSED":
+    if build_status != "PASSED":
         restart_failed_runs.delay(build.pk, request_body_json)
         return HttpResponse("OK")
 

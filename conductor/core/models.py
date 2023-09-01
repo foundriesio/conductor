@@ -382,6 +382,9 @@ class Build(models.Model):
         (BUILD_TYPE_STATIC_DELTA, "Create static delta between targets"),
     ]
     build_type = models.CharField(max_length=3, choices=BUILD_TYPE_CHOICES, default=BUILD_TYPE_REGULAR)
+    # build status that comes from the callback
+    # this field is updated any time jobserv callback comes in
+    build_status = models.CharField(max_length=16, null=True, blank=True)
     # lmp_commit is the head of lmp-manifest tree
     # before commit. It will be used as build version in qa-reports
     lmp_commit = models.CharField(max_length=40, blank=True, null=True)
