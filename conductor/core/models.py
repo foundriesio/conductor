@@ -336,11 +336,18 @@ class Project(models.Model):
         except Build.DoesNotExist:
             logger.warning("Build doesn't exist in the database")
             return None
-        url = f"https://api.{domain}/ota/factories/{self.name}/targets/{to_build.build_id}/static-deltas/"
-        parameters = {
-            "from_versions": [from_build.build_id]
-        }
-        return self._retrieve_api_request(url, method="post", json=parameters)
+        if not settings.DEBUG_FIO_SUBMIT:
+            url = f"https://api.{domain}/ota/factories/{self.name}/targets/{to_build.build_id}/static-deltas/"
+            parameters = {
+                "from_versions": [from_build.build_id]
+            }
+            return self._retrieve_api_request(url, method="post", json=parameters)
+        else:
+            logger.debug("Sending POST to:")
+            logger.debug(f"https://api.{domain}/ota/factories/{self.name}/targets/{to_build.build_id}/static-deltas/")
+            logger.debug(parameters)
+            target_number = to_build.build_id + 1
+            return {"jobserv-url": f"https://api.foundries.io/projects/{self.name}/lmp/builds/{targer_number}/", "web-url": f"https://ci.foundries.io/projects/{self.name}/lmp/builds/{target_number}"}
 
 
     def __str__(self):
