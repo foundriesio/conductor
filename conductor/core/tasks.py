@@ -368,7 +368,7 @@ def create_build_run(self, build_id, run_name, submit_jobs=True):
                         "build": build,
                         "template": _template_from_string(yaml.dump(plan_testjob.get_job_definition(plan), default_flow_style=False))
                     })
-            if build.build_reason and not build.build_type == Build.BUILD_TYPE_OTA:
+            if build.build_reason and build.build_type == Build.BUILD_TYPE_OTA:
                 for plan_testjob in plan.testjobs.filter(is_ota_job=True, is_static_delta_job=False):
                     job_type = LAVAJob.JOB_LAVA
                     if plan_testjob.is_el2go_job:
