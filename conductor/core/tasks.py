@@ -429,6 +429,12 @@ def _submit_lava_templates(templates, build, device_type, submit_jobs):
             "target": lcl_build.build_id,
             "ota_target": build.build_id,
         }
+        if lcl_build.lmp_commit:
+            context.update(
+                {"lmp_commit": lcl_build.lmp_commit,
+                 "lmp_commit_url": lcl_build.get_lmp_commit_url()
+                }
+            )
         if run_name == "raspberrypi4-64":
             context["BOOTLOADER_URL"] = "%sother/u-boot-%s.bin" % (run_url, run_name)
         if run_name == "stm32mp1-disco":

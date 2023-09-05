@@ -1294,12 +1294,13 @@ class TaskTest(TestCase):
         remove_el2go_mock.assert_called()
         remove_factory_mock.assert_not_called()
 
+    @patch('conductor.core.models.Build.get_lmp_commit_url', return_value="https://example.com/aabbccddeeff")
     @patch('conductor.core.tasks._get_os_tree_hash', return_value="someHash1")
     @patch('conductor.core.models.SQUADBackend.update_testjob')
     @patch('conductor.core.models.Project.watch_qa_reports_job')
     @patch('conductor.core.models.Project.submit_lava_job', return_value=[123])
     @patch('conductor.core.tasks.update_build_reason')
-    def test_create_build_run_testplan(self, update_build_reason_mock, submit_lava_job_mock, watch_qa_reports_mock, update_testjob_mock, get_hash_mock):
+    def test_create_build_run_testplan(self, update_build_reason_mock, submit_lava_job_mock, watch_qa_reports_mock, update_testjob_mock, get_hash_mock, build_lmp_commit_mock):
         response_mock = MagicMock()
         response_mock.status_code = 201
         response_mock.text = "321"
@@ -1307,6 +1308,7 @@ class TaskTest(TestCase):
         run_name = "imx8mmevk"
         self.build_testplan.build_reason = "Hello world"
         self.build_testplan.build_type = Build.BUILD_TYPE_REGULAR
+        self.build_testplan.lmp_commit = "aabbccddeeff"
         self.build_testplan.save()
         create_build_run(self.build_testplan.id, run_name)
         update_build_reason_mock.assert_not_called()
@@ -1316,6 +1318,7 @@ class TaskTest(TestCase):
         assert 1 == submit_lava_job_mock.call_count
         get_hash_mock.assert_called()
         assert 1 == get_hash_mock.call_count
+        build_lmp_commit_mock.assert_called()
 
     @patch('conductor.core.tasks._get_os_tree_hash', return_value="someHash1")
     @patch('conductor.core.models.SQUADBackend.update_testjob')
