@@ -1226,6 +1226,8 @@ def check_ota_completed():
 
 @celery.task
 def schedule_lmp_pr_tests(lmp_build_description):
+    if lmp_build_description is None:
+        return
     # This task will schedule boot test round on LmP PR
     # coming from meta-lmp in github
 

@@ -323,7 +323,10 @@ class Project(models.Model):
         if self.name == "lmp":
             # lmp is not a real factory and the URL is different
             url = f"https://api.foundries.io/projects/lmp/builds/{ci_id}"
-        return self._retrieve_api_request(url).get("data")
+        data = self._retrieve_api_request(url).get("data")
+        if data:
+            return data.get("build")
+        return None
 
     def create_static_delta(self, from_build_id, to_build_id):
         logger.debug(f"Creating static delta in {self.name} from {from_build_id} to {to_build_id}")
