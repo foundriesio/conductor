@@ -64,6 +64,7 @@ class LAVABackend(models.Model):
                 return response.json()['job_ids']
             else:
                 logger.info(f"LAVA submission failed with code {response.status_code}")
+                logger.info(response.text)
         else:
             # save job definition to file
             y_definition = yaml.safe_load(definition)

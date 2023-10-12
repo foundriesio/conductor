@@ -238,17 +238,10 @@ def restart_failed_runs(self, build_id, request_json):
         return
     for run in request_json.get("runs"):
         if run.get("status") != "PASSED":
-            # get the log and try to assess the situation
-            log_url = run.get("log_url")
-            run_log = _get_ci_url(log_url, build.project)
-            # if there is no "ERROR" string
-            # the run is likely to be infra failure
-            if run_log.find("ERROR") < 0:
-            # ToDo: add more heuristics
-                # restart the run
-                if build.restart_counter < settings.MAX_BUILD_RESTARTS:
-                    if restart_ci_run(build.project, run.get("url")):
-                        restarted = True
+            # restart the run
+            if build.restart_counter < settings.MAX_BUILD_RESTARTS:
+                if restart_ci_run(build.project, run.get("url")):
+                    restarted = True
     if restarted:
         build.restart_counter = build.restart_counter + 1
         build.save()
