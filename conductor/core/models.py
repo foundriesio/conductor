@@ -627,7 +627,7 @@ class LAVADevice(models.Model):
     def _el2go_operation(self, requests_method):
         authentication = self._get_auth_dict()
         domain = settings.FIO_DOMAIN
-        if self.fio_meds_domain:
+        if self.project.fio_meds_domain:
             domain = self.project.fio_meds_domain
         if self.el2go_name:
             params = {
