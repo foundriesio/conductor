@@ -855,18 +855,20 @@ def create_project_meta_repository(project_id):
     except subprocess.CalledProcessError:
         pass
 
+
 @celery.task
-def merge_lmp_manifest():
-    # merge LmP manifest into all project manifest repositories
-    # don't touch LmP manifest itself. Project named 'lmp' is
-    # a fake project that only keeps the API password.
-    # exclude partner factory projects
-    projects = Project.objects.filter(fio_lmp_manifest_url__isnull=True).exclude(name="lmp")
-    for project in projects:
+def merge_project_lmp_manifest(project_id):
+    project = None
+    try:
+        project = Project.objects.get(pk=project_id)
+    except Project.DoesNotExist:
+        logger.error(f"Project with ID {project_id} doesn't exist")
+        return
+    if project:
         repository_path = os.path.join(settings.FIO_REPOSITORY_HOME, project.name)
         if not __project_repository_exists(project):
             # ignore project with no repository
-            continue
+            return
         # call shell script to merge manifests
         cmd = [os.path.join(settings.FIO_REPOSITORY_SCRIPT_PATH_PREFIX,"merge_manifest.sh"),
                "-d", repository_path,
@@ -879,6 +881,17 @@ def merge_lmp_manifest():
             subprocess.run(cmd, check=True)
         except subprocess.CalledProcessError:
             pass
+
+
+@celery.task
+def merge_lmp_manifest():
+    # merge LmP manifest into all project manifest repositories
+    # don't touch LmP manifest itself. Project named 'lmp' is
+    # a fake project that only keeps the API password.
+    # exclude partner factory projects
+    projects = Project.objects.filter(fio_lmp_manifest_url__isnull=True).exclude(name="lmp")
+    for project in projects:
+        merge_project_lmp_manifest(project.id)
 
 
 #@celery.task

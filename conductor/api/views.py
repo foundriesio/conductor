@@ -1,4 +1,4 @@
-# Copyright 2021 Foundries.io
+# Copyright 2021-2023 Foundries.io
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import hashlib
 import hmac
 import json
 import logging
@@ -33,6 +34,7 @@ from conductor.core.models import Project, Build, LAVADevice, Run
 from conductor.core.tasks import (
     create_build_run,
     merge_lmp_manifest,
+    merge_project_lmp_manifest,
     update_build_commit_id,
     check_device_ota_completed,
     tag_build_runs,
@@ -232,3 +234,35 @@ def generate_context(request, project_name, build_version, device_type_name):
         return JsonResponse(context)
     except Run.DoesNotExist:
         return HttpResponseNotFound()
+
+
+@csrf_exempt
+def process_github_webhook(request):
+    """Verify that the payload was sent from GitHub by validating SHA256.
+
+    Raise and return 403 if not authorized.
+
+    Projects must share a secret if they inherit the same partner manifest
+    """
+    request_body_json = json.loads(request.body)
+    APICallback.objects.create(
+        endpoint="github",
+        content=json.dumps(request_body_json)
+    )
+
+    signature_header = request.headers.get("X-Hub-Signature-256", None)
+    projects = Project.objects.filter(fio_lmp_manifest_url = f"https://github.com/{request_body_json['repository']['full_name']}")
+    project = None
+    if not projects:
+        return HttpResponseForbidden()
+
+    if not signature_header:
+        return HttpResponseForbidden()
+    for project in projects:
+        hash_object = hmac.new(project.secret.encode('utf-8'), msg=request.body, digestmod=hashlib.sha256)
+        expected_signature = "sha256=" + hash_object.hexdigest()
+        if not hmac.compare_digest(expected_signature, signature_header):
+            continue
+        # launch merge event for the project lmp-manifest repository
+        merge_project_lmp_manifest.delay(project.id)
+    return HttpResponse("OK")

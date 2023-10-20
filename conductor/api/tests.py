@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import hashlib
 import hmac
 import json
 from django.test import TestCase, Client
@@ -34,6 +35,12 @@ class ApiViewTest(TestCase):
             name="testProject1",
             secret=self.project_secret,
             lava_backend=self.lavabackend1
+        )
+        self.project_partner = Project.objects.create(
+            name="testProjectPartner1",
+            secret=self.project_secret,
+            lava_backend=self.lavabackend1,
+            fio_lmp_manifest_url="https://github.com/example/repository"
         )
         self.device_type = LAVADeviceType.objects.create(
             name="name1",
@@ -358,6 +365,7 @@ class ApiViewTest(TestCase):
         self.assertEqual(response.status_code, 201)
         # check if build was created
         merge_lmp_manifest_mock.assert_called()
+
     @patch("conductor.core.tasks.merge_lmp_manifest.delay")
     def test_jobserv_lmp_webhook_failed(self, merge_lmp_manifest_mock):
         request_body_dict = {
@@ -523,3 +531,40 @@ class ApiViewTest(TestCase):
             f"/api/context/{self.project.name}/{self.build.build_id}/foo/"
         )
         self.assertEqual(response.status_code, 404)
+
+    @patch("conductor.core.tasks.merge_project_lmp_manifest.delay")
+    def test_process_github_webhook(self, merge_project_lmp_manifest_mock):
+        request_body_dict = {
+            "action": "opened",
+            "issue": {
+                "url": "https://api.github.com/repos/octocat/Hello-World/issues/1347",
+                "number": 1347,
+            },
+            "repository" : {
+                "id": 1296269,
+                "full_name": "example/repository",
+                "owner": {
+                    "login": "octocat",
+                    "id": 1,
+                },
+            },
+            "sender": {
+                "login": "octocat",
+                "id": 1,
+            }
+        }
+        data = json.dumps(request_body_dict, cls=ISO8601_JSONEncoder)
+        sig = hmac.new(self.project.secret.encode(), msg=data.encode(), digestmod=hashlib.sha256)
+        print(sig.hexdigest())
+
+        response = self.client.post(
+            "/api/github/",
+            request_body_dict,
+            content_type="application/json",
+            **{"HTTP_X_Hub_Signature_256":f"sha256={sig.hexdigest()}"}
+        )
+        apicallback = APICallback.objects.first()
+        self.assertEqual(request_body_dict, json.loads(apicallback.content))
+        self.assertEqual(response.status_code, 200)
+        # check if merge was attempted
+        merge_project_lmp_manifest_mock.assert_called_with(self.project_partner.id)
