@@ -757,13 +757,16 @@ def create_project_repository(project_id):
     if project.fio_meds_domain is not None:
         domain = project.fio_meds_domain
     repository_base = settings.FIO_REPOSITORY_BASE % domain
+    lmp_manifest = settings.FIO_BASE_MANIFEST
+    if project.fio_lmp_manifest_url:
+        lmp_manifest = project.fio_lmp_manifest_url
     # call shell script to clone and configure repository
     cmd = [os.path.join(settings.FIO_REPOSITORY_SCRIPT_PATH_PREFIX, "checkout_repository.sh"),
            "-d", repository_path,
            "-r", settings.FIO_REPOSITORY_REMOTE_NAME,
            "-u", "%s/%s/lmp-manifest.git" % (repository_base, project.name),
            "-l", settings.FIO_BASE_REMOTE_NAME,
-           "-w", settings.FIO_BASE_MANIFEST,
+           "-w", lmp_manifest,
            "-t", fio_repository_token,
            "-b", project.default_branch,
            "-D", domain]

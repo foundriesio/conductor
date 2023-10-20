@@ -821,6 +821,17 @@ class TaskTest(TestCase):
             create_ota_commit=True,
             fio_meds_domain="meds.com"
         )
+        self.project_partner = Project.objects.create(
+            name="testProjectPartner1",
+            secret="webhooksecret",
+            lava_backend=self.lavabackend1,
+            squad_backend=self.squadbackend1,
+            squad_group="squadgroup",
+            fio_api_token="fio_api_token_partner1",
+            fio_repository_token="fio_repository_token_partner1",
+            create_ota_commit=True,
+            fio_lmp_manifest_url="https://github.com/example/repository"
+        )
         self.project_rolling = Project.objects.create(
             name="testProject2",
             secret="webhooksecret",
@@ -1506,6 +1517,28 @@ class TaskTest(TestCase):
                "-D", self.project_meds.fio_meds_domain,
                "-f", "True"]
         create_project_repository(self.project_meds.id)
+        # at this stage repository should already exist
+        # it is created when creating project
+        makedirs_mock.assert_not_called()
+        run_mock.assert_called_with(cmd, check=True)
+
+    @patch("django.conf.settings.DEBUG_REPOSITORY_SCRIPTS", True)
+    @patch("subprocess.run")
+    @patch("os.makedirs")
+    def test_create_project_repository_partner(self, makedirs_mock, run_mock):
+        repository_path = os.path.join(settings.FIO_REPOSITORY_HOME, self.project_partner.name)
+        repository_base = settings.FIO_REPOSITORY_BASE % settings.FIO_DOMAIN
+        cmd = [os.path.join(settings.FIO_REPOSITORY_SCRIPT_PATH_PREFIX, "checkout_repository.sh"),
+               "-d", repository_path,
+               "-r", settings.FIO_REPOSITORY_REMOTE_NAME,
+               "-u", "%s/%s/lmp-manifest.git" % (repository_base, self.project_partner.name),
+               "-l", settings.FIO_BASE_REMOTE_NAME,
+               "-w", self.project_partner.fio_lmp_manifest_url,
+               "-t", self.project_partner.fio_repository_token,
+               "-b", self.project_partner.default_branch,
+               "-D", settings.FIO_DOMAIN,
+               "-f", "True"]
+        create_project_repository(self.project_partner.id)
         # at this stage repository should already exist
         # it is created when creating project
         makedirs_mock.assert_not_called()

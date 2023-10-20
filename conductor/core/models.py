@@ -244,6 +244,10 @@ class Project(models.Model):
     fio_repository_token = models.CharField(max_length=40, blank=True, null=True)
     # domain of the MEDS instance. If empty defaults to "foundries.io"
     fio_meds_domain = models.CharField(max_length=64, blank=True, null=True)
+    # URL of the lmp-manifest repository. This should only be set
+    # if the project doesn't directly use FIO lmp-manifest.
+    # Example use case is partner factory, i.e. arduino
+    fio_lmp_manifest_url = models.URLField(blank=True, null=True)
 
     # test plans
     testplans = models.ManyToManyField(TestPlan, blank=True)
@@ -426,7 +430,10 @@ class Build(models.Model):
     def get_lmp_commit_url(self):
         if not self.lmp_commit or self.lmp_commit == self.commit_id:
             return ""
-        return f"{settings.FIO_BASE_MANIFEST}/commit/{self.lmp_commit}"
+        lmp_manifest = settings.FIO_BASE_MANIFEST
+        if self.project.fio_lmp_manifest_url:
+            lmp_manifest = self.project.fio_lmp_manifest_url
+        return f"{lmp_manifest}/commit/{self.lmp_commit}"
 
     def get_commit_url(self):
         if not self.commit_id:
