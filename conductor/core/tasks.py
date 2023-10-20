@@ -860,7 +860,8 @@ def merge_lmp_manifest():
     # merge LmP manifest into all project manifest repositories
     # don't touch LmP manifest itself. Project named 'lmp' is
     # a fake project that only keeps the API password.
-    projects = Project.objects.all().exclude(name="lmp")
+    # exclude partner factory projects
+    projects = Project.objects.filter(fio_lmp_manifest_url__isnull=True).exclude(name="lmp")
     for project in projects:
         repository_path = os.path.join(settings.FIO_REPOSITORY_HOME, project.name)
         if not __project_repository_exists(project):
