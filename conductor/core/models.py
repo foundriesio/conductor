@@ -248,6 +248,8 @@ class Project(models.Model):
     # if the project doesn't directly use FIO lmp-manifest.
     # Example use case is partner factory, i.e. arduino
     fio_lmp_manifest_url = models.URLField(blank=True, null=True)
+    # branch in lmp-manifest to merge changes from
+    fio_lmp_manifest_branch = models.CharField(max_length=32, blank=True, null=True)
 
     # test plans
     testplans = models.ManyToManyField(TestPlan, blank=True)

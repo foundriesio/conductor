@@ -875,6 +875,9 @@ def merge_project_lmp_manifest(project_id):
                "-r", settings.FIO_REPOSITORY_REMOTE_NAME,
                "-l", settings.FIO_BASE_REMOTE_NAME,
                "-b", project.default_branch]
+        if project.fio_lmp_manifest_branch:
+            cmd.append("-t")
+            cmd.append(project.fio_lmp_manifest_branch)
         logger.info("Calling merge_manifest.sh script")
         logger.info(" ".join(cmd))
         try:
