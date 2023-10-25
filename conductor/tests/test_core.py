@@ -1280,7 +1280,7 @@ class TaskTest(TestCase):
         process_testjob_notification(event_data)
         retrieve_mock.assert_not_called()
         add_el2go_mock.assert_called()
-        remove_el2go_mock.assert_not_called()
+        remove_el2go_mock.assert_called()
         remove_factory_mock.assert_called()
 
     @patch('conductor.core.tasks.retrieve_lava_results')

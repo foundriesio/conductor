@@ -1106,6 +1106,8 @@ def process_testjob_notification(event_data):
             # remove device from factory so it can autoregister
             # and update it's target ID
             lava_db_device.remove_from_factory(factory=lava_job.project.name)
+            # remove from EL2GO in case it's been added manually
+            lava_db_device.remove_from_el2go()
             # add 2 EL2GO so the device can retrieve credentials
             lava_db_device.add_to_el2go()
         if lava_job.job_type == LAVAJob.JOB_EL2GO and \
