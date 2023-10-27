@@ -133,12 +133,13 @@ class TestJob(models.Model):
 
         job_yaml = {
             "job_name": self.name,
-            "device_type": testplan.lava_device_type,
             "visibility": self.visibility,
             "priority": self.priority,
             "timeouts": timeouts_dict,
             "actions": [action.to_yaml() for action in self.actions.all()]
         }
+        if testplan:
+            job_yaml.update({"device_type": testplan.lava_device_type})
         if self.metadata:
             job_yaml["metadata"] = self.metadata.to_yaml()
         if self.context:

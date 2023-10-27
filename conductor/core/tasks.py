@@ -421,6 +421,7 @@ def _submit_lava_templates(templates, build, device_type, submit_jobs):
             "os_tree_hash": run.ostree_hash,
             "target": lcl_build.build_id,
             "ota_target": build.build_id,
+            "factory": build.project.name,
         }
         if lcl_build.lmp_commit:
             context.update(

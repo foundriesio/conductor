@@ -12,7 +12,12 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import io
+import yaml
+import zipfile
 from django.contrib import admin
+from django.http import HttpResponse
+from django.utils.text import slugify
 from . import models
 
 
@@ -20,9 +25,27 @@ class TimeoutAdmin(admin.ModelAdmin):
     models = models.Timeout
 
 
+@admin.action(description="Render selected jobs")
+def test_job_render(modeladmin, request, queryset):
+    testjob_list = []
+    tmp = io.BytesIO()
+    with zipfile.ZipFile(tmp, 'w', zipfile.ZIP_DEFLATED, False) as archive:
+        index = 0
+        for testjob in queryset:
+            testjob_yaml = testjob.get_job_definition(None)
+            testjob_yaml_string = yaml.dump(testjob.get_job_definition(None), default_flow_style=False)
+            filename = slugify(testjob_yaml.get("job_name", index))
+            archive.writestr(f"{index}-{filename}.yaml", testjob_yaml_string.encode())
+            index = index + 1
+    response = HttpResponse(tmp.getvalue(), content_type='application/zip')
+    response['Content-Disposition'] = 'attachment; filename="lava.zip"'
+    return response
+
+
 class TestJobAdmin(admin.ModelAdmin):
     models = models.TestJob
     save_as = True
+    actions = [test_job_render]
 
 
 class TestJobContextAdmin(admin.ModelAdmin):
