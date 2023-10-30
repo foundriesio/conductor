@@ -934,7 +934,7 @@ class TaskTest(TestCase):
             build_id="3"
         )
         self.build_testplan_static = Build.objects.create(
-            url="https://example.com/build/3/",
+            url="https://example.com/build/5/",
             project=self.project_testplan,
             static_from=self.build_testplan,
             build_id="5"
@@ -991,6 +991,12 @@ class TaskTest(TestCase):
             net_interface="eth0",
             project=self.project_testplan,
         )
+        self.device_type_testplan3 = LAVADeviceType.objects.create(
+            name="imx93evk",
+            net_interface="eth0",
+            project=self.project_testplan,
+        )
+
         self.device_type_lmp1 = LAVADeviceType.objects.create(
             name="imx8mmevk",
             net_interface="eth0",
@@ -1061,6 +1067,13 @@ class TaskTest(TestCase):
             project = self.project_testplan,
             pduagent=self.pduagent1
         )
+        self.lava_device_testplan3 = LAVADevice.objects.create(
+            device_type = self.device_type_testplan3,
+            name = "imx93evk-1",
+            auto_register_name = "ota_device_3",
+            project = self.project_testplan,
+            pduagent=self.pduagent1
+        )
         self.testplan1 = TestPlan.objects.create(
             name = "testplan_imx8mm",
             lava_device_type = "imx8mmevk"
@@ -1096,6 +1109,29 @@ class TaskTest(TestCase):
         self.testplan2.save()
         self.project_testplan.testplans.add(self.testplan2)
         self.project_lmp.testplans.add(self.testplan1)
+
+        self.testplan3 = TestPlan.objects.create(
+            name = "testplan_ota",
+            lava_device_type = "imx93evk"
+        )
+        self.testplan3.save()
+        self.testjob_imx8mm3_1 = TestJob.objects.create(
+            priority=50,
+            is_ota_job=True,
+            is_downgrade_job=False,
+        )
+        self.testjob_imx8mm3_2 = TestJob.objects.create(
+            priority=50,
+            is_ota_job=True,
+            is_downgrade_job=True,
+        )
+        self.testjob_imx8mm3_1.save()
+        self.testjob_imx8mm3_2.save()
+        self.testplan3.testjobs.add(self.testjob_imx8mm3_1)
+        self.testplan3.testjobs.add(self.testjob_imx8mm3_2)
+        self.testplan3.save()
+        self.project_testplan.testplans.add(self.testplan3)
+
 
         # notifications
         definition_lavajob1 = yaml.dump({"actions": [{"boot": {"prompts": ["root@ota_device_1"]}}]})
@@ -1377,6 +1413,29 @@ class TaskTest(TestCase):
         assert 1 == submit_lava_job_mock.call_count
         get_hash_mock.assert_called()
         assert 1 == get_hash_mock.call_count
+
+    @patch('conductor.core.tasks._get_os_tree_hash', return_value="someHash1")
+    @patch('conductor.core.models.SQUADBackend.update_testjob')
+    @patch('conductor.core.models.Project.watch_qa_reports_job')
+    @patch('conductor.core.models.Project.submit_lava_job', return_value=[123])
+    @patch('conductor.core.tasks.update_build_reason')
+    def test_create_build_run_testplan_ota(self, update_build_reason_mock, submit_lava_job_mock, watch_qa_reports_mock, update_testjob_mock, get_hash_mock):
+        response_mock = MagicMock()
+        response_mock.status_code = 201
+        response_mock.text = "321"
+        watch_qa_reports_mock.return_value = response_mock
+        run_name = "imx93evk"
+        self.build_testplan_static.build_reason = "Hello world"
+        self.build_testplan_static.build_type = Build.BUILD_TYPE_OTA
+        self.build_testplan_static.save()
+        create_build_run(self.build_testplan_static.id, run_name)
+        update_build_reason_mock.assert_not_called()
+        submit_lava_job_mock.assert_called()
+        watch_qa_reports_mock.assert_called()
+        update_testjob_mock.assert_called()
+        assert 2 == submit_lava_job_mock.call_count
+        get_hash_mock.assert_called()
+        assert 2 == get_hash_mock.call_count
 
     @patch('conductor.core.tasks._get_os_tree_hash', return_value="someHash1")
     @patch('conductor.core.models.SQUADBackend.watch_lava_job', return_value=None)

@@ -345,6 +345,7 @@ def create_build_run(self, build_id, run_name, submit_jobs=True):
         return None
 
     templates = []
+    downgrade_templates = []
     # if there is a TestPlan object defined for the Project
     # use it to generate templates. Otherwise use the static rules
     # below
@@ -362,7 +363,7 @@ def create_build_run(self, build_id, run_name, submit_jobs=True):
                         "template": _template_from_string(yaml.dump(plan_testjob.get_job_definition(plan), default_flow_style=False))
                     })
             if build.build_reason and build.build_type == Build.BUILD_TYPE_OTA:
-                for plan_testjob in plan.testjobs.filter(is_ota_job=True, is_static_delta_job=False):
+                for plan_testjob in plan.testjobs.filter(is_ota_job=True, is_downgrade_job=False, is_static_delta_job=False):
                     job_type = LAVAJob.JOB_LAVA
                     if plan_testjob.is_el2go_job:
                         job_type = LAVAJob.JOB_EL2GO
@@ -372,12 +373,28 @@ def create_build_run(self, build_id, run_name, submit_jobs=True):
                         "build": previous_build,
                         "template": _template_from_string(yaml.dump(plan_testjob.get_job_definition(plan), default_flow_style=False))
                     })
+                for plan_testjob in plan.testjobs.filter(is_ota_job=True, is_downgrade_job=True, is_static_delta_job=False):
+                    job_type = LAVAJob.JOB_LAVA
+                    if plan_testjob.is_el2go_job:
+                        job_type = LAVAJob.JOB_EL2GO
+                    downgrade_templates.append({
+                        "name": plan_testjob.name,
+                        "job_type": job_type,
+                        "build": build,
+                        "template": _template_from_string(yaml.dump(plan_testjob.get_job_definition(plan), default_flow_style=False))
+                    })
     else:
         logger.info("Default test plan disabled")
 
     logger.debug(f"run_name: {run_name}")
     logger.debug(f"{templates}")
-    return _submit_lava_templates(templates, build, device_type, submit_jobs)
+    lava_templates = _submit_lava_templates(templates, build, device_type, submit_jobs)
+    lava_templates_downgrade = []
+    if previous_build and downgrade_templates:
+        logger.debug(f"downgrade")
+        logger.debug(f"{downgrade_templates}")
+        lava_templates_downgrade = _submit_lava_templates(downgrade_templates, previous_build, device_type, submit_jobs)
+    return lava_templates + lava_templates_downgrade
 
 
 def _submit_lava_templates(templates, build, device_type, submit_jobs):
