@@ -3,8 +3,8 @@
 REPOSITORY_DIR=""
 REPOSITORY_REMOTE=origin
 REPOSITORY_LMP_REMOTE=lmp
-REPOSITORY_LMP_BRANCH=master
-REPOSITORY_DEFAULT_BRANCH=master
+REPOSITORY_LMP_BRANCH=main
+REPOSITORY_DEFAULT_BRANCH=main
 
 usage() {
     echo "Usage: $0 [-d <repository_dir>] [-r <repository_remote>] [-t <lmp remote branch>]
