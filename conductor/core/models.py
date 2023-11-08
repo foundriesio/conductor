@@ -250,6 +250,8 @@ class Project(models.Model):
     fio_lmp_manifest_url = models.URLField(blank=True, null=True)
     # branch in lmp-manifest to merge changes from
     fio_lmp_manifest_branch = models.CharField(max_length=32, blank=True, null=True)
+    # update kernel moduel keys for OTA buils
+    fio_force_kernel_rebuild = models.BooleanField(default=False)
 
     # test plans
     testplans = models.ManyToManyField(TestPlan, blank=True)

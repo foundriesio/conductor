@@ -744,6 +744,9 @@ def create_upgrade_commit(build_id):
                "-r", settings.FIO_REPOSITORY_REMOTE_NAME,
                "-m", settings.FIO_UPGRADE_ROLLBACK_MESSAGE,
                "-b", project.default_branch]
+        if project.fio_force_kernel_rebuild:
+            cmd.append("-k")
+            cmd.append("true")
     if not settings.DEBUG_FIO_SUBMIT and cmd:
         logger.debug(f"{cmd}")
         try:
