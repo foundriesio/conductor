@@ -1091,7 +1091,7 @@ def process_testjob_notification(event_data):
         if device_name:
             lava_db_device = _find_lava_device(lava_job, device_name, lava_job.project)
             if lava_db_device is None:
-                logger.warning(f"Device from {job_id} not found in {lava_job.project}") 
+                logger.warning(f"Device from {job_id} not found in {lava_job.project}")
                 return
             lava_job.device = lava_db_device
             lava_job.save()
@@ -1126,10 +1126,17 @@ def process_testjob_notification(event_data):
                 lava_db_device:
             # remove device from factory so it can autoregister
             # and update it's target ID
+            logger.info(f"Removing {lava_db_device} from Factory")
             lava_db_device.remove_from_factory(factory=lava_job.project.name)
             # remove from EL2GO in case it's been added manually
+            logger.info(f"LAVA device {lava_db_device} details:")
+            logger.info(f"{lava_db_device.project.name}")
+            logger.info(f"{lava_db_device.project.el2go_product_id}")
+            logger.info(f"{lava_db_device.el2go_name}")
+            logger.info(f"Removing {lava_db_device} from EL2GO")
             lava_db_device.remove_from_el2go()
             # add 2 EL2GO so the device can retrieve credentials
+            logger.info(f"Adding {lava_db_device} to EL2GO")
             lava_db_device.add_to_el2go()
         if lava_job.job_type == LAVAJob.JOB_EL2GO and \
                 event_data.get("state") == "Finished" and \
@@ -1137,6 +1144,11 @@ def process_testjob_notification(event_data):
             retrieve_lava_results(lava_db_device.id, job_id)
             # remove EL2GO so the device can retrieve credentials
             # in the next job
+            logger.info(f"LAVA device {lava_db_device} details:")
+            logger.info(f"{lava_db_device.project.name}")
+            logger.info(f"{lava_db_device.project.el2go_product_id}")
+            logger.info(f"{lava_db_device.el2go_name}")
+            logger.info(f"Removing {lava_db_device} from EL2GO")
             lava_db_device.remove_from_el2go()
 
     except LAVAJob.DoesNotExist:
