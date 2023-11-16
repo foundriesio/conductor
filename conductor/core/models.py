@@ -187,14 +187,21 @@ class SQUADBackend(models.Model):
                 )
         return None
 
+    def __str__(self):
+        return self.name
+
 
 class Project(models.Model):
-    name = models.CharField(max_length=32)
+    name = models.CharField(
+        max_length=32,
+        help_text="The name of the Foundries Factory")
     # secret stored in a factory and passed in webhook
     # request POST header
-    secret = models.CharField(max_length=128)
+    secret = models.CharField(
+        max_length=128,
+        help_text="Secret set in the Foundries Factory usign fioctl. The secret is sent by jobserv callback.")
     # private key to sign targets.json for tagging
-    privkey = models.TextField(null=True, blank=True)
+    privkey = models.TextField(null=True, blank=True, help_text="TUF private key for signing targets")
     # ID corresponding to the privkey
     keyid = models.CharField(max_length=64, null=True, blank=True)
     lava_backend = models.ForeignKey(
@@ -205,33 +212,63 @@ class Project(models.Model):
     # name of the header variable in LAVA inscance
     # the variable is used to authenticate downloads from
     # FoundriesFactory CI
-    lava_header = models.CharField(max_length=23, null=True, blank=True)
+    lava_header = models.CharField(
+        max_length=23,
+        null=True,
+        blank=True,
+        help_text="Name of LAVA header created in LAVA profile. Header should be created for the user submitting test jobs")
     squad_backend = models.ForeignKey(
         SQUADBackend,
         on_delete=models.SET_NULL,
         null=True,
-        blank=True)
-    squad_group = models.CharField(max_length=16, null=True, blank=True)
+        blank=True,
+        help_text="Name of the SQUAD instance to use for reporing of this project.")
+    squad_group = models.CharField(
+        max_length=16,
+        null=True,
+        blank=True,
+        help_text="Name of the group in SQUAD instance where this project data is reported. SQUAD project name by default is the same as this project name.")
     create_ota_commit = models.BooleanField(default=False)
     # create commit in containers repository
     # this will trigger a script which should update a file in containers repository
     # for this to work, the file needs to be referenced in Dockerfile
     # only one compose app will be updated
-    create_containers_commit = models.BooleanField(default=False)
+    create_containers_commit = models.BooleanField(
+        default=False,
+        help_text="If set to true OTA commit will be created in the containers repository")
     compose_app_name = models.CharField(max_length=64, null=True, blank=True)
     compose_app_env_filename = models.CharField(max_length=64, null=True, blank=True)
     default_container_branch = models.CharField(max_length=64, default="master")
     # meta-subscribers branch name
-    default_meta_branch = models.CharField(max_length=64, default="master")
+    default_meta_branch = models.CharField(
+        max_length=64,
+        default="master",
+        help_text="Default branch to monitor in meta-subscriber-overrides repository")
     # if set to True, only lmp-manifest merges will trigger testing
-    test_on_merge_only = models.BooleanField(default=False)
-    qa_reports_project_name = models.CharField(max_length=32, null=True, blank=True)
-    el2go_product_id = models.CharField(max_length=32, null=True, blank=True)
+    test_on_merge_only = models.BooleanField(
+        default=False,
+        help_text="If set to true testing will be triggered only on merges from lmp-manifest.")
+    qa_reports_project_name = models.CharField(
+        max_length=32,
+        null=True,
+        blank=True,
+        help_text="When not empty this name is used as a project name in SQUAD.")
+    el2go_product_id = models.CharField(
+        max_length=32,
+        null=True,
+        blank=True,
+        help_text="12NC number for the SE05x device. This field will be moved to the LAVADevice. For now all devices in the factory have to use the same SE05x chip.")
 
     # name of the tag applied to devices and targets
-    testing_tag = models.CharField(max_length=16, null=True, blank=True)
+    testing_tag = models.CharField(
+        max_length=16,
+        null=True,
+        blank=True,
+        help_text="This tag will be applied to the targets in the Foundries Factory on successful build.")
     # apply testing tag to 1st build only. This is done to prevent OTA
-    apply_tag_to_first_build_only = models.BooleanField(default=False)
+    apply_tag_to_first_build_only = models.BooleanField(
+        default=False,
+        help_text="When set to true, testing_tag is not applied to the OTA build.")
     # set to True to apply testing_tag to target
     apply_testing_tag_on_callback = models.BooleanField(default=False)
     # produce static deltas for OTA builds
