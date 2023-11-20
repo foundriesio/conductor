@@ -28,5 +28,5 @@ done
 cd "${REPOSITORY_DIR}"
 git checkout "${REPOSITORY_DEFAULT_BRANCH}"
 git fetch --all
-git merge -X theirs  --no-edit -m "update-manifest: merge LmP master" "${REPOSITORY_LMP_REMOTE}/${REPOSITORY_LMP_BRANCH}" || exit $?
+git merge -X theirs  --no-edit -m "update-manifest: merge LmP ${REPOSITORY_LMP_BRANCH} to ${REPOSITORY_DEFAULT_BRANCH}" "${REPOSITORY_LMP_REMOTE}/${REPOSITORY_LMP_BRANCH}" || exit $?
 git push "${REPOSITORY_REMOTE}" "${REPOSITORY_DEFAULT_BRANCH}"
