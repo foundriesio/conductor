@@ -362,7 +362,7 @@ def create_build_run(self, build_id, run_name, submit_jobs=True):
                         "build": build,
                         "template": _template_from_string(yaml.dump(plan_testjob.get_job_definition(plan), default_flow_style=False))
                     })
-            if build.build_reason and build.build_type == Build.BUILD_TYPE_OTA:
+            if build.build_reason and build.build_type in [Build.BUILD_TYPE_OTA, Build.BUILD_TYPE_CONTAINERS]:
                 for plan_testjob in plan.testjobs.filter(is_ota_job=True, is_downgrade_job=False, is_static_delta_job=False):
                     job_type = LAVAJob.JOB_LAVA
                     if plan_testjob.is_el2go_job:
@@ -658,11 +658,15 @@ def update_build_commit_id(build_id, run_url):
                 logger.debug("Skipping testing. [skip qa] found in commit message")
                 return None
 
-            if settings.FIO_UPGRADE_ROLLBACK_MESSAGE not in build.build_reason:
-                create_upgrade_commit.delay(build_id)
-            else: 
-                # create static delta for OTA build and it's previous build
-                create_static_delta_build.delay(build_id)
+            if build.build_type in [Build.BUILD_TYPE_REGULAR, Build.BUILD_TYPE_OTA]:
+                if settings.FIO_UPGRADE_ROLLBACK_MESSAGE not in build.build_reason:
+                    create_upgrade_commit.delay(build_id)
+                else:
+                    # create static delta for OTA build and it's previous build
+                    create_static_delta_build.delay(build_id)
+            if build.build_type == Build.BUILD_TYPE_CONTAINERS:
+                # do nothing for containers for now
+                return None
 
 
 @celery.task

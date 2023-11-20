@@ -180,13 +180,14 @@ def process_jobserv_webhook(request):
         schedule_static_delta.delay(build.pk)
         return HttpResponse("Created", status=201)
 
-    if "containers" in trigger_name:
-        # only create build and tag it
-        # build won't have a commit ID in conductor DB
-        tag_build_runs.delay(build.pk)
-        return HttpResponse("Created", status=201)
+#    if "containers" in trigger_name:
+#        # only create build and tag it
+#        # build won't have a commit ID in conductor DB
+#        tag_build_runs.delay(build.pk)
+#        return HttpResponse("Created", status=201)
     # only trigger testing round when build comes from proper branch
-    if "platform" in trigger_name and project.default_branch in trigger_name:
+    if ("platform" in trigger_name and project.default_branch in trigger_name) or \
+            "containers" in trigger_name:
         run_url = None
         build_run_list = []
         for run in request_body_json.get("runs"):

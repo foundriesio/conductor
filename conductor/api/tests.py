@@ -70,9 +70,10 @@ class ApiViewTest(TestCase):
         )
         self.client = Client()
 
+    @patch("conductor.core.tasks.tag_build_runs.si")
     @patch("conductor.core.tasks.create_build_run.si")
     @patch("conductor.core.tasks.update_build_commit_id.si")
-    def test_jobserv_webhook(self, ubci_mock, cbr_mock):
+    def test_jobserv_webhook(self, ubci_mock, cbr_mock, tag_mock):
         request_body_dict = {
             "status": "PASSED",
             "build_id": 1,
@@ -99,6 +100,7 @@ class ApiViewTest(TestCase):
         self.assertEqual(build.build_id, 1)
         cbr_mock.assert_called()
         ubci_mock.assert_called()
+        tag_mock.assert_called()
 
     @patch("conductor.core.tasks._get_ci_url", return_value="abc")
     @patch("conductor.core.tasks.restart_ci_run")
@@ -218,15 +220,17 @@ class ApiViewTest(TestCase):
         )
         self.assertEqual(response.status_code, 403)
 
-    @patch("conductor.core.tasks.tag_build_runs.delay")
-    def test_jobserv_webhook_container_build(self, tag_mock):
+    @patch("conductor.core.tasks.tag_build_runs.si")
+    @patch("conductor.core.tasks.create_build_run.si")
+    @patch("conductor.core.tasks.update_build_commit_id.si")
+    def test_jobserv_webhook_container_build(self, build_commit_mock, build_run_mock, tag_mock):
         request_body_dict = {
             "status": "PASSED",
             "build_id": 1,
             "url": "https://api.foundries.io/projects/testProject1/lmp/builds/73/",
             "trigger_name": "containers-master",
             "runs": [
-                {"url": "example.com", "name": "name1"}
+                {"url": "https://example.com", "name": "name1"}
             ]
         }
         data = json.dumps(request_body_dict, cls=ISO8601_JSONEncoder)
@@ -240,6 +244,8 @@ class ApiViewTest(TestCase):
         apicallback = APICallback.objects.first()
         self.assertEqual(request_body_dict, json.loads(apicallback.content))
         self.assertEqual(response.status_code, 201)
+        build_run_mock.assert_called()
+        build_commit_mock.assert_called()
         tag_mock.assert_called()
 
     def test_jobserv_webhook_wrong_project(self):
