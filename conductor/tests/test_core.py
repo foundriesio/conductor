@@ -50,7 +50,9 @@ from conductor.core.tasks import (
     tag_build_runs,
     process_testjob_notification,
     schedule_lmp_pr_tests,
-    schedule_static_delta
+    schedule_static_delta,
+    create_static_delta_build,
+    poll_static_delta_build
 )
 
 
@@ -1636,6 +1638,16 @@ class TaskTest(TestCase):
         assert 3 == run_mock.call_count
         run_mock.assert_any_call(cmd, check=True)
 
+    @patch("conductor.core.tasks.poll_static_delta_build.apply_async")
+    @patch("conductor.core.models.Project.create_static_delta")
+    def test_create_static_delta_build(self, create_mock, poll_mock):
+        static_delta_json = {"jobserv-url": "https://api.foundries.io/projects/milosz-rpi3/lmp/builds/581/", "web-url": "https://ci.foundries.io/projects/milosz-rpi3/lmp/builds/581"}
+        create_mock.return_value = static_delta_json
+
+        create_static_delta_build(self.build.id)
+        create_mock.assert_called()
+        poll_mock.assert_called()
+
     @patch("subprocess.run")
     def test_create_upgrade_commit(self, run_mock):
         repository_path = os.path.join(settings.FIO_REPOSITORY_HOME, self.project.name)
@@ -2248,3 +2260,32 @@ class TaskTest(TestCase):
         assert 1 == submit_lava_job_mock.call_count
         get_hash_mock.assert_called()
         assert 1 == get_hash_mock.call_count
+
+    @patch('conductor.core.tasks.poll_static_delta_build.apply_async')
+    @patch('conductor.core.models.Project.ci_build_details')
+    def test_poll_static_delta_running(self, ci_mock, poll_mock):
+        build_details_json = {"status": "RUNNING"}
+        ci_mock.return_value = build_details_json
+        poll_static_delta_build(self.build.id)
+        poll_mock.assert_called()
+
+    @patch('conductor.core.tasks.schedule_static_delta')
+    @patch('conductor.core.tasks.poll_static_delta_build.apply_async')
+    @patch('conductor.core.models.Project.ci_build_details')
+    def test_poll_static_delta_passed(self, ci_mock, poll_mock, schedule_mock):
+        build_details_json = {"status": "PASSED"}
+        ci_mock.return_value = build_details_json
+        poll_static_delta_build(self.build.id)
+        poll_mock.assert_not_called()
+        schedule_mock.assert_called()
+
+    @patch('conductor.core.tasks.schedule_static_delta')
+    @patch('conductor.core.tasks.poll_static_delta_build.apply_async')
+    @patch('conductor.core.models.Project.ci_build_details')
+    def test_poll_static_delta_failed(self, ci_mock, poll_mock, schedule_mock):
+        build_details_json = {"status": "FAILED"}
+        ci_mock.return_value = build_details_json
+        ret_val = poll_static_delta_build(self.build.id)
+        poll_mock.assert_not_called()
+        schedule_mock.assert_not_called()
+        self.assertEqual(None, ret_val)

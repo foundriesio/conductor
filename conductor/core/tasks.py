@@ -496,6 +496,26 @@ def _submit_lava_templates(templates, build, device_type, submit_jobs):
 
 
 @celery.task(bind=True)
+def poll_static_delta_build(self, build_id):
+    build = None
+    try:
+        build = Build.objects.get(pk=build_id)
+    except Build.DoesNotExist:
+        return None
+
+    # poll build_url and check if status == PASSED
+    build_json = build.project.ci_build_details(build.build_id)
+    if build_json.get("status") == "PASSED":
+        schedule_static_delta(build.pk)
+    elif build_json.get("status") == "FAILED":
+        return None
+    else:
+        # repeat the task every 2 minutes
+        poll_static_delta_build.apply_async(build_id, countdown=120)
+    return True
+
+
+@celery.task(bind=True)
 def create_static_delta_build(self, build_id):
     build = None
     try:
@@ -522,6 +542,8 @@ def create_static_delta_build(self, build_id):
         build_type=Build.BUILD_TYPE_STATIC_DELTA,
         static_from=previous_build,
         static_to=build)
+
+    poll_static_delta_build.apply_async(s_build.id, countdown=120)
 
 
 @celery.task(bind=True)
