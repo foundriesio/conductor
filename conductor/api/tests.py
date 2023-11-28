@@ -44,6 +44,7 @@ class ApiViewTest(TestCase):
         )
         self.device_type = LAVADeviceType.objects.create(
             name="name1",
+            architecture="aarch64",
             net_interface="eth0",
             project=self.project
         )
@@ -230,7 +231,7 @@ class ApiViewTest(TestCase):
             "url": "https://api.foundries.io/projects/testProject1/lmp/builds/73/",
             "trigger_name": "containers-master",
             "runs": [
-                {"url": "https://example.com", "name": "name1"}
+                {"url": "https://example.com", "name": "build-aarch64"}
             ]
         }
         data = json.dumps(request_body_dict, cls=ISO8601_JSONEncoder)

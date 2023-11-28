@@ -30,7 +30,7 @@ from django.http import (
 from django.views.decorators.csrf import csrf_exempt
 
 from conductor.api.models import APICallback
-from conductor.core.models import Project, Build, LAVADevice, Run
+from conductor.core.models import Project, Build, LAVADevice, LAVADeviceType, Run
 from conductor.core.tasks import (
     create_build_run,
     merge_lmp_manifest,
@@ -193,7 +193,22 @@ def process_jobserv_webhook(request):
         for run in request_body_json.get("runs"):
             run_url = run.get("url")
             run_name = run.get("name")
-            build_run_list.append(create_build_run.si(build.pk, run_name))
+            dev_names = []
+            if build.build_type == Build.BUILD_TYPE_CONTAINERS:
+                # create run_name list base ond device type
+                # architectures
+                # container build names are in form "build-architecture"
+                if "-" in run_name:
+                    arch_name = run_name.split("-", 1)[1]
+                    device_types = LAVADeviceType.objects.filter(project=build.project, architecture=arch_name)
+                    for dev_type in device_types:
+                        dev_names.append(dev_type.name)
+                else:
+                    continue
+            else:
+                dev_names.append(run_name)
+            for dev_name in dev_names:
+                build_run_list.append(create_build_run.si(build.pk, dev_name))
         if run_url is not None:
             # only call update_build_commit_id once as
             # all runs should contain identical GIT_SHA
