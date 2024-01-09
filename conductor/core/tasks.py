@@ -511,7 +511,7 @@ def poll_static_delta_build(self, build_id):
         return None
     else:
         # repeat the task every 2 minutes
-        poll_static_delta_build.apply_async(build_id, countdown=120)
+        poll_static_delta_build.apply_async(args=[build_id], countdown=120)
     return True
 
 
@@ -543,7 +543,7 @@ def create_static_delta_build(self, build_id):
         static_from=previous_build,
         static_to=build)
 
-    poll_static_delta_build.apply_async(s_build.id, countdown=120)
+    poll_static_delta_build.apply_async(args=[s_build.id], countdown=120)
 
 
 @celery.task(bind=True)

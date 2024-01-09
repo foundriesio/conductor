@@ -1646,7 +1646,8 @@ class TaskTest(TestCase):
 
         create_static_delta_build(self.build.id)
         create_mock.assert_called()
-        poll_mock.assert_called()
+        s_build_id = Build.objects.last().id
+        poll_mock.assert_called_with(args=[s_build_id], countdown=120)
 
     @patch("subprocess.run")
     def test_create_upgrade_commit(self, run_mock):
