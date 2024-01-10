@@ -33,6 +33,7 @@ from cryptography.hazmat.primitives.asymmetric.rsa import RSAPrivateKey
 from cryptography.hazmat.backends import default_backend
 
 from conductor.celery import app as celery
+from celery.signals import task_internal_error, task_failure
 from celery.utils.log import get_task_logger
 from conductor.core.models import Run, Build, BuildTag, LAVADeviceType, LAVADevice, LAVAJob, Project
 from datetime import timedelta
@@ -56,6 +57,27 @@ translate_result = {
     "skip": "SKIPPED",
     "unknown": "SKIPPED"
 }
+
+
+def task_email_notify(sender=None, headers=None, body=None, **kwargs):
+    from django.core.mail import mail_admins
+    import socket
+    kwargs['sender'] = sender
+    subject = "Error: Task {sender.name} ({task_id}): {exception.context} {exception.problem}".format(**kwargs)
+    message = """Task {sender.name} with id {task_id} raised exception:
+{exception!r}
+Task was called with args: {args}
+kwargs: {kwargs}.
+The contents of the full traceback was:
+{einfo}
+    """.format(**kwargs)
+    mail_admins(subject, message)
+
+
+# record notification for failed and error tasks
+task_failure.connect(task_email_notify)
+task_internal_error.connect(task_email_notify)
+
 
 def requests_retry_session(
     retries=3,

@@ -183,6 +183,8 @@ GH_LMP_PATCH_SOURCE = "fio-github"
 SKIP_QA_MESSAGES = ["[skip qa]", "[skip-qa]", "skip-qa"]
 MAX_BUILD_RESTARTS = 3
 
+EMAIL_SUBJECT_PREFIX = "[Conductor] "
+
 LOGGING = {
     'version': 1,
     'disable_existing_loggers': False,
