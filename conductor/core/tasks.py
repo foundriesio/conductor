@@ -247,6 +247,23 @@ def _remove_tag(build, tag):
             build.buildtag_set.remove(oldtag)
 
 
+def _retrieve_previous_build(
+        build,
+        build_types=[Build.BUILD_TYPE_REGULAR,
+                     Build.BUILD_TYPE_OTA,
+                     Build.BUILD_TYPE_STATIC_DELTA,
+                     Build.BUILD_TYPE_CONTAINERS]):
+
+    previous_builds = build.project.build_set.filter(
+            build_id__lt=build.build_id,
+            tag=build.tag,
+            build_type__in=build_types).order_by('-build_id')
+    previous_build = None
+    if previous_builds:
+        previous_build = previous_builds[0]
+    return previous_build
+
+
 @celery.task(bind=True)
 def restart_failed_runs(self, build_id, request_json):
     # restarts failed runs in a build
@@ -299,13 +316,9 @@ def tag_build_runs(self, build_id):
 
     testing_buildtag, _ = BuildTag.objects.get_or_create(name=build.project.testing_tag)
 
-    # previous build has to be a platform build
-    # this is important for container build tests
-    previous_builds = build.project.build_set.filter(build_id__lt=build.build_id, tag=build.tag, build_type__in=[Build.BUILD_TYPE_REGULAR, Build.BUILD_TYPE_OTA]).order_by('-build_id')
-    previous_build = None
+    previous_build = _retrieve_previous_build(build)
     old_tagged_builds = []
-    if previous_builds:
-        previous_build = previous_builds[0]
+    if previous_build:
         old_tagged_builds = build.project.build_set.filter(buildtag=testing_buildtag, build_id__lt=previous_build.build_id)
         # there should only be 2 tagged builds: current and previous
 
@@ -357,10 +370,9 @@ def create_build_run(self, build_id, run_name, submit_jobs=True):
     if not build.is_merge_commit and build.build_type == Build.BUILD_TYPE_REGULAR and build.project.test_on_merge_only:
         # don't schedule tests
         return None
-    previous_builds = build.project.build_set.filter(build_id__lt=build.build_id, tag=build.tag).order_by('-build_id')
-    previous_build = None
-    if previous_builds:
-        previous_build = previous_builds[0]
+    # previous build has to be a platform build
+    # this is important for container build tests
+    previous_build = _retrieve_previous_build(build, build_types=[Build.BUILD_TYPE_REGULAR, Build.BUILD_TYPE_OTA])
     device_type = None
     try:
         device_type = LAVADeviceType.objects.get(name=run_name, project=build.project)
@@ -547,10 +559,7 @@ def create_static_delta_build(self, build_id):
     except Build.DoesNotExist:
         return None
 
-    previous_builds = build.project.build_set.filter(build_id__lt=build.build_id, tag=build.tag).order_by('-build_id')
-    previous_build = None
-    if previous_builds:
-        previous_build = previous_builds[0]
+    previous_build = _retrieve_previous_build(build, build_types=[Build.BUILD_TYPE_REGULAR, Build.BUILD_TYPE_OTA])
     if not previous_build:
         # no previous build found
         return None
@@ -1271,10 +1280,7 @@ def __check_ota_status(device):
     current_target = device.get_current_target()
     # determine whether current target is correct
     last_build = device.project.build_set.last()
-    previous_builds = last_build.project.build_set.filter(build_id__lt=last_build.build_id).order_by('-build_id')
-    previous_build = None
-    if previous_builds:
-        previous_build = previous_builds[0]
+    previous_build = _retrieve_previous_build(last_build)
     try:
         last_run = last_build.run_set.get(run_name=device.device_type.name)
         target_name = current_target.get('target-name')
