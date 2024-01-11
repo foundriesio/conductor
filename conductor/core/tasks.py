@@ -299,7 +299,9 @@ def tag_build_runs(self, build_id):
 
     testing_buildtag, _ = BuildTag.objects.get_or_create(name=build.project.testing_tag)
 
-    previous_builds = build.project.build_set.filter(build_id__lt=build.build_id, tag=build.tag).order_by('-build_id')
+    # previous build has to be a platform build
+    # this is important for container build tests
+    previous_builds = build.project.build_set.filter(build_id__lt=build.build_id, tag=build.tag, build_type__in=[Build.BUILD_TYPE_REGULAR, Build.BUILD_TYPE_OTA]).order_by('-build_id')
     previous_build = None
     old_tagged_builds = []
     if previous_builds:
@@ -1164,6 +1166,7 @@ def process_testjob_notification(event_data):
                 lava_db_device:
             # remove device from factory so it can autoregister
             # and update it's target ID
+            logger.info(f"Removing {lava_db_device} from Factory {lava_db_device.project.name}")
             lava_db_device.remove_from_factory(factory=lava_job.project.name)
         if lava_job.job_type == LAVAJob.JOB_LAVA and \
                 event_data.get("state") == "Finished" and \
