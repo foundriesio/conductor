@@ -552,11 +552,11 @@ class LAVADeviceType(models.Model):
     # keep device type specific settings in the TextField
     device_type_settings = models.TextField(blank=True, null=True, validators=[yaml_validator])
     ARCH_ARMHF = "armhf"
-    ARCH_AARCH64 = "arm64"
+    ARCH_AARCH64 = "aarch64"
     ARCH_AMD64 = "amd64"
     ARCH_CHOICES = [
         (ARCH_ARMHF, "armhf"),
-        (ARCH_AARCH64, "arm64"),
+        (ARCH_AARCH64, "aarch64"),
         (ARCH_AMD64, "amd64")
     ]
     architecture = models.CharField(max_length=8, choices=ARCH_CHOICES, default=ARCH_AARCH64)
