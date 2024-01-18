@@ -935,10 +935,16 @@ class TaskTest(TestCase):
             project=self.project_testplan,
             build_id="3"
         )
+        self.build_testplan_ota = Build.objects.create(
+            url="https://example.com/build/4/",
+            project=self.project_testplan,
+            build_id="4"
+        )
         self.build_testplan_static = Build.objects.create(
             url="https://example.com/build/5/",
             project=self.project_testplan,
             static_from=self.build_testplan,
+            static_to=self.build_testplan_ota,
             build_id="5"
         )
         self.build_run_testplan1 = Run.objects.create(

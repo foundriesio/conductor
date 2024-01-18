@@ -615,7 +615,7 @@ def schedule_static_delta(self, build_id):
                     "build": build.static_from,
                     "template": _template_from_string(yaml.dump(plan_testjob.get_job_definition(plan), default_flow_style=False))
                 })
-        _submit_lava_templates(templates, build, device_type, True)
+        _submit_lava_templates(templates, build.static_to, device_type, True)
 
 
 def _update_build_reason(build):
