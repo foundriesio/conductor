@@ -27,6 +27,7 @@ done
 
 cd "${REPOSITORY_DIR}"
 git checkout "${REPOSITORY_DEFAULT_BRANCH}"
+git pull "${REPOSITORY_REMOTE}" "${REPOSITORY_DEFAULT_BRANCH}"
 CHECKSUM=$(find . -type f -exec md5sum {} \; | sort -k 2 | md5sum | cut -d" " -f 1)
 echo "CHECKSUM=${CHECKSUM}" > "${CONTAINERS_FILE}"
 git add "${CONTAINERS_FILE}"

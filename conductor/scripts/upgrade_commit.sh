@@ -29,6 +29,7 @@ done
 
 cd "${REPOSITORY_DIR}"
 git checkout "${REPOSITORY_DEFAULT_BRANCH}"
+git pull "${REPOSITORY_REMOTE}" "${REPOSITORY_DEFAULT_BRANCH}"
 if [ "${KERNEL_REBUILD}" = "true" ] || [ "${KERNEL_REBUILD}" = "True" ] || [ "${KERNEL_REBUILD}" = "TRUE" ]; then
     if [ -d factory-keys ]; then
         # change kernel module keys to force new kernel build
