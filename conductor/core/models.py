@@ -721,10 +721,12 @@ class LAVAJob(models.Model):
     JOB_LAVA = "LAVA"
     JOB_EL2GO = "EL2GO"
     JOB_OTA = "OTA"
+    JOB_ASSEMBLE = "ASM"
     JOB_CHOICES = [
         (JOB_LAVA, "Lava"),
         (JOB_OTA, "OTA"),
         (JOB_EL2GO, "EL2GO"),
+        (JOB_ASSEMBLE, "Assemble"),
     ]
 
     job_type = models.CharField(
