@@ -126,6 +126,7 @@ class TestJob(models.Model):
     is_downgrade_job = models.BooleanField(default=False)
     is_static_delta_job = models.BooleanField(default=False)
     is_el2go_job = models.BooleanField(default=False)
+    is_assemble_image_job = models.BooleanField(default=False)
 
     def get_job_definition(self, testplan):
         timeouts_dict = {}
