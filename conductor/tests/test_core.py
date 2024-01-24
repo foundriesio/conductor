@@ -947,6 +947,13 @@ class TaskTest(TestCase):
             static_to=self.build_testplan_ota,
             build_id="5"
         )
+        self.build_testplan_containers = Build.objects.create(
+            url="https://example.com/build/5/",
+            project=self.project_testplan,
+            build_type=Build.BUILD_TYPE_CONTAINERS,
+            build_id="6"
+        )
+
         self.build_run_testplan1 = Run.objects.create(
             build=self.build_testplan,
             device_type="imx8mmevk",
@@ -1124,19 +1131,31 @@ class TaskTest(TestCase):
         )
         self.testplan3.save()
         self.testjob_imx8mm3_1 = TestJob.objects.create(
+            name="job1",
             priority=50,
             is_ota_job=True,
             is_downgrade_job=False,
         )
         self.testjob_imx8mm3_2 = TestJob.objects.create(
+            name="job2",
             priority=50,
             is_ota_job=True,
             is_downgrade_job=True,
         )
+        self.testjob_imx8mm3_3 = TestJob.objects.create(
+            name="job3",
+            priority=50,
+            is_ota_job=False,
+            is_downgrade_job=False,
+            is_assemble_image_job=True,
+        )
+
         self.testjob_imx8mm3_1.save()
         self.testjob_imx8mm3_2.save()
+        self.testjob_imx8mm3_3.save()
         self.testplan3.testjobs.add(self.testjob_imx8mm3_1)
         self.testplan3.testjobs.add(self.testjob_imx8mm3_2)
+        self.testplan3.testjobs.add(self.testjob_imx8mm3_3)
         self.testplan3.save()
         self.project_testplan.testplans.add(self.testplan3)
 
@@ -1444,6 +1463,29 @@ class TaskTest(TestCase):
         assert 2 == submit_lava_job_mock.call_count
         get_hash_mock.assert_called()
         assert 2 == get_hash_mock.call_count
+
+    @patch('conductor.core.tasks._get_os_tree_hash', return_value="someHash1")
+    @patch('conductor.core.models.SQUADBackend.update_testjob')
+    @patch('conductor.core.models.Project.watch_qa_reports_job')
+    @patch('conductor.core.models.Project.submit_lava_job', return_value=[123])
+    @patch('conductor.core.tasks.update_build_reason')
+    def test_create_build_run_testplan_containers(self, update_build_reason_mock, submit_lava_job_mock, watch_qa_reports_mock, update_testjob_mock, get_hash_mock):
+        response_mock = MagicMock()
+        response_mock.status_code = 201
+        response_mock.text = "321"
+        watch_qa_reports_mock.return_value = response_mock
+        run_name = "imx93evk"
+        self.build_testplan_containers.build_reason = "Hello world"
+        self.build_testplan_containers.save()
+        create_build_run(self.build_testplan_containers.id, run_name)
+        update_build_reason_mock.assert_not_called()
+        submit_lava_job_mock.assert_called()
+        watch_qa_reports_mock.assert_called()
+        update_testjob_mock.assert_called()
+        assert 3 == submit_lava_job_mock.call_count
+        get_hash_mock.assert_called()
+        assert 3 == get_hash_mock.call_count
+
 
     @patch('conductor.core.tasks._get_os_tree_hash', return_value="someHash1")
     @patch('conductor.core.models.SQUADBackend.watch_lava_job', return_value=None)

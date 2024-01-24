@@ -419,6 +419,15 @@ def create_build_run(self, build_id, run_name, submit_jobs=True):
                         "build": build,
                         "template": _template_from_string(yaml.dump(plan_testjob.get_job_definition(plan), default_flow_style=False))
                     })
+            if build.build_reason and build.build_type in [Build.BUILD_TYPE_CONTAINERS]:
+                for plan_testjob in plan.testjobs.filter(is_assemble_image_job=True):
+                    templates.append({
+                        "name": plan_testjob.name,
+                        "job_type": LAVAJob.JOB_ASSEMBLE,
+                        "build": build,
+                        "template": _template_from_string(yaml.dump(plan_testjob.get_job_definition(plan), default_flow_style=False))
+                    })
+
     else:
         logger.info("Default test plan disabled")
 
@@ -486,6 +495,15 @@ def _submit_lava_templates(templates, build, device_type, submit_jobs):
             context["BOOTLOADER_URL"] = "%sother/u-boot-%s.bin" % (run_url, run_name)
         if run_name == "stm32mp1-disco":
             context["BOOTLOADER_URL"] = "%sother/boot.itb" % (run_url)
+        if template.get("job_type") == LAVAJob.JOB_ASSEMBLE:
+            # assume assemble system image is enabled in the factory
+            previous_build = _retrieve_previous_build(build, build_types=[Build.BUILD_TYPE_REGULAR])
+            run_url = f"{previous_build.url}runs/{run_name}/"
+            context["BOOTLOADER_URL"] = "%simx-boot-%s" % (run_url, run_name),
+            context["BOOTLOADER_NOHDMI_URL"] = "%simx-boot-%s-nohdmi" % (run_url, run_name),
+            context["SPLIMG_URL"] = "%sSPL-%s" % (run_url, run_name),
+            context["MFGTOOL_URL"] = f"{previous_build.url}runs/{run_name}-mfgtools/mfgtool-files.tar.gz",
+
         dt_settings = device_type.get_settings()
         for key, value in dt_settings.items():
             try:
@@ -496,6 +514,9 @@ def _submit_lava_templates(templates, build, device_type, submit_jobs):
             except AttributeError:
                 # ignore values that are not strings
                 pass
+        if template.get("job_type") == LAVAJob.JOB_ASSEMBLE:
+            # IMAGE_URL has to be overwritten here for assemble jobs
+            context["IMAGE_URL"] = f"{lcl_build.url}runs/assemble-system-image/{build.tag}/lmp-factory-image-{run_name}.wic.gz"
 
         lava_job_definition = None
         if not template.get("template", None):
