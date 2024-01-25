@@ -453,6 +453,10 @@ def _submit_lava_templates(templates, build, device_type, submit_jobs):
         if not lcl_build:
             continue
         run_url = f"{lcl_build.url}runs/{run_name}/"
+        if template.get("job_type") == LAVAJob.JOB_ASSEMBLE:
+            # assume assemble system image is enabled in the factory
+            previous_build = _retrieve_previous_build(build, build_types=[Build.BUILD_TYPE_REGULAR])
+            run_url = f"{previous_build.url}runs/{run_name}/"
         ostree_hash=_get_os_tree_hash(run_url, build.project)
         if not ostree_hash:
             logger.error("OSTree hash missing")
@@ -495,15 +499,6 @@ def _submit_lava_templates(templates, build, device_type, submit_jobs):
             context["BOOTLOADER_URL"] = "%sother/u-boot-%s.bin" % (run_url, run_name)
         if run_name == "stm32mp1-disco":
             context["BOOTLOADER_URL"] = "%sother/boot.itb" % (run_url)
-        if template.get("job_type") == LAVAJob.JOB_ASSEMBLE:
-            # assume assemble system image is enabled in the factory
-            previous_build = _retrieve_previous_build(build, build_types=[Build.BUILD_TYPE_REGULAR])
-            run_url = f"{previous_build.url}runs/{run_name}/"
-            context["BOOTLOADER_URL"] = "%simx-boot-%s" % (run_url, run_name),
-            context["BOOTLOADER_NOHDMI_URL"] = "%simx-boot-%s-nohdmi" % (run_url, run_name),
-            context["SPLIMG_URL"] = "%sSPL-%s" % (run_url, run_name),
-            context["MFGTOOL_URL"] = f"{previous_build.url}runs/{run_name}-mfgtools/mfgtool-files.tar.gz",
-
         dt_settings = device_type.get_settings()
         for key, value in dt_settings.items():
             try:
@@ -540,7 +535,7 @@ def _submit_lava_templates(templates, build, device_type, submit_jobs):
                 project=build.project,
                 job_type=job_type,
             )
-            if job_type in [LAVAJob.JOB_LAVA, LAVAJob.JOB_EL2GO]:
+            if job_type in [LAVAJob.JOB_LAVA, LAVAJob.JOB_EL2GO, LAVAJob.JOB_ASSEMBLE]:
                 # returns HTTPResponse object or None
                 watch_response = build.project.watch_qa_reports_job(lcl_build, run_name, job)
                 if watch_response and watch_response.status_code == 201:
