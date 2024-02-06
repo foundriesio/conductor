@@ -481,6 +481,7 @@ def _submit_lava_templates(templates, build, device_type, submit_jobs):
             "BOOTLOADER_NOHDMI_URL": "%simx-boot-%s-nohdmi" % (run_url, run_name),
             "SPLIMG_URL": "%sSPL-%s" % (run_url, run_name),
             "MFGTOOL_URL": f"{lcl_build.url}runs/{run_name}-mfgtools/mfgtool-files.tar.gz",
+            "MFGTOOL_BUILD_URL": f"{lcl_build.url}runs/{run_name}-mfgtools/",
             "LAVA_HEADER": lava_header,
             "prompts": ["fio@%s" % run_name, "Password:", "root@%s" % run_name],
             "net_interface": device_type.net_interface,
