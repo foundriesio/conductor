@@ -513,6 +513,8 @@ def _submit_lava_templates(templates, build, device_type, submit_jobs):
         if template.get("job_type") == LAVAJob.JOB_ASSEMBLE:
             # IMAGE_URL has to be overwritten here for assemble jobs
             context["IMAGE_URL"] = f"{lcl_build.url}runs/assemble-system-image/{build.tag}/lmp-factory-image-{run_name}.wic.gz"
+            context["MFGTOOL_URL"] = f"{previous_build.url}runs/{run_name}-mfgtools/mfgtool-files.tar.gz"
+            context["MFGTOOL_BUILD_URL"] = f"{previous_build.url}runs/{run_name}-mfgtools/"
 
         lava_job_definition = None
         if not template.get("template", None):
