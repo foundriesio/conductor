@@ -470,6 +470,8 @@ def _submit_lava_templates(templates, build, device_type, submit_jobs):
         )
 
         context = {
+            "run_name" : run_name,
+            "run_url": run_url,
             "device_type": run_name,
             "build_url": lcl_build.url,
             "build_id": lcl_build.build_id,
@@ -503,7 +505,7 @@ def _submit_lava_templates(templates, build, device_type, submit_jobs):
         dt_settings = device_type.get_settings()
         for key, value in dt_settings.items():
             try:
-                context.update({key: value.format(run_url=run_url, run_name=run_name)})
+                context.update({key: value.format(**context)})
             except KeyError:
                 # ignore KeyError in case of misformatted string
                 pass
