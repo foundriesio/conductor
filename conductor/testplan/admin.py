@@ -45,8 +45,8 @@ def test_job_render(modeladmin, request, queryset):
 class TestJobAdmin(admin.ModelAdmin):
     models = models.TestJob
     save_as = True
-    list_display = ('name', 'is_ota_job', 'is_downgrade_job', 'is_static_delta_job', 'is_el2go_job')
-    list_filter = ('is_ota_job', 'is_downgrade_job', 'is_static_delta_job', 'is_el2go_job')
+    list_display = ('name', 'is_ota_job', 'is_downgrade_job', 'is_static_delta_job', 'is_el2go_job', 'is_assemble_image_job')
+    list_filter = ('is_ota_job', 'is_downgrade_job', 'is_static_delta_job', 'is_el2go_job', 'is_assemble_image_job')
     actions = [test_job_render]
 
 
