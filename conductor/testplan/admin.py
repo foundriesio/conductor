@@ -18,6 +18,7 @@ import zipfile
 from django.contrib import admin
 from django.http import HttpResponse
 from django.utils.text import slugify
+from django.utils.safestring import mark_safe
 from . import models
 
 
@@ -45,9 +46,12 @@ def test_job_render(modeladmin, request, queryset):
 class TestJobAdmin(admin.ModelAdmin):
     models = models.TestJob
     save_as = True
-    list_display = ('name', 'is_ota_job', 'is_downgrade_job', 'is_static_delta_job', 'is_el2go_job', 'is_assemble_image_job')
+    list_display = ('name', 'testplans', 'is_ota_job', 'is_downgrade_job', 'is_static_delta_job', 'is_el2go_job', 'is_assemble_image_job')
     list_filter = ('is_ota_job', 'is_downgrade_job', 'is_static_delta_job', 'is_el2go_job', 'is_assemble_image_job')
     actions = [test_job_render]
+    def testplans(self, obj):
+        return mark_safe(obj.get_testplans())
+    testplans.allow_tags = True
 
 
 class TestJobContextAdmin(admin.ModelAdmin):

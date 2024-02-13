@@ -18,6 +18,8 @@ from django.db import models
 from polymorphic.models import PolymorphicModel
 from sortedm2m.fields import SortedManyToManyField
 
+from conductor.utils import get_admin_url
+
 logger = logging.getLogger()
 
 
@@ -149,6 +151,14 @@ class TestJob(models.Model):
         if self.tags:
             job_yaml["tags"] = list(self.tags.all().values_list('name', flat=True))
         return job_yaml
+
+    def get_testplans(self):
+        # this is used to display testplan links in the admin
+        ret_string = ""
+        for tp in self.testplan_set.all():
+            tp_url = get_admin_url(tp)
+            ret_string += f"<a href=\"{tp_url}\">{tp.id}</a> "
+        return ret_string
 
     def __str__(self):
         return self.name
