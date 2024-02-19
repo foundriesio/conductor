@@ -517,6 +517,11 @@ def _submit_lava_templates(templates, build, device_type, submit_jobs):
             context["IMAGE_URL"] = f"{lcl_build.url}runs/assemble-system-image/{build.tag}/lmp-factory-image-{run_name}.wic.gz"
             context["MFGTOOL_URL"] = f"{previous_build.url}runs/{run_name}-mfgtools/mfgtool-files.tar.gz"
             context["MFGTOOL_BUILD_URL"] = f"{previous_build.url}runs/{run_name}-mfgtools/"
+            context.update(
+                {"lmp_commit": previous_build.lmp_commit,
+                 "lmp_commit_url": previous_build.get_lmp_commit_url()
+                }
+            )
 
         lava_job_definition = None
         if not template.get("template", None):
