@@ -1167,8 +1167,11 @@ def _find_lava_device(lava_job, device_name, project):
 @celery.task
 def process_testjob_notification(event_data):
     job_id = event_data.get("job")
+    job_state = event_data.get("state")
     try:
         lava_job = LAVAJob.objects.get(job_id=job_id)
+        lava_job.status = job_state
+        lava_job.save()
         device_name = event_data.get("device")
         lava_db_device = None
         logger.debug(f"Processing job: {job_id}")

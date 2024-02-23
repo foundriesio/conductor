@@ -750,6 +750,7 @@ class LAVAJob(models.Model):
     device = models.ForeignKey(LAVADevice, null=True, blank=True, on_delete=models.CASCADE)
     definition = models.TextField()
     project = models.ForeignKey(Project, on_delete=models.CASCADE)
+    status = models.CharField(null=True, blank=True, max_length=16)
     JOB_LAVA = "LAVA"
     JOB_EL2GO = "EL2GO"
     JOB_OTA = "OTA"
