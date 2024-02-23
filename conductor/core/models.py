@@ -663,6 +663,38 @@ class LAVADevice(models.Model):
                 logger.error(device_details_request.text)
         return {}
 
+    def get_current_apps(self):
+        device_details = self.get_current_target()
+        return device_details.get("docker-apps", [])
+
+    def set_current_apps(self, apps_list):
+        # compare the apps first
+        current_apps = self.get_current_apps()
+        if set(apps_list) == set(current_apps):
+            return
+        apps_list_str = ",".join(apps_list)
+        payload = {"reason": "Changing config for testing (conductor)",
+                   "files": [{
+                       "name": "z-50-fioctl.toml",
+                       "on-changed": ["/usr/share/fioconfig/handlers/aktualizr-toml-update"],
+                       "value": f"\n[pacman]\n  compose_apps = \"{apps_list_str}\"\n  docker_apps = \"{apps_list_str}\"\n",
+                       "unencrypted": True}]
+                   }
+        authentication = self._get_auth_dict()
+        domain = settings.FIO_DOMAIN
+        if self.project.fio_meds_domain:
+            domain = self.project.fio_meds_domain
+        if self.auto_register_name:
+            params = {"factory": self.project.name}
+            url = f"https://api.{domain}/ota/devices/{self.auto_register_name}/config/"
+            config_request = requests.patch(url, headers=authentication, params=params, json=payload)
+            if config_request.status_code == 200:
+                return config_request.json()
+            else:
+                logger.error(f"Could not change config for {self.auto_register_name}")
+                logger.error(config_request.text)
+        return {}
+
     def remove_from_factory(self, factory=None):
         if not factory:
             logger.error("Factory name is required when removing device")
