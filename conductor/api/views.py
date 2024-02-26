@@ -30,7 +30,7 @@ from django.http import (
 from django.views.decorators.csrf import csrf_exempt
 
 from conductor.api.models import APICallback
-from conductor.core.models import Project, Build, LAVADevice, LAVADeviceType, Run
+from conductor.core.models import Project, Build, LAVADevice, LAVADeviceType, LAVAJob, Run
 from conductor.core.tasks import (
     create_build_run,
     merge_lmp_manifest,
@@ -90,6 +90,40 @@ def __verify_header_auth(request, header_name="X-JobServ-Sig"):
     else:
         return HttpResponseNotAllowed(["POST"])
     return request_body_json
+
+
+@csrf_exempt
+def process_test_apps_request(request, factory_name, device_name):
+    if request.method == 'GET':
+        # do nothing
+        return HttpResponseBadRequest()
+    apps_list = []
+    force = False
+    if request.method == 'POST':
+        try:
+            request_body_json = json.loads(request.body)
+            apps_list = request_body_json.get("apps_list", [])
+            force = request_body_json.get("force", False)
+        except json.decoder.JSONDecodeError:
+            return HttpResponseBadRequest()
+
+    # find the device on active job
+    device = None
+    try:
+        device = LAVADevice.objects.get(auto_register_name=device_name, project__name=factory_name)
+        lava_job = LAVAJob.objects.get(device=device, status="Running")
+    except LAVADevice.DoesNotExist:
+        logger.warning(f"There is no device with auto register name {device_name} in {factory_name}")
+        return HttpResponseNotFound()
+    except LAVAJob.DoesNotExist:
+        # there is no active job for the device. Do nothing
+        logger.warning(f"There is no active LAVA job for {device_name} from {factory_name}")
+        return HttpResponseNotFound()
+    if device:
+        if apps_list or force:
+            # prevent setting empty list if force is not set
+            device.set_current_apps(apps_list)
+    return HttpResponse("OK")
 
 
 @csrf_exempt
