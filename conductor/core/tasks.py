@@ -522,6 +522,7 @@ def _submit_lava_templates(templates, build, device_type, submit_jobs):
                  "lmp_commit_url": previous_build.get_lmp_commit_url()
                 }
             )
+            lcl_build = previous_build
 
         lava_job_definition = None
         if not template.get("template", None):
