@@ -1,3 +1,7 @@
+# Copyright 2021 Foundries.io
+#
+# SPDX-License-Identifier: BSD-3-Clause
+
 from django import template
 from allauth.socialaccount.models import SocialApp
 from allauth.socialaccount import providers

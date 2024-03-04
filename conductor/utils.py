@@ -1,3 +1,7 @@
+# Copyright 2024 Foundries.io
+#
+# SPDX-License-Identifier: BSD-3-Clause
+
 from django.urls import reverse
 
 

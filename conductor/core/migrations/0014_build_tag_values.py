@@ -1,3 +1,7 @@
+# Copyright 2021 Foundries.io
+#
+# SPDX-License-Identifier: BSD-3-Clause
+
 from django.db import migrations
 
 def fill_in_build_tag(apps, schema_editor):

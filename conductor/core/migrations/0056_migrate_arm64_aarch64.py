@@ -1,3 +1,7 @@
+# Copyright 2024 Foundries.io
+#
+# SPDX-License-Identifier: BSD-3-Clause
+
 from django.db import migrations, models
 
 def move_arm64_to_aarch64(apps, schema_editor):

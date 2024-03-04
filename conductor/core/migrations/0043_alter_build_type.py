@@ -1,3 +1,7 @@
+# Copyright 2023 Foundries.io
+#
+# SPDX-License-Identifier: BSD-3-Clause
+
 from django.db import migrations, models
 from conductor.core.models import Build as BuildModel
 

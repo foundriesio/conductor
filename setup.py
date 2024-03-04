@@ -41,7 +41,7 @@ setup(
         "conductor/scripts/upgrade_containers_commit.sh"],
     install_requires=requirements,
     extras_require=extras_require,
-    license='Apache License 2.0',
+    license='3-clause BSD',
     description="Foundries.io test scheduler/coordinator",
     platforms='any',
 )

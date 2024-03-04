@@ -1,3 +1,7 @@
+# Copyright 2021 Foundries.io
+#
+# SPDX-License-Identifier: BSD-3-Clause
+
 FROM ubuntu:focal
 
 RUN apt-get update -q=2 && \

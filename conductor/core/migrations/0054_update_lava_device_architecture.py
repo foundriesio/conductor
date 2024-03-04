@@ -1,3 +1,7 @@
+# Copyright 2023 Foundries.io
+#
+# SPDX-License-Identifier: BSD-3-Clause
+
 from django.db import migrations, models
 
 def update_device_architecture(apps, schema_editor):

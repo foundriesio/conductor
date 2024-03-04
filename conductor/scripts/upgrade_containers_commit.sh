@@ -1,5 +1,9 @@
 #!/bin/bash
 
+# Copyright 2021 Foundries.io
+#
+# SPDX-License-Identifier: BSD-3-Clause
+
 REPOSITORY_DIR=""
 REPOSITORY_REMOTE=origin
 COMMIT_MESSAGE="Force container rebuild"
