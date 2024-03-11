@@ -564,7 +564,7 @@ def submit_single_testjob(self, project_id, build_id, testplan_id, testjob_id):
         job_type = LAVAJob.JOB_ASSEMBLE
 
     templates = []
-    if build.build_reason and build.build_type == Build.BUILD_TYPE_REGULAR:
+    if build.build_reason:
         templates.append({
             "name": testjob.name,
             "job_type": job_type,
