@@ -37,15 +37,10 @@ def start_project_testjob(request, project_id, testjob_id, testplan_id):
     testjob = get_object_or_404(TestJob, pk=testjob_id)
     testplan = get_object_or_404(TestPlan, pk=testplan_id)
 
-    builds = project.build_set.filter(build_type=Build.BUILD_TYPE_REGULAR)
-    if testjob.is_ota_job:
-        builds = project.build_set.filter(build_type=Build.BUILD_TYPE_OTA)
-
     context = {
         "project": project,
         "testjob": testjob,
         "testplan": testplan,
-        "builds": builds
     }
     return render(request, "conductor/starttestjob.html", context)
 
