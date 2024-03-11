@@ -1,0 +1,74 @@
+{% extends "conductor/base.html" %}
+
+{% block styleheader %}
+.panel {
+  cursor: pointer;
+}
+{% endblock %}
+
+{% block content %}
+    <div class="row">
+        <div class="col-md-12 col-sm-12">
+            <h3>Recent Builds:</h3>
+            <div class="row container-border">
+                <div class="col-md-3">
+                    <strong>Commit ID</strong>
+                </div>
+                <div class="col-md-3">
+                    <strong>LmP Commit ID</strong>
+                </div>
+                <div class="col-md-2">
+                    <strong>Build URL</strong>
+                </div>
+                <div class="col-md-2">
+                    <strong>Build type</strong>
+                </div>
+                <div class="col-md-1">
+                    <strong>Tests scheduled</strong>
+                </div>
+                <div class="col-md-1">
+                    <strong>Run</strong>
+                </div>
+            </div>
+
+            {% for build in builds|dictsortreversed:"id"|slice:":10" %}
+            <div class="row container-border">
+                <div class="col-md-3">
+                    {% if build.commit_id != None %}
+                    <a href="{{ build.get_commit_url }}">{{ build.commit_id|truncatechars:7 }}</a>
+                    {% endif %}
+                </div>
+                <div class="col-md-3">
+                    {% if build.get_lmp_commit_url != "" %}
+                    <a href="{{ build.get_lmp_commit_url }}">{{ build.lmp_commit|truncatechars:7 }}</a>
+                    {% endif %}
+                </div>
+                <div class="col-md-2">
+                    <a href="{{ build.url }}">{{ build.build_id }}</a><br/>
+                </div>
+                <div class="col-md-2">
+                    {{ build.get_build_type_display }}
+                </div>
+                <div class="col-md-1">
+                    {% if build.is_scheduled_tests %}
+                    <span class="badge alert-success"><span class="glyphicon glyphicon-ok"></span></span>
+                    {% else %}
+                    <span class="badge alert-danger"><span class="glyphicon glyphicon-remove"></span></span>
+                    {% endif %}
+                </div>
+                <div class="col-md-1">
+                    <a href="{% url 'projectruntestjob' project_id=project.id testjob_id=testjob.id testplan_id=testplan.id build_id=build.id %}">Run</a>
+
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+
+{{ project }}
+
+{{ testjob }}
+
+{{ testplan }}
+
+{% endblock %}

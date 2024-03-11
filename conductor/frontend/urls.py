@@ -11,4 +11,6 @@ urlpatterns = [
     path('', views.index),
     path('project/<int:project_id>/', views.project, name="project-details"),
     path('project/<int:project_id>/startqa/<int:ci_id>', views.start_project_qa, name="projectstartqa"),
+    path('project/<int:project_id>/startjob/<int:testjob_id>/testplan/<int:testplan_id>', views.start_project_testjob, name="projectstarttestjob"),
+    path('project/<int:project_id>/startjob/<int:testjob_id>/testplan/<int:testplan_id>/build/<int:build_id>', views.run_project_testjob, name="projectruntestjob"),
 ]

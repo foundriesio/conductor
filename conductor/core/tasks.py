@@ -26,6 +26,7 @@ from conductor.celery import app as celery
 from celery.signals import task_internal_error, task_failure
 from celery.utils.log import get_task_logger
 from conductor.core.models import Run, Build, BuildTag, LAVADeviceType, LAVADevice, LAVAJob, Project
+from conductor.testplan.models import TestPlan, TestJob
 from datetime import timedelta
 from django.conf import settings
 from django.db import transaction
@@ -432,7 +433,7 @@ def create_build_run(self, build_id, run_name, submit_jobs=True):
     return lava_templates + lava_templates_downgrade
 
 
-def _submit_lava_templates(templates, build, device_type, submit_jobs):
+def _submit_lava_templates(templates, build, device_type, submit_jobs, watch_jobs=True):
     run_name = device_type.name
     lava_job_definitions = []
     lava_header = settings.FIO_LAVA_HEADER
@@ -536,16 +537,42 @@ def _submit_lava_templates(templates, build, device_type, submit_jobs):
                 project=build.project,
                 job_type=job_type,
             )
-            if job_type in [LAVAJob.JOB_LAVA, LAVAJob.JOB_EL2GO, LAVAJob.JOB_ASSEMBLE]:
-                # returns HTTPResponse object or None
-                watch_response = build.project.watch_qa_reports_job(lcl_build, run_name, job)
-                if watch_response and watch_response.status_code == 201:
-                    # update the testjob object in SQUAD
-                    squad_job_id = watch_response.text
-                    job_definition_yaml = yaml.safe_load(lava_job_definition)
-                    job_name = job_definition_yaml.get('job_name')
-                    build.project.squad_backend.update_testjob(squad_job_id, job_name, lava_job_definition)
+            if watch_jobs:
+                if job_type in [LAVAJob.JOB_LAVA, LAVAJob.JOB_EL2GO, LAVAJob.JOB_ASSEMBLE]:
+                    # returns HTTPResponse object or None
+                    watch_response = build.project.watch_qa_reports_job(lcl_build, run_name, job)
+                    if watch_response and watch_response.status_code == 201:
+                        # update the testjob object in SQUAD
+                        squad_job_id = watch_response.text
+                        job_definition_yaml = yaml.safe_load(lava_job_definition)
+                        job_name = job_definition_yaml.get('job_name')
+                        build.project.squad_backend.update_testjob(squad_job_id, job_name, lava_job_definition)
     return lava_job_definitions
+
+
+@celery.task(bind=True)
+def submit_single_testjob(self, project_id, build_id, testplan_id, testjob_id):
+    project = Project.objects.get(pk=project_id)
+    build = Build.objects.get(pk=build_id)
+    testjob = TestJob.objects.get(pk=testjob_id)
+    testplan = TestPlan.objects.get(pk=testplan_id)
+    device_type = LAVADeviceType.objects.get(name=testplan.lava_device_type, project=build.project)
+    job_type = LAVAJob.JOB_LAVA
+    if testjob.is_el2go_job:
+        job_type = LAVAJob.JOB_EL2GO
+    if testjob.is_assemble_image_job:
+        job_type = LAVAJob.JOB_ASSEMBLE
+
+    templates = []
+    if build.build_reason and build.build_type == Build.BUILD_TYPE_REGULAR:
+        templates.append({
+            "name": testjob.name,
+            "job_type": job_type,
+            "build": build,
+            "template": _template_from_string(yaml.dump(testjob.get_job_definition(testplan), default_flow_style=False))
+        })
+    logger.debug(templates)
+    _submit_lava_templates(templates, build, device_type, True, False)
 
 
 @celery.task(bind=True)

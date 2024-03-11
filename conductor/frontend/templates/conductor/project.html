@@ -16,7 +16,7 @@
         <div class="col-md-12 col-sm-12">
             <h3>Recent Builds:</h3>
             <div class="row container-border">
-                <div class="col-md-4">
+                <div class="col-md-2">
                     <strong>Commit ID</strong>
                 </div>
                 <div class="col-md-4">
@@ -24,6 +24,9 @@
                 </div>
                 <div class="col-md-2">
                     <strong>Build URL</strong>
+                </div>
+                <div class="col-md-2">
+                    <strong>Build type</strong>
                 </div>
                 <div class="col-md-1">
                     <strong>Tests scheduled</strong>
@@ -35,9 +38,9 @@
 
             {% for build in project.build_set.all|dictsortreversed:"id"|slice:":10" %}
             <div class="row container-border">
-                <div class="col-md-4">
+                <div class="col-md-2">
                     {% if build.commit_id != None %}
-                    <a href="{{ build.get_commit_url }}">{{ build.commit_id }}</a>
+                    <a href="{{ build.get_commit_url }}">{{ build.commit_id|truncatechars:7 }}</a>
                     {% endif %}
                 </div>
                 <div class="col-md-4">
@@ -47,6 +50,9 @@
                 </div>
                 <div class="col-md-2">
                     <a href="{{ build.url }}">{{ build.build_id }}</a><br/>
+                </div>
+                <div class="col-md-2">
+					{{ build.get_build_type_display }}
                 </div>
                 <div class="col-md-1">
                     {% if build.is_scheduled_tests %}
@@ -120,7 +126,7 @@
                     <div id="tp{{ testplan.id }}" class="panel-collapse collapse">
                         <div class="panel-body">
                             <div class="row container-border">
-                                <div class="col-md-8">
+                                <div class="col-md-6">
                                     <strong>Name</strong>
                                 </div>
                                 <div class="col-md-2">
@@ -129,10 +135,13 @@
                                 <div class="col-md-2">
                                     <strong>EL2GO job</strong>
                                 </div>
+                                <div class="col-md-2">
+                                    <strong>Run test job</strong>
+                                </div>
                             </div>
                             {% for testjob in testplan.testjobs.all %}
                             <div class="row container-border">
-                                <div class="col-md-8">
+                                <div class="col-md-6">
                                     {{ testjob.name }}
                                 </div>
                                 <div class="col-md-2">
@@ -148,6 +157,9 @@
                                     {% else %}
                                     <span class="badge alert-danger"><span class="glyphicon glyphicon-remove"></span></span>
                                     {% endif %}
+                                </div>
+                                <div class="col-md-2">
+                                    <a href="{% url 'projectstarttestjob' project_id=project.id testjob_id=testjob.id testplan_id=testplan.id %}">Run</a>
                                 </div>
                             </div>
                             {% endfor %}
