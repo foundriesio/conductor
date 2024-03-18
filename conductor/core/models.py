@@ -657,7 +657,28 @@ class LAVADevice(models.Model):
         device_details = self.get_current_target()
         return device_details.get("docker-apps", [])
 
+    def get_current_tag(self):
+        device_details = self.get_current_target()
+        return device_details.get("tag")
+
+    def set_current_tag(self, tag):
+        # WARNING: This only sets tag for a single test.
+        # It will overwrite compose_apps if set before this function is called
+        current_tag = self.get_current_tag()
+        if current_tag == tag:
+            return
+        payload = {"reason": "Changing config for testing (conductor)",
+                   "files": [{
+                       "name": "z-50-fioctl.toml",
+                       "on-changed": ["/usr/share/fioconfig/handlers/aktualizr-toml-update"],
+                       "value": f"\n[pacman]\n tag = \"{tag}\"\n",
+                       "unencrypted": True}]
+                   }
+        return self.set_config_payload(payload)
+
     def set_current_apps(self, apps_list):
+        # WARNING: This only sets compose_apps for a single test.
+        # It will overwrite tag if set before this function is called
         # compare the apps first
         current_apps = self.get_current_apps()
         if set(apps_list) == set(current_apps):
@@ -670,6 +691,9 @@ class LAVADevice(models.Model):
                        "value": f"\n[pacman]\n  compose_apps = \"{apps_list_str}\"\n  docker_apps = \"{apps_list_str}\"\n",
                        "unencrypted": True}]
                    }
+        return self.set_config_payload(payload)
+
+    def set_config_payload(self, payload):
         authentication = self._get_auth_dict()
         domain = settings.FIO_DOMAIN
         if self.project.fio_meds_domain:

@@ -82,18 +82,21 @@ def __verify_header_auth(request, header_name="X-JobServ-Sig"):
     return request_body_json
 
 
-@csrf_exempt
-def process_test_apps_request(request, factory_name, device_name):
+def _process_test_request(request, factory_name, device_name):
     if request.method == 'GET':
         # do nothing
         return HttpResponseBadRequest()
     apps_list = []
+    tag = None
     force = False
     if request.method == 'POST':
         try:
+            logger.info(request.body)
             request_body_json = json.loads(request.body)
+            logger.info("here")
             apps_list = request_body_json.get("apps_list", [])
             force = request_body_json.get("force", False)
+            tag = request_body_json.get("tag", None)
         except json.decoder.JSONDecodeError:
             return HttpResponseBadRequest()
 
@@ -109,8 +112,36 @@ def process_test_apps_request(request, factory_name, device_name):
         # there is no active job for the device. Do nothing
         logger.warning(f"There is no active LAVA job for {device_name} from {factory_name}")
         return HttpResponseNotFound()
+    return {"device": device,
+            "lava_job": lava_job,
+            "apps_list": apps_list,
+            "force": force,
+            "tag": tag}
+
+
+@csrf_exempt
+def process_test_tags_request(request, factory_name, device_name):
+    logger.info("process_test_tag_request")
+
+    values_dict = _process_test_request(request, factory_name, device_name)
+    device = values_dict.get("device")
+    tag = values_dict.get("tag")
+    if values_dict.get("device"):
+        if tag:
+            # prevent setting empty list if force is not set
+            device.set_current_tag(tag)
+    return HttpResponse("OK")
+
+
+@csrf_exempt
+def process_test_apps_request(request, factory_name, device_name):
+    logger.info("process_test_apps_request")
+
+    values_dict = _process_test_request(request, factory_name, device_name)
+    device = values_dict.get("device")
+    apps_list = values_dict.get("apps_list")
     if device:
-        if apps_list or force:
+        if apps_list or valuse_dict.get("force"):
             # prevent setting empty list if force is not set
             device.set_current_apps(apps_list)
     return HttpResponse("OK")
