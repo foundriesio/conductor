@@ -1375,6 +1375,47 @@ def check_ota_completed():
     for device in devices:
         __check_ota_status(device)
 
+@celery.task
+def fetch_lmp_code_review():
+    # this is a periodic task that will fetch list of builds from
+    # lmp "factory" and schedule PR tests if the build was started
+    # by Github PR
+    project = Project.objects.get(name="lmp")
+    # get last 25 builds
+    api_builds = []
+    try:
+        builds = project.get_api_builds()
+        api_builds = builds.get("builds")
+    except:
+        # should be HTTP error code
+        return
+    last_db_build = project.build_set.last()
+    if last_db_build and last_db_build.build_id >= api_builds[0]["build_id"]:
+        # all builds already fetched
+        # do nothing
+        return
+    for api_build in reversed(api_builds):
+        if last_db_build is None or \
+                api_build["build_id"] > last_db_build.build_id:
+            # create new builds in DB
+            if api_build["status"] is not "RUNNING":
+                # only create build object for completed builds
+                build_type = Build.BUILD_TYPE_REGULAR
+                if api_build["trigger_name"] == "Code Review":
+                    build_type = Build.BUILD_TYPE_CODE_REVIEW
+                b = Build.objects.create(
+                    url=api_build["url"],
+                    project=project,
+                    build_id=api_build["build_id"],
+                    build_type=build_type,
+                    build_status=api_build["status"]
+                )
+                if build_type == Build.BUILD_TYPE_CODE_REVIEW and \
+                        api_build["status"] == "PASSED":
+                    # retrieve build details
+                    build_description = project.ci_build_details(b.build_id)
+                    schedule_lmp_pr_tests.delay(build_description)
+
 
 @celery.task
 def schedule_lmp_pr_tests(lmp_build_description):

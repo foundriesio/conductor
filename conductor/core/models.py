@@ -424,11 +424,13 @@ class Build(models.Model):
     BUILD_TYPE_OTA = "OTA"
     BUILD_TYPE_STATIC_DELTA = "SDE"
     BUILD_TYPE_CONTAINERS = "CTR"
+    BUILD_TYPE_CODE_REVIEW = "GPR"
     BUILD_TYPE_CHOICES = [
         (BUILD_TYPE_REGULAR, "Ordinary build (manifest or meta-sub)"),
         (BUILD_TYPE_OTA, "OTA build"),
         (BUILD_TYPE_STATIC_DELTA, "Create static delta between targets"),
         (BUILD_TYPE_CONTAINERS, "Containers build"),
+        (BUILD_TYPE_CODE_REVIEW, "Code Review"),
     ]
     build_type = models.CharField(max_length=3, choices=BUILD_TYPE_CHOICES, default=BUILD_TYPE_REGULAR)
     # build status that comes from the callback

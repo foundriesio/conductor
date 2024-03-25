@@ -143,6 +143,10 @@ CELERY_BEAT_SCHEDULE = {
         'task': 'conductor.core.tasks.check_ota_completed',
         'schedule': crontab(minute='*/10'),
     },
+    'fetch_lmp_code_review': {
+        'task': 'conductor.core.tasks.fetch_lmp_code_review',
+        'schedule': crontab(minute='*/27'),
+    },
 }
 
 CELERY_TASK_DEFAULT_QUEUE = 'celery'
