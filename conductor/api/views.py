@@ -141,7 +141,7 @@ def process_test_apps_request(request, factory_name, device_name):
     device = values_dict.get("device")
     apps_list = values_dict.get("apps_list")
     if device:
-        if apps_list or valuse_dict.get("force"):
+        if apps_list or values_dict.get("force"):
             # prevent setting empty list if force is not set
             device.set_current_apps(apps_list)
     return HttpResponse("OK")
