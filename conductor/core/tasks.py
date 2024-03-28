@@ -1396,22 +1396,22 @@ def fetch_lmp_code_review():
         return
     for api_build in reversed(api_builds):
         if last_db_build is None or \
-                api_build["build_id"] > last_db_build.build_id:
+                api_build.get("build_id") > last_db_build.build_id:
             # create new builds in DB
-            if api_build["status"] is not "RUNNING":
+            if api_build.get("status") != "RUNNING":
                 # only create build object for completed builds
                 build_type = Build.BUILD_TYPE_REGULAR
-                if api_build["trigger_name"] == "Code Review":
+                if api_build.get("trigger_name") == "Code Review":
                     build_type = Build.BUILD_TYPE_CODE_REVIEW
                 b = Build.objects.create(
-                    url=api_build["url"],
+                    url=api_build.get("url"),
                     project=project,
-                    build_id=api_build["build_id"],
+                    build_id=api_build.get("build_id"),
                     build_type=build_type,
-                    build_status=api_build["status"]
+                    build_status=api_build.get("status")
                 )
                 if build_type == Build.BUILD_TYPE_CODE_REVIEW and \
-                        api_build["status"] == "PASSED":
+                        api_build.get("status") == "PASSED":
                     # retrieve build details
                     build_description = project.ci_build_details(b.build_id)
                     schedule_lmp_pr_tests.delay(build_description)

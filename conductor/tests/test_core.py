@@ -42,7 +42,8 @@ from conductor.core.tasks import (
     schedule_lmp_pr_tests,
     schedule_static_delta,
     create_static_delta_build,
-    poll_static_delta_build
+    poll_static_delta_build,
+    fetch_lmp_code_review
 )
 
 
@@ -558,6 +559,25 @@ VK3ZSSn5+31zjyuZ4+oQpTFWn6g+7IlVQHl56/BoBate4OfxAKs=
 PEM_PRIV_KEY_ED25519 = """-----BEGIN PRIVATE KEY-----
 MC4CAQAwBQYDK2VwBCIEIPw4JlEEdsmBRN0dKwJpXQgTwdnddxWSYqBvGwvkZcfl
 -----END PRIVATE KEY-----"""
+
+
+LMP_API_BUILDS = {'limit': 25,
+                  'page': 0,
+                  'pages': 14,
+                  'total': 333,
+                  'next': 'http://example.com/?page=1',
+                  'builds': [
+                      {'build_id': 2564,
+                       'url': 'https://api.foundries.io/projects/lmp/builds/2564/',
+                       'status': 'PASSED',
+                       'web_url': 'https://ci.foundries.io/projects/lmp/builds/2564',
+                       'trigger_name': 'Code Review',
+                       'created': '2024-03-28T11:29:15+00:00',
+                       'runs': []}
+                      ]
+                  }
+
+LMP_CI_BUILD_DETAILS = {'build_id': 2564, 'url': 'https://api.foundries.io/projects/lmp/builds/2564/', 'status': 'PASSED', 'runs': [], 'web_url': 'https://ci.foundries.io/projects/lmp/builds/2564', 'runs_url': 'https://api.foundries.io/projects/lmp/builds/2557/runs/', 'reason': 'GitHub PR(427): pull_request, https://github.com/foundriesio/lmp-manifest/pull/427', 'annotation': None}
 
 
 class ProjectTest(TestCase):
@@ -1228,6 +1248,39 @@ class TaskTest(TestCase):
         get_mock.assert_called()
         squad_create_build_mock.assert_not_called()
         squad_submit_job_mock.assert_not_called()
+
+    @patch('conductor.core.tasks.schedule_lmp_pr_tests.delay')
+    @patch('conductor.core.models.Project.get_api_builds', return_value=LMP_API_BUILDS)
+    @patch('conductor.core.models.Project.ci_build_details', return_value=LMP_CI_BUILD_DETAILS)
+    def test_fetch_lmp_code_review(self, mock_build_details, mock_api_builds, mock_schedule):
+        fetch_lmp_code_review()
+        mock_build_details.assert_called_with(LMP_API_BUILDS["builds"][0]["build_id"])
+        mock_api_builds.assert_called()
+        mock_schedule.assert_called_with(LMP_CI_BUILD_DETAILS)
+
+    @patch('conductor.core.tasks.schedule_lmp_pr_tests.delay')
+    @patch('conductor.core.models.Project.get_api_builds')
+    @patch('conductor.core.models.Project.ci_build_details', return_value=LMP_CI_BUILD_DETAILS)
+    def test_fetch_lmp_code_review_running(self, mock_build_details, mock_api_builds, mock_schedule):
+        api_builds_running = LMP_API_BUILDS
+        api_builds_running["builds"][0]["status"] = "RUNNING"
+        mock_api_builds.return_value = api_builds_running
+        fetch_lmp_code_review()
+        mock_api_builds.assert_called()
+        mock_build_details.assert_not_called()
+        mock_schedule.assert_not_called()
+
+    @patch('conductor.core.tasks.schedule_lmp_pr_tests.delay')
+    @patch('conductor.core.models.Project.get_api_builds')
+    @patch('conductor.core.models.Project.ci_build_details', return_value=LMP_CI_BUILD_DETAILS)
+    def test_fetch_lmp_code_review_wrong_trigger(self, mock_build_details, mock_api_builds, mock_schedule):
+        api_builds_running = LMP_API_BUILDS
+        api_builds_running["builds"][0]["trigger_name"] = "Foo"
+        mock_api_builds.return_value = api_builds_running
+        fetch_lmp_code_review()
+        mock_api_builds.assert_called()
+        mock_build_details.assert_not_called()
+        mock_schedule.assert_not_called()
 
     @patch('conductor.core.tasks.retrieve_lava_results')
     @patch('conductor.core.models.LAVADevice.add_to_el2go')
