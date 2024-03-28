@@ -249,6 +249,17 @@ class Project(models.Model):
         blank=True,
         help_text="12NC number for the SE05x device. This field will be moved to the LAVADevice. For now all devices in the factory have to use the same SE05x chip.")
 
+    fioctl_client_id = models.CharField(
+        max_length=48,
+        null=True,
+        blank=True,
+        help_text="Client ID for fioctl. Can be obtained from https://app.foundries.io/settings/credentials/")
+    fioctl_client_secret = models.CharField(
+        max_length=48,
+        null=True,
+        blank=True,
+        help_text="Client secret for fioctl. Can be obtained from https://app.foundries.io/settings/credentials/")
+
     # name of the tag applied to devices and targets
     testing_tag = models.CharField(
         max_length=16,
