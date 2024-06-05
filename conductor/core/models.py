@@ -719,6 +719,7 @@ class LAVADevice(models.Model):
                 return config_request.json()
             else:
                 logger.error(f"Could not change config for {self.auto_register_name}")
+                logger.error(config_request.status_code)
                 logger.error(config_request.text)
         return {}
 

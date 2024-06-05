@@ -93,7 +93,6 @@ def _process_test_request(request, factory_name, device_name):
         try:
             logger.info(request.body)
             request_body_json = json.loads(request.body)
-            logger.info("here")
             apps_list = request_body_json.get("apps_list", [])
             force = request_body_json.get("force", False)
             tag = request_body_json.get("tag", None)
