@@ -2,4 +2,4 @@
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
-__version__ = '6.2.2'
+__version__ = '6.2.3'

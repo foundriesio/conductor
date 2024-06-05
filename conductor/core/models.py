@@ -715,7 +715,7 @@ class LAVADevice(models.Model):
             params = {"factory": self.project.name}
             url = f"https://api.{domain}/ota/devices/{self.auto_register_name}/config/"
             config_request = requests.patch(url, headers=authentication, params=params, json=payload)
-            if config_request.status_code == 200:
+            if config_request.status_code in [200, 201]:
                 return config_request.json()
             else:
                 logger.error(f"Could not change config for {self.auto_register_name}")
