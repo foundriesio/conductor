@@ -301,12 +301,32 @@ class InteractiveCommand(models.Model):
         return self.name
 
 
+class TestMonitor(models.Model):
+    name = models.CharField(max_length=32)
+    start = models.CharField(max_length=256)
+    end = models.CharField(max_length=256)
+    pattern = models.CharField(max_length=256, default="_unused_")
+
+    def to_yaml(self):
+        return {
+            "name": self.name,
+            "start": self.start,
+            "end": self.end,
+            "pattern": self.pattern
+        }
+
+    def __str__(self):
+        return self.name
+
+
 class TestDefinition(models.Model):
     TYPE_GIT = "git"
     TYPE_INTERACTIVE = "interactive"
+    TYPE_MONITOR = "monitor"
     TYPE_CHOICES = [
         (TYPE_GIT, "git"),
-        (TYPE_INTERACTIVE, "interactive")
+        (TYPE_INTERACTIVE, "interactive"),
+        (TYPE_MONITOR, "monitor")
     ]
     testtype = models.CharField(
         max_length=16,
@@ -324,6 +344,7 @@ class TestDefinition(models.Model):
     parameters = models.TextField(blank=True)
     prompts = models.TextField(default="[]")
     interactive_commands = SortedManyToManyField(InteractiveCommand, blank=True)
+    test_monitor = models.ForeignKey(TestMonitor, on_delete=models.SET_NULL, null=True, blank=True)
 
     def parameters_yaml(self, substitutions=None):
         params = self.parameters
@@ -353,6 +374,8 @@ class TestDefinition(models.Model):
             }
             for command in self.interactive_commands.all():
                 td_dict["script"].append(command.to_yaml())
+        if self.testtype == TestDefinition.TYPE_MONITOR and self.test_monitor:
+            td_dict = self.test_monitor.to_yaml()
         return td_dict
 
     def __str__(self):
@@ -369,10 +392,14 @@ class TestAction(LAVAAction):
             return_dict[self.action_type].update({"definitions": []})
         if self.definitions.filter(testtype=TestDefinition.TYPE_INTERACTIVE):
             return_dict[self.action_type].update({"interactive": []})
+        if self.definitions.filter(testtype=TestDefinition.TYPE_MONITOR):
+            return_dict[self.action_type].update({"monitors": []})
         for definition in self.definitions.filter(testtype=TestDefinition.TYPE_GIT):
             return_dict[self.action_type]["definitions"].append(definition.to_yaml())
         for definition in self.definitions.filter(testtype=TestDefinition.TYPE_INTERACTIVE):
             return_dict[self.action_type]["interactive"].append(definition.to_yaml())
+        for definition in self.definitions.filter(testtype=TestDefinition.TYPE_MONITOR):
+            return_dict[self.action_type]["monitors"].append(definition.to_yaml())
         return return_dict
 
 

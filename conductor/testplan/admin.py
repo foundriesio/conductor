@@ -110,6 +110,10 @@ class InteractiveCommandAdmin(admin.ModelAdmin):
     models = models.InteractiveCommand
 
 
+class TestMonitorAdmin(admin.ModelAdmin):
+    models = models.TestMonitor
+
+
 admin.site.register(models.Timeout, TimeoutAdmin)
 admin.site.register(models.TestJob, TestJobAdmin)
 admin.site.register(models.TestJobContext, TestJobContextAdmin)
@@ -125,3 +129,4 @@ admin.site.register(models.TestAction, TestActionAdmin)
 admin.site.register(models.CommandAction, CommandActionAdmin)
 admin.site.register(models.TestPlan, TestPlanAdmin)
 admin.site.register(models.InteractiveCommand, InteractiveCommandAdmin)
+admin.site.register(models.TestMonitor, TestMonitorAdmin)
