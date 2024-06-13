@@ -16,6 +16,7 @@ pytz
 pyzmq
 PyYAML
 requests
+setuptools
 tzdata
 whitenoise
 zmq
