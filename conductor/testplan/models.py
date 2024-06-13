@@ -247,7 +247,7 @@ class AutoLogin(models.Model):
 
 class Boot(LAVAAction):
     # job specific boot action
-    prompts = models.TextField()
+    prompts = models.TextField(null=True, blank=True)
     METHOD_MINIMAL = "minimal"
     METHOD_CHOICES = (
         (METHOD_MINIMAL, "minimal"),
@@ -262,9 +262,10 @@ class Boot(LAVAAction):
     def to_yaml(self):
         boot_dict = super().to_yaml()
         boot_dict[self.action_type].update({
-            "prompts": yaml.safe_load(self.prompts),
             "method" : self.method,
         })
+        if self.prompts:
+            boot_dict[self.action_type].update({"prompts": yaml.safe_load(self.prompts)})
         if self.auto_login:
             boot_dict[self.action_type].update({"auto_login": self.auto_login.to_yaml()})
         if self.transfer_overlay:
