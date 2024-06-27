@@ -2,7 +2,7 @@
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
-FROM ubuntu:focal
+FROM ubuntu:22.04
 
 RUN apt-get update -q=2 && \
     apt-get install -q=2 --no-install-recommends python3-pip gunicorn git curl jq
