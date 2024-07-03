@@ -104,11 +104,11 @@ class TestJob(models.Model):
     priority = models.IntegerField(default=50)
     VISIBILITY_PUBLIC = "public"
     VISIBILITY_GROUP = "group"
-    VISIBILITY_PRIVATE = "private"
+    VISIBILITY_PRIVATE = "personal"
     VISIBILITY_CHOICES = (
         (VISIBILITY_PUBLIC, "public"),
         (VISIBILITY_GROUP, "group"),
-        (VISIBILITY_PRIVATE, "private")
+        (VISIBILITY_PRIVATE, "personal")
     )
     visibility = models.CharField(max_length=8, choices=VISIBILITY_CHOICES, default=VISIBILITY_PUBLIC)
     timeouts = models.ManyToManyField(Timeout)
