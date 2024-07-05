@@ -517,7 +517,7 @@ class BuildTag(models.Model):
 class Run(models.Model):
     build = models.ForeignKey(Build, on_delete=models.CASCADE)
     device_type = models.CharField(max_length=32)
-    ostree_hash = models.CharField(max_length=64)
+    ostree_hash = models.CharField(max_length=64, null=True, blank=True)
     run_name = models.CharField(max_length=32)
 
     def __str__(self):

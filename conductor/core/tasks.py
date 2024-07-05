@@ -433,7 +433,7 @@ def create_build_run(self, build_id, run_name, submit_jobs=True):
     return lava_templates + lava_templates_downgrade
 
 
-def _submit_lava_templates(templates, build, device_type, submit_jobs, watch_jobs=True):
+def _submit_lava_templates(templates, build, device_type, submit_jobs, watch_jobs=True, ostree_hash_empty=False):
     run_name = device_type.name
     lava_job_definitions = []
     lava_header = settings.FIO_LAVA_HEADER
@@ -450,8 +450,10 @@ def _submit_lava_templates(templates, build, device_type, submit_jobs, watch_job
             run_url = f"{previous_build.url}runs/{run_name}/"
         ostree_hash=_get_os_tree_hash(run_url, build.project)
         if not ostree_hash:
-            logger.error("OSTree hash missing")
-            continue
+            # ostree hash doesn't exist for base console image builds
+            logger.warning("OSTree hash missing")
+            if not ostree_hash_empty:
+                continue
 
         run, _ = Run.objects.get_or_create(
             build=lcl_build,
@@ -572,7 +574,7 @@ def submit_single_testjob(self, project_id, build_id, testplan_id, testjob_id):
             "template": _template_from_string(yaml.dump(testjob.get_job_definition(testplan), default_flow_style=False))
         })
     logger.debug(templates)
-    _submit_lava_templates(templates, build, device_type, True, False)
+    _submit_lava_templates(templates, build, device_type, True, False, True)
 
 
 @celery.task(bind=True)
