@@ -1414,6 +1414,10 @@ def fetch_lmp_code_review():
                         api_build.get("status") == "PASSED":
                     # retrieve build details
                     build_description = project.ci_build_details(b.build_id)
+                    build_reason = build_description.get("reason")
+                    if build_reason:
+                        b.build_reason = build_reason[:127]
+                        b.save()
                     schedule_lmp_pr_tests.delay(build_description)
 
 
