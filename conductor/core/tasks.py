@@ -1400,7 +1400,7 @@ def fetch_lmp_code_review():
         if last_db_build is None or \
                 api_build.get("build_id") > last_db_build.build_id:
             # create new builds in DB
-            if api_build.get("status") != "RUNNING":
+            if api_build.get("status") not in ["RUNNING", "RUNNING_WITH_FAILURES", "PROMOTED", "QUEUED"]:
                 # only create build object for completed builds
                 build_type = Build.BUILD_TYPE_REGULAR
                 if api_build.get("trigger_name") == "Code Review":
