@@ -1521,6 +1521,8 @@ def schedule_lmp_pr_tests(lmp_build_description):
             run_url = run.get("url")
 
             context = {
+                "run_url": run_url,
+                "run_name": run_name,
                 "device_type": run_name,
                 "build_url": build_url,
                 "build_id": build_id,
@@ -1532,6 +1534,7 @@ def schedule_lmp_pr_tests(lmp_build_description):
                 "BOOTLOADER_NOHDMI_URL": "%simx-boot-%s-nohdmi" % (run_url, run_name),
                 "SPLIMG_URL": "%sSPL-%s" % (run_url, run_name),
                 "MFGTOOL_URL": f"{build_url}runs/build-mfgtool-{run_name}/mfgtool-files.tar.gz",
+                "MFGTOOL_BUILD_URL": f"{build_url}runs/build-mfgtool-{run_name}/",
                 "prompts": ["fio@%s" % run_name, "Password:", "root@%s" % run_name],
                 "net_interface": device_type.net_interface,
             }
@@ -1542,7 +1545,7 @@ def schedule_lmp_pr_tests(lmp_build_description):
             dt_settings = device_type.get_settings()
             for key, value in dt_settings.items():
                 try:
-                    context.update({key: value.format(run_url=run_url, run_name=run_name)})
+                    context.update({key: value.format(**context)})
                 except KeyError:
                     # ignore KeyError in case of misformatted string
                     pass
