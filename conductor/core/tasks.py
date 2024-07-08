@@ -1412,14 +1412,20 @@ def fetch_lmp_code_review():
                     build_type=build_type,
                     build_status=api_build.get("status")
                 )
+                # retrieve build details
+                build_description = project.ci_build_details(b.build_id)
+                build_reason = build_description.get("reason")
+                if build_reason:
+                    b.build_reason = build_reason[:127]
+                    b.save()
+                # fetch commit id from first run
+                run = build_description.get("runs")[0]
+                print(run)
+                run_url = run.get("run_url")
+                update_build_commit_id.delay(b.pk, run_url)
+
                 if build_type == Build.BUILD_TYPE_CODE_REVIEW and \
                         api_build.get("status") == "PASSED":
-                    # retrieve build details
-                    build_description = project.ci_build_details(b.build_id)
-                    build_reason = build_description.get("reason")
-                    if build_reason:
-                        b.build_reason = build_reason[:127]
-                        b.save()
                     schedule_lmp_pr_tests.delay(build_description)
 
 

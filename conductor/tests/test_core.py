@@ -577,7 +577,7 @@ LMP_API_BUILDS = {'limit': 25,
                       ]
                   }
 
-LMP_CI_BUILD_DETAILS = {'build_id': 2564, 'url': 'https://api.foundries.io/projects/lmp/builds/2564/', 'status': 'PASSED', 'runs': [], 'web_url': 'https://ci.foundries.io/projects/lmp/builds/2564', 'runs_url': 'https://api.foundries.io/projects/lmp/builds/2557/runs/', 'reason': 'GitHub PR(427): pull_request, https://github.com/foundriesio/lmp-manifest/pull/427', 'annotation': None}
+LMP_CI_BUILD_DETAILS = {'build_id': 2564, 'url': 'https://api.foundries.io/projects/lmp/builds/2564/', 'status': 'PASSED', 'runs': [{'name': 'lmp-sdk', 'run_url': 'https://api.foundries.io/projects/lmp/builds/2564/runs/lmp-sdk/', 'status': 'PASSED'}], 'web_url': 'https://ci.foundries.io/projects/lmp/builds/2564', 'runs_url': 'https://api.foundries.io/projects/lmp/builds/2557/runs/', 'reason': 'GitHub PR(427): pull_request, https://github.com/foundriesio/lmp-manifest/pull/427', 'annotation': None}
 
 
 class ProjectTest(TestCase):
@@ -1250,13 +1250,16 @@ class TaskTest(TestCase):
         squad_submit_job_mock.assert_not_called()
 
     @patch('conductor.core.tasks.schedule_lmp_pr_tests.delay')
+    @patch('conductor.core.tasks.update_build_commit_id.delay')
     @patch('conductor.core.models.Project.get_api_builds', return_value=LMP_API_BUILDS)
     @patch('conductor.core.models.Project.ci_build_details', return_value=LMP_CI_BUILD_DETAILS)
-    def test_fetch_lmp_code_review(self, mock_build_details, mock_api_builds, mock_schedule):
+    def test_fetch_lmp_code_review(self, mock_build_details, mock_api_builds, mock_update, mock_schedule):
         fetch_lmp_code_review()
         mock_build_details.assert_called_with(LMP_API_BUILDS["builds"][0]["build_id"])
         mock_api_builds.assert_called()
         mock_schedule.assert_called_with(LMP_CI_BUILD_DETAILS)
+        s_build_id = Build.objects.last().id
+        mock_update.assert_called_with(s_build_id, 'https://api.foundries.io/projects/lmp/builds/2564/runs/lmp-sdk/')
 
     @patch('conductor.core.tasks.schedule_lmp_pr_tests.delay')
     @patch('conductor.core.models.Project.get_api_builds')
