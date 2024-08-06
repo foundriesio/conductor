@@ -455,6 +455,15 @@ def _submit_lava_templates(templates, build, device_type, submit_jobs, watch_job
             if not ostree_hash_empty:
                 continue
 
+        # try to find LMP build corresponding to this build
+        trigger = None
+        if lcl_build.lmp_commit:
+            try:
+                lmp_build = Build.objects.get(project__name="lmp", commit_id=lcl_build.lmp_commit)
+                trigger = lmp_build.url
+            except Build.DoesNotExist:
+                logger.info(f"LMP build with commit: {lcl_build.lmp_commit} NOT FOUND")
+
         run, _ = Run.objects.get_or_create(
             build=lcl_build,
             device_type=device_type,
@@ -470,6 +479,7 @@ def _submit_lava_templates(templates, build, device_type, submit_jobs, watch_job
             "build_id": lcl_build.build_id,
             "build_commit": lcl_build.commit_id,
             "build_reason": lcl_build.build_reason,
+            "trigger": trigger,
 
             "IMAGE_URL": "%slmp-factory-image-%s.wic.gz" % (run_url, run_name),
             "BOOTLOADER_URL": "%simx-boot-%s" % (run_url, run_name),
@@ -1420,7 +1430,6 @@ def fetch_lmp_code_review():
                     b.save()
                 # fetch commit id from first run
                 run = build_description.get("runs")[0]
-                print(run)
                 run_url = run.get("run_url")
                 update_build_commit_id.delay(b.pk, run_url)
 
