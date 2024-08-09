@@ -290,6 +290,9 @@ class Project(models.Model):
     fio_lmp_manifest_branch = models.CharField(max_length=32, blank=True, null=True)
     # update kernel moduel keys for OTA buils
     fio_force_kernel_rebuild = models.BooleanField(default=False)
+    # From which factory this project derives
+    # It's used in the "partner factories"
+    forked_from = models.CharField(max_length=32, blank=True, null=True)
 
     # test plans
     testplans = models.ManyToManyField(TestPlan, blank=True)
