@@ -298,6 +298,34 @@ def process_lmp_build(request):
 
 
 @csrf_exempt
+def process_partner_build(request):
+    request_body_json = __verify_header_auth(request)
+    if isinstance(request_body_json, HttpResponse):
+        return request_body_json
+    else:
+        APICallback.objects.create(
+            endpoint="partner",
+            content=json.dumps(request_body_json)
+        )
+        # check if build is successful
+        if not request_body_json.get("status") == "PASSED":
+            logger.warning("status not set to PASSED")
+            return HttpResponse("OK")
+        if "platform" in request_body_json.get("trigger_name"):
+            # extract project name from URL
+            # example: https://api.foundries.io/projects/qualcomm/lmp/builds/25/"
+            url = request_body_json.get("url")
+            base_project_name = url.split("/")[4]
+            branch = request_body_json.get("trigger_name").split("-")[1]
+            logger.info(f"Merging partner factories derived from {base_project_name}, branch {branch}")
+            partner_factories = Project.objects.filter(forked_from=base_project_name, fio_lmp_manifest_branch=branch)
+            for factory in partner_factories:
+                merge_project_lmp_manifest.delay(factory.id)
+            return HttpResponse("Created", status=201)
+
+    return HttpResponse("Created", status=201)
+
+@csrf_exempt
 def generate_context(request, project_name, build_version, device_type_name):
     project = get_object_or_404(Project, name=project_name)
     build = get_object_or_404(Build, project=project, build_id=build_version)
