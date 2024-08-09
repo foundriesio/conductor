@@ -293,6 +293,8 @@ class Project(models.Model):
     # From which factory this project derives
     # It's used in the "partner factories"
     forked_from = models.CharField(max_length=32, blank=True, null=True)
+    # set true for parent partner factories
+    is_parent_factory = models.BooleanField(default=False)
 
     # test plans
     testplans = models.ManyToManyField(TestPlan, blank=True)
