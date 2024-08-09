@@ -5,13 +5,12 @@
 import hashlib
 import hmac
 import json
-from django.test import TestCase, Client
+from django.test import TestCase, Client, override_settings
 from django.conf import settings
 from conductor.api.models import APICallback
 from conductor.core.models import Project, LAVABackend, LAVADeviceType, LAVADevice, Build, Run
 from conductor.core.utils import ISO8601_JSONEncoder
 from unittest.mock import MagicMock, patch
-
 
 class ApiViewTest(TestCase):
     def setUp(self):
@@ -30,7 +29,8 @@ class ApiViewTest(TestCase):
             name="parentProject",
             secret=self.project_secret,
             lava_backend=self.lavabackend1,
-            fio_lmp_manifest_url="https://github.com/example/repository"
+            fio_lmp_manifest_url="https://github.com/example/repository",
+            is_parent_factory=True
         )
         self.project_partner = Project.objects.create(
             name="testProjectPartner1",
@@ -323,7 +323,8 @@ class ApiViewTest(TestCase):
 
     # api/lmp
 
-    @patch("conductor.core.tasks.merge_lmp_manifest.delay")
+    @override_settings(CELERY_ALWAYS_EAGER=True)
+    @patch("conductor.core.tasks.merge_project_lmp_manifest")
     def test_jobserv_lmp_webhook(self, merge_lmp_manifest_mock):
         request_body_dict = {
             "status": "PASSED",
@@ -346,7 +347,7 @@ class ApiViewTest(TestCase):
         self.assertEqual(request_body_dict, json.loads(apicallback.content))
         self.assertEqual(response.status_code, 201)
         # check if build was created
-        merge_lmp_manifest_mock.assert_called()
+        merge_lmp_manifest_mock.assert_called_once_with(self.project.id)
 
     @patch("conductor.core.tasks.merge_lmp_manifest.delay")
     def test_jobserv_lmp_webhook_stable(self, merge_lmp_manifest_mock):
