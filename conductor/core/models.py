@@ -228,11 +228,11 @@ class Project(models.Model):
         help_text="If set to true OTA commit will be created in the containers repository")
     compose_app_name = models.CharField(max_length=64, null=True, blank=True)
     compose_app_env_filename = models.CharField(max_length=64, null=True, blank=True)
-    default_container_branch = models.CharField(max_length=64, default="master")
+    default_container_branch = models.CharField(max_length=64, default="main")
     # meta-subscribers branch name
     default_meta_branch = models.CharField(
         max_length=64,
-        default="master",
+        default="main",
         help_text="Default branch to monitor in meta-subscriber-overrides repository")
     # if set to True, only lmp-manifest merges will trigger testing
     test_on_merge_only = models.BooleanField(
@@ -275,7 +275,7 @@ class Project(models.Model):
     # produce static deltas for OTA builds
     test_static_delta = models.BooleanField(default=True)
     # name of the default branch in the lmp-manifest project
-    default_branch = models.CharField(max_length=16, default="master")
+    default_branch = models.CharField(max_length=16, default="main")
     # token to allow FoundriesFactory backend operations
     fio_api_token = models.CharField(max_length=40, blank=True, null=True)
     # token to allow source code operations
