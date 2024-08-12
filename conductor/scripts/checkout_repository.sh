@@ -26,6 +26,9 @@ usage() {
     exit 1
 }
 
+echo "checkout_repository.sh called with:"
+echo "$@"
+
 while getopts "d:r:l:u:w:t:b:c:D:f:" o; do
   case "$o" in
     # The current working directory will be used by default.
@@ -61,7 +64,8 @@ git config "http.https://source.${REPOSITORY_DOMAIN}.extraheader" "Authorization
 git config user.email "testbot@foundries.io"
 git config user.name "Testbot"
 git remote add "${REPOSITORY_REMOTE}" "${REPOSITORY_URL}"
-git pull "${REPOSITORY_REMOTE}" "${REPOSITORY_DEFAULT_BRANCH}"
 if [ "${REPOSITORY_TYPE}" = "manifest" ]; then
     git remote add "${REPOSITORY_LMP_REMOTE}" "${REPOSITORY_LMP_URL}"
 fi
+git fetch --all
+git checkout --track "${REPOSITORY_REMOTE}/${REPOSITORY_DEFAULT_BRANCH}"
