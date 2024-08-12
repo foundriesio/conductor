@@ -318,7 +318,7 @@ def process_partner_build(request):
             base_project_name = url.split("/")[4]
             branch = request_body_json.get("trigger_name").split("-")[1]
             logger.info(f"Merging partner factories derived from {base_project_name}, branch {branch}")
-            partner_factories = Project.objects.filter(forked_from=base_project_name, fio_lmp_manifest_branch=branch)
+            partner_factories = Project.objects.filter(forked_from=base_project_name, default_branch=branch)
             for factory in partner_factories:
                 merge_project_lmp_manifest.delay(factory.id)
             return HttpResponse("Created", status=201)
