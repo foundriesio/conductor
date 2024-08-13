@@ -49,7 +49,7 @@ done
 
 cd "${REPOSITORY_DIR}"
 # check if the repository is initiated already with proper settings
-REMOTE_ORIGIN=$(git remote get-url "${REPOSITORY_REMOTE}")
+REMOTE_ORIGIN=$(git remote get-url "${REPOSITORY_REMOTE}") || true
 if [ "${REMOTE_ORIGIN}" = "${REPOSITORY_URL}" ]; then
     # Update the repository token
     git config "http.https://source.${REPOSITORY_DOMAIN}.extraheader" "Authorization: basic $(echo -n $REPOSITORY_TOKEN | openssl base64)"
