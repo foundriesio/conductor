@@ -883,6 +883,7 @@ def create_project_repository(project_id):
             fio_repository_token = settings.FIO_REPOSITORY_TOKEN
     except Project.DoesNotExist:
         # do nothing if project is not found
+        logger.warning("Project does not exist")
         return
     # check if repository DIR already exists
     repository_path = os.path.join(settings.FIO_REPOSITORY_HOME, project.name)
@@ -925,6 +926,7 @@ def create_project_containers_repository(project_id):
             fio_repository_token = settings.FIO_REPOSITORY_TOKEN
     except Project.DoesNotExist:
         # do nothing if project is not found
+        logger.warning("Project does not exist")
         return
     # check if repository DIR already exists
     repository_path = os.path.join(settings.FIO_REPOSITORY_CONTAINERS_HOME, project.name)
@@ -963,6 +965,7 @@ def create_project_meta_repository(project_id):
             fio_repository_token = settings.FIO_REPOSITORY_TOKEN
     except Project.DoesNotExist:
         # do nothing if project is not found
+        logger.warning("Project does not exist")
         return
     # check if repository DIR already exists
     repository_path = os.path.join(settings.FIO_REPOSITORY_META_HOME, project.name)

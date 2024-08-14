@@ -58,6 +58,6 @@ def on_pduagent_save(sender, instance, created, **kwargs):
 def on_project_save(sender, instance, created, **kwargs):
     #if created:
     #    create_project_repository.delay(instance.id)
-    create_project_repository.delay(instance.id)
-    create_project_containers_repository.delay(instance.id)
-    create_project_meta_repository.delay(instance.id)
+    create_project_repository.s(instance.id).apply_async(countdown=10)
+    create_project_containers_repository.s(instance.id).apply_async(countdown=10)
+    create_project_meta_repository.s(instance.id).apply_async(countdown=10)
