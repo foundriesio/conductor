@@ -77,7 +77,7 @@ class ApiViewTest(TestCase):
             "status": "PASSED",
             "build_id": 1,
             "url": "https://api.foundries.io/projects/testProject1/lmp/builds/73/",
-            "trigger_name": "platform-master",
+            "trigger_name": "platform-main",
             "runs": [
                 {"url": "example.com", "name": "name1"}
             ]
