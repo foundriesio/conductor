@@ -865,9 +865,12 @@ def create_upgrade_commit(build_id):
     if not settings.DEBUG_FIO_SUBMIT and cmd:
         logger.debug(f"{cmd}")
         try:
-            subprocess.run(cmd, check=True)
+            subprocess.run(cmd, capture_output=True, check=True)
         except subprocess.CalledProcessError:
-            pass
+            mail_admins(
+                "merge_project_lmp_manifest {project_id} failed",
+                str(e)
+            )
     else:
         logger.debug("Debugging FIO submit")
         logger.debug(f"{cmd}")
@@ -1020,9 +1023,12 @@ def merge_project_lmp_manifest(project_id):
         logger.info("Calling merge_manifest.sh script")
         logger.info(" ".join(cmd))
         try:
-            subprocess.run(cmd, check=True)
-        except subprocess.CalledProcessError:
-            pass
+            subprocess.run(cmd, check=True, capture_output=True)
+        except subprocess.CalledProcessError as e:
+            mail_admins(
+                "merge_project_lmp_manifest {project_id} failed",
+                str(e)
+            )
 
 
 @celery.task
@@ -1192,7 +1198,7 @@ def _find_lava_device(lava_job, device_name, project):
                     selected_prompt = prompt.split("@")[1]
                     break
             for device in lava_devices:
-                if selected_prompt in device.auto_register_name:
+                if device.auto_register_name and selected_prompt in device.auto_register_name:
                     return device
     return None
 

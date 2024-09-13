@@ -1754,7 +1754,7 @@ class TaskTest(TestCase):
 
         create_upgrade_commit(self.build.id)
         if not settings.DEBUG_FIO_SUBMIT:
-            run_mock.assert_called_with(cmd, check=True)
+            run_mock.assert_called_with(cmd, capture_output=True, check=True)
 
     @patch("subprocess.run")
     def test_create_upgrade_commit_test_on_merge_only(self, run_mock):
@@ -1771,7 +1771,7 @@ class TaskTest(TestCase):
         self.build.save()
         create_upgrade_commit(self.build.id)
         if not settings.DEBUG_FIO_SUBMIT:
-            run_mock.assert_called_with(cmd, check=True)
+            run_mock.assert_called_with(cmd, capture_output=True, check=True)
 
     @patch("subprocess.run")
     def test_create_upgrade_commit_test_on_merge_only_false(self, run_mock):
@@ -1820,7 +1820,7 @@ class TaskTest(TestCase):
 
         create_upgrade_commit(self.build.id)
         if not settings.DEBUG_FIO_SUBMIT:
-            run_mock.assert_called_with(cmd, check=True)
+            run_mock.assert_called_with(cmd, capture_output=True, check=True)
 
     @patch("conductor.core.tasks.__project_repository_exists", return_value=True)
     @patch("subprocess.run")
