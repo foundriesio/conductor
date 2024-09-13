@@ -29,8 +29,17 @@ while getopts "d:r:l:b:t:" o; do
   esac
 done
 
+git_merge(){
+    git merge -X theirs  --no-edit -m "update-manifest: merge LmP ${REPOSITORY_LMP_BRANCH} to ${REPOSITORY_DEFAULT_BRANCH}" "${REPOSITORY_LMP_REMOTE}/${REPOSITORY_LMP_BRANCH}"
+}
+
+git_merge_fix_keys_conflict(){
+    git rm -r conf/keys && \
+    git commit -m "update-manifest: merge LmP main to main (key conflict)"
+}
+
 cd "${REPOSITORY_DIR}"
 git checkout "${REPOSITORY_DEFAULT_BRANCH}"
 git fetch --all
-git merge -X theirs  --no-edit -m "update-manifest: merge LmP ${REPOSITORY_LMP_BRANCH} to ${REPOSITORY_DEFAULT_BRANCH}" "${REPOSITORY_LMP_REMOTE}/${REPOSITORY_LMP_BRANCH}" || exit $?
+git_merge || git_merge_fix_keys_conflict || exit $?
 git push "${REPOSITORY_REMOTE}" "${REPOSITORY_DEFAULT_BRANCH}"
