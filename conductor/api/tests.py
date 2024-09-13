@@ -349,6 +349,34 @@ class ApiViewTest(TestCase):
         # check if build was created
         merge_lmp_manifest_mock.assert_called_once_with(self.project.id)
 
+    @override_settings(CELERY_ALWAYS_EAGER=True)
+    @patch("conductor.core.tasks.merge_project_lmp_manifest")
+    def test_jobserv_lmp_webhook_project_disabled(self, merge_lmp_manifest_mock):
+        request_body_dict = {
+            "status": "PASSED",
+            "build_id": 1,
+            "url": "https://api.foundries.io/projects/testProject1/lmp/builds/73/",
+            "trigger_name": "build-release",
+            "runs": [
+                {"url": "example.com", "name": "name1"}
+            ]
+        }
+        self.project.disabled = True
+        self.project.save()
+        data = json.dumps(request_body_dict, cls=ISO8601_JSONEncoder)
+        sig = hmac.new(self.project.secret.encode(), msg=data.encode(), digestmod="sha256")
+        response = self.client.post(
+            "/api/lmp/",
+            request_body_dict,
+            content_type="application/json",
+            **{"HTTP_X_JobServ_Sig":f"sha256: {sig.hexdigest()}"}
+        )
+        apicallback = APICallback.objects.first()
+        self.assertEqual(request_body_dict, json.loads(apicallback.content))
+        self.assertEqual(response.status_code, 201)
+        # check if build was created
+        merge_lmp_manifest_mock.assert_not_called()
+
     @patch("conductor.core.tasks.merge_lmp_manifest.delay")
     def test_jobserv_lmp_webhook_stable(self, merge_lmp_manifest_mock):
         request_body_dict = {

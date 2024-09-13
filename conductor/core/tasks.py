@@ -1037,7 +1037,7 @@ def merge_lmp_manifest():
     # don't touch LmP manifest itself. Project named 'lmp' is
     # a fake project that only keeps the API password.
     # exclude partner factory projects
-    projects = Project.objects.filter(fio_lmp_manifest_url__isnull=True, is_parent_factory=False).exclude(name="lmp")
+    projects = Project.objects.filter(fio_lmp_manifest_url__isnull=True, is_parent_factory=False, disabled=False).exclude(name="lmp")
     for project in projects:
         merge_project_lmp_manifest(project.id)
 

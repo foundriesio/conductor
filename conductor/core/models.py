@@ -295,6 +295,10 @@ class Project(models.Model):
     forked_from = models.CharField(max_length=32, blank=True, null=True)
     # set true for parent partner factories
     is_parent_factory = models.BooleanField(default=False)
+    # when this is set to true, the project repositories receive no new code
+    disabled = models.BooleanField(
+        default=False,
+        help_text="When set to True, automatic merges are switched off. It is still possible to manually trigger test rounds.")
 
     # test plans
     testplans = models.ManyToManyField(TestPlan, blank=True)
