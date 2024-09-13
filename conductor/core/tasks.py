@@ -868,7 +868,7 @@ def create_upgrade_commit(build_id):
             subprocess.run(cmd, capture_output=True, check=True)
         except subprocess.CalledProcessError:
             mail_admins(
-                "merge_project_lmp_manifest {project_id} failed",
+                f"merge_project_lmp_manifest {project} failed",
                 f"{e.stdout.decode()}\n\n{e.stderr.decode()}"
             )
     else:
@@ -1026,7 +1026,7 @@ def merge_project_lmp_manifest(project_id):
             subprocess.run(cmd, check=True, capture_output=True)
         except subprocess.CalledProcessError as e:
             mail_admins(
-                "merge_project_lmp_manifest {project_id} failed",
+                f"merge_project_lmp_manifest {project} failed",
                 f"{e.stdout.decode()}\n\n{e.stderr.decode()}"
             )
 
