@@ -869,7 +869,7 @@ def create_upgrade_commit(build_id):
         except subprocess.CalledProcessError:
             mail_admins(
                 "merge_project_lmp_manifest {project_id} failed",
-                str(e)
+                f"{e.stdout}\n\n{e.stderr}"
             )
     else:
         logger.debug("Debugging FIO submit")
@@ -1027,7 +1027,7 @@ def merge_project_lmp_manifest(project_id):
         except subprocess.CalledProcessError as e:
             mail_admins(
                 "merge_project_lmp_manifest {project_id} failed",
-                str(e)
+                f"{e.stdout}\n\n{e.stderr}"
             )
 
 
