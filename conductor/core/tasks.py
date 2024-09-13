@@ -29,6 +29,7 @@ from conductor.core.models import Run, Build, BuildTag, LAVADeviceType, LAVADevi
 from conductor.testplan.models import TestPlan, TestJob
 from datetime import timedelta
 from django.conf import settings
+from django.core.mail import mail_admins
 from django.db import transaction
 from django.template.loader import get_template
 from django.template import engines, TemplateSyntaxError
@@ -51,7 +52,6 @@ translate_result = {
 
 
 def task_email_notify(sender=None, headers=None, body=None, **kwargs):
-    from django.core.mail import mail_admins
     import socket
     kwargs['sender'] = sender
     subject = "Error: Task {sender.name} ({task_id}): {exception.context} {exception.problem}".format(**kwargs)
