@@ -251,8 +251,10 @@ class Boot(LAVAAction):
     # job specific boot action
     prompts = models.TextField(null=True, blank=True)
     METHOD_MINIMAL = "minimal"
+    METHOD_QEMU = "qemu"
     METHOD_CHOICES = (
         (METHOD_MINIMAL, "minimal"),
+        (METHOD_QEMU, "qemu"),
     )
     method = models.CharField(max_length=32, choices=METHOD_CHOICES)
     transfer_overlay = models.BooleanField(default=True)
