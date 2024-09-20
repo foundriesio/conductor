@@ -210,6 +210,8 @@ class Deployment(LAVAAction):
                 images_dict[image.name].update({"compression": image.compression})
             if image.headers:
                 images_dict[image.name].update({"headers": image.get_headers()})
+            if image.image_arg:
+                images_dict[image.name].update({"image_arg": image.image_arg})
         deployment_dict = super().to_yaml()
         deployment_dict[self.action_type].update({
             "to": self.deploy_to,
