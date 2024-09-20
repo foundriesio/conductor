@@ -22,6 +22,8 @@ class SQUADBackendAdmin(admin.ModelAdmin):
 
 class ProjectAdmin(admin.ModelAdmin):
     models = models.Project
+    list_display = ("name", "create_ota_commit", "create_containers_commit","test_on_merge_only", "apply_tag_to_first_build_only", "test_static_delta","disabled",)
+    list_filter = ("create_ota_commit", "create_containers_commit","test_on_merge_only", "apply_tag_to_first_build_only", "test_static_delta", "disabled", "qa_reports_project_name", "forked_from",)
 
 
 @admin.action(description='Create LAVA templates')
