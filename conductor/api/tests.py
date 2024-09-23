@@ -38,7 +38,7 @@ class ApiViewTest(TestCase):
             lava_backend=self.lavabackend1,
             fio_lmp_manifest_url="https://github.com/example/repository",
             forked_from="parentProject",
-            fio_lmp_manifest_branch="main"
+            fio_lmp_manifest_branch="foo"
         )
         self.device_type = LAVADeviceType.objects.create(
             name="name1",
@@ -467,7 +467,7 @@ class ApiViewTest(TestCase):
             "status": "PASSED",
             "build_id": 1,
             "url": "https://api.foundries.io/projects/parentProject/lmp/builds/73/",
-            "trigger_name": "platform-main",
+            "trigger_name": "platform-foo",
             "runs": [
                 {"url": "example.com", "name": "name1"}
             ]
@@ -487,12 +487,37 @@ class ApiViewTest(TestCase):
         merge_project_manifest_mock.assert_called_with(self.project_partner.id)
 
     @patch("conductor.core.tasks.merge_project_lmp_manifest.delay")
+    def test_partner_webhook_wrong_branch(self, merge_project_manifest_mock):
+        request_body_dict = {
+            "status": "PASSED",
+            "build_id": 1,
+            "url": "https://api.foundries.io/projects/parentProject/lmp/builds/73/",
+            "trigger_name": "platform-foobar",
+            "runs": [
+                {"url": "example.com", "name": "name1"}
+            ]
+        }
+        data = json.dumps(request_body_dict, cls=ISO8601_JSONEncoder)
+        sig = hmac.new(self.project_partner.secret.encode(), msg=data.encode(), digestmod="sha256")
+        response = self.client.post(
+            "/api/partner/",
+            request_body_dict,
+            content_type="application/json",
+            **{"HTTP_X_JobServ_Sig":f"sha256: {sig.hexdigest()}"}
+        )
+        apicallback = APICallback.objects.first()
+        self.assertEqual(request_body_dict, json.loads(apicallback.content))
+        self.assertEqual(response.status_code, 201)
+        # check if build was created
+        merge_project_manifest_mock.assert_not_called()
+
+    @patch("conductor.core.tasks.merge_project_lmp_manifest.delay")
     def test_jobserv_lmp_webhook_failed(self, merge_project_manifest_mock):
         request_body_dict = {
             "status": "FAILED",
             "build_id": 1,
             "url": "https://api.foundries.io/projects/parentProject/lmp/builds/73/",
-            "trigger_name": "platform-main",
+            "trigger_name": "platform-foo",
             "runs": [
                 {"url": "example.com", "name": "name1"}
             ]
