@@ -9,7 +9,6 @@ from . import views
 
 urlpatterns = [
     path('jobserv/', views.process_jobserv_webhook),
-    path('device/', views.process_device_webhook),
     path('lmp/', views.process_lmp_build),
     path('partner/', views.process_partner_build),
     path('github/', views.process_github_webhook),

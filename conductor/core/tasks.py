@@ -1049,37 +1049,6 @@ def merge_lmp_manifest():
 #    pass
 
 
-@celery.task
-def device_pdu_action(device_id, power_on=True):
-    lava_device = None
-    try:
-        lava_device = LAVADevice.objects.get(pk=device_id)
-    except LAVADevice.DoesNotExist:
-        return
-    # get device dictionary
-    device_dict_url = urljoin(lava_device.project.lava_backend.lava_url, f"devices/{lava_device.name}/dictionary?render=true")
-    auth = {
-        "Authorization": f"Token {lava_device.project.lava_backend.lava_api_token}"
-    }
-    device_request = requests.get(device_dict_url, headers=auth)
-    device_dict = None
-    if device_request.status_code == 200:
-        device_dict = yaml.load(device_request.text, Loader=yaml.SafeLoader)
-    # extract power on/off command(s)
-    cmds = device_dict['commands']['power_on']
-    logger.debug("Commands to be sent")
-    logger.debug(cmds)
-    if not power_on:
-        cmds = device_dict['commands']['power_off']
-    if not isinstance(cmds, list):
-        cmds = [cmds]
-    # use PDUAgent to run command(s) remotely
-    if lava_device.pduagent:
-        for cmd in cmds:
-            lava_device.pduagent.message = cmd
-            lava_device.pduagent.save()
-
-
 def __get_testjob_results__(device, job_id):
     logger.debug(f"Retrieving result summary for job: {job_id}")
     current_target = device.get_current_target()
@@ -1328,58 +1297,6 @@ def report_test_results(lava_device_id, target_name, ota_update_result=None, ota
     elif result_dict != None:
         __report_test_result(device, result_dict)
 
-
-def __check_ota_status(device):
-    current_target = device.get_current_target()
-    # determine whether current target is correct
-    last_build = device.project.build_set.last()
-    previous_build = _retrieve_previous_build(last_build)
-    try:
-        last_run = last_build.run_set.get(run_name=device.device_type.name)
-        target_name = current_target.get('target-name')
-        if current_target.get('ostree-hash') == last_run.ostree_hash:
-            # update successful
-            logger.info(f"Device {device.name} successfully updated to {last_build.build_id}")
-            report_test_results(device.id, target_name, ota_update_result=True, ota_update_from=previous_build.build_id)
-        else:
-            logger.info(f"Device {device.name} NOT updated to {last_build.build_id}")
-            report_test_results(device.id, target_name, ota_update_result=False, ota_update_from=previous_build.build_id)
-
-        # switch the device to LAVA control
-        device.request_online()
-        device.controlled_by = LAVADevice.CONTROL_LAVA
-        device.save()
-        device_pdu_action(device.id, power_on=False)
-    except Run.DoesNotExist:
-        logger.error(f"Run {device.device_type.name} for build {last_build.id} does not exist")
-
-
-@celery.task
-def check_device_ota_completed(device_name, project_name):
-    try:
-        device = LAVADevice.objects.get(auto_register_name=device_name, project__name=project_name)
-        if device.controlled_by == LAVADevice.CONTROL_PDU:
-            # only call __check_ota_status when the device is
-            # in the upgrade mode
-            __check_ota_status(device)
-    except LAVADevice.DoesNotExist:
-        logger.error(f"Device with name {device_name} not found in project {project_name}")
-
-
-@celery.task
-def check_ota_completed():
-    # This is a periodic task which checks all devices which are in
-    # OTA configuration. The default timeout for performing OTA and
-    # running all tests is 30 minutes. If the device is not updated
-    # after this timeout OTA is considered to be unsuccessful. The
-    # device is moved back under LAVA control.
-    deadline = timezone.now() - timedelta(minutes=30)
-    devices = LAVADevice.objects.filter(
-        controlled_by=LAVADevice.CONTROL_PDU,
-        ota_started__lt=deadline
-    )
-    for device in devices:
-        __check_ota_status(device)
 
 @celery.task
 def fetch_lmp_code_review():

@@ -139,10 +139,6 @@ CELERY_ACCEPT_CONTENT = ['json', 'yaml']
 CELERY_TASK_SERIALIZER = 'json'
 CELERY_BEAT_SCHEDULE_FILENAME = os.path.join(DATA_DIR, 'celerybeat-schedule')
 CELERY_BEAT_SCHEDULE = {
-    'check_ota_complete': {
-        'task': 'conductor.core.tasks.check_ota_completed',
-        'schedule': crontab(minute='*/10'),
-    },
     'fetch_lmp_code_review': {
         'task': 'conductor.core.tasks.fetch_lmp_code_review',
         'schedule': crontab(minute='*/27'),

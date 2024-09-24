@@ -613,41 +613,6 @@ class LAVADevice(models.Model):
     def __str__(self):
         return f"{self.name} ({self.project.name})"
 
-    def __request_state(self, state):
-        auth = {
-            "Authorization": f"Token {self.project.lava_backend.lava_api_token}"
-        }
-        device_url = urljoin(self.project.lava_backend.lava_url, "/".join(["devices", self.name]))
-        if not device_url.endswith("/"):
-            device_url = device_url + "/"
-        device_request = requests.get(device_url, headers=auth)
-        if device_request.status_code == 200:
-            device_json = device_request.json()
-            device_json['health'] = state
-            logger.info(device_json)
-            device_put_request = requests.put(device_url, json=device_json, headers=auth)
-            if device_put_request.status_code == 200:
-                logger.info(f"Requested state: {state} for device: {self.name}")
-                return True
-            else:
-                logger.warning("LAVA API request rejected")
-                logger.warning(device_put_request.status_code)
-                logger.warning(device_put_request.text)
-        return False
-
-    def request_maintenance(self):
-        # send request to LAVA server to change device state to Maintenance
-        # this prevents from scheduling more LAVA jobs while the device
-        # runs OTA update and tests
-        if self.__request_state("Maintenance"):
-            self.ota_started = timezone.now()
-            self.controlled_by = LAVADevice.CONTROL_PDU
-            self.save()
-
-    def request_online(self):
-        if self.__request_state("Good"):
-            self.controlled_by = LAVADevice.CONTROL_LAVA
-            self.save()
 
     def _get_auth_dict(self):
         token = self.project.fio_api_token

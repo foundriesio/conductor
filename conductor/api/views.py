@@ -26,7 +26,6 @@ from conductor.core.tasks import (
     merge_lmp_manifest,
     merge_project_lmp_manifest,
     update_build_commit_id,
-    check_device_ota_completed,
     tag_build_runs,
     schedule_lmp_pr_tests,
     restart_failed_runs,
@@ -143,35 +142,6 @@ def process_test_apps_request(request, factory_name, device_name):
         if apps_list or values_dict.get("force"):
             # prevent setting empty list if force is not set
             device.set_current_apps(apps_list)
-    return HttpResponse("OK")
-
-
-@csrf_exempt
-def process_device_webhook(request):
-    """
-    Expected request body:
-    {
-        "name": "device_auto_register_name",
-        "project": "factory/project name"
-    }
-    """
-    request_body_json = __verify_header_auth(request, header_name="X-DeviceOta-Sig")
-    if isinstance(request_body_json, HttpResponse):
-        return request_body_json
-    APICallback.objects.create(
-        endpoint="device",
-        content=json.dumps(request_body_json)
-    )
-    project_name = request_body_json.get("project")
-    device_name = request_body_json.get("name")
-    logger.info(f"Checking device: {device_name} from {project_name}")
-    project = get_object_or_404(Project, name=project_name)
-    try:
-        device = project.lavadevice_set.get(auto_register_name=device_name)
-        check_device_ota_completed.delay(device_name, project_name)
-    except LAVADevice.DoesNotExist:
-        logger.warning(f"Device {device_name} not found in project {project_name}")
-        return HttpResponseNotFound()
     return HttpResponse("OK")
 
 

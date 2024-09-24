@@ -31,8 +31,6 @@ from conductor.testplan.models import (
 )
 from conductor.core.tasks import (
     create_build_run,
-    device_pdu_action,
-    check_ota_completed,
     create_project_repository,
     create_upgrade_commit,
     update_build_reason,
@@ -728,41 +726,6 @@ class LAVADeviceTest(TestCase):
             project = self.project,
             pduagent=self.pduagent1
         )
-
-    @patch("requests.put")
-    @patch("requests.get")
-    def test_request_maintenance(self, get_mock, put_mock):
-        response_mock = MagicMock()
-        response_mock.status_code = 200
-        response_mock.text = DEVICE_DICT
-        get_mock.return_value = response_mock
-        put_response_mock = MagicMock()
-        put_response_mock.status_code = 200
-        put_mock.return_value = response_mock
-
-        self.lava_device1.request_maintenance()
-        self.lava_device1.refresh_from_db()
-        self.assertIsNotNone(self.lava_device1.ota_started)
-        self.assertEqual(self.lava_device1.controlled_by, LAVADevice.CONTROL_PDU)
-        get_mock.assert_called()
-        put_mock.assert_called()
-
-    @patch("requests.put")
-    @patch("requests.get")
-    def test_request_online(self, get_mock, put_mock):
-        response_mock = MagicMock()
-        response_mock.status_code = 200
-        response_mock.text = DEVICE_DICT
-        get_mock.return_value = response_mock
-        put_response_mock = MagicMock()
-        put_response_mock.status_code = 200
-        put_mock.return_value = response_mock
-
-        self.lava_device1.request_online()
-        self.lava_device1.refresh_from_db()
-        self.assertEqual(self.lava_device1.controlled_by, LAVADevice.CONTROL_LAVA)
-        get_mock.assert_called()
-        put_mock.assert_called()
 
     @patch("requests.get")
     def test_get_current_target(self, get_mock):
@@ -1591,47 +1554,6 @@ class TaskTest(TestCase):
         submit_lava_job_mock.assert_not_called()
         watch_qa_reports_mock.assert_not_called()
         get_hash_mock.assert_not_called()
-
-    @patch("requests.get")
-    @patch("conductor.core.models.PDUAgent.save")
-    def test_device_pdu_action_on(self, save_mock, get_mock):
-        response_mock = MagicMock()
-        response_mock.status_code = 200
-        response_mock.text = DEVICE_DICT
-        get_mock.return_value = response_mock
-        device_pdu_action(self.lava_device1.pk)
-        save_mock.assert_called()
-
-    @patch("requests.get")
-    @patch("conductor.core.models.PDUAgent.save")
-    def test_device_pdu_action_off(self, save_mock, get_mock):
-        response_mock = MagicMock()
-        response_mock.status_code = 200
-        response_mock.text = DEVICE_DICT
-        get_mock.return_value = response_mock
-        device_pdu_action(self.lava_device1.pk, power_on=False)
-        save_mock.assert_called()
-
-    @patch("conductor.core.tasks.report_test_results")
-    @patch("conductor.core.tasks.device_pdu_action")
-    @patch("conductor.core.models.LAVADevice.get_current_target", return_value=TARGET_DICT)
-    @patch("conductor.core.models.LAVADevice.request_online")
-    def test_check_ota_completed(
-            self,
-            request_online_mock,
-            get_current_target_mock,
-            device_pdu_action_mock,
-            report_test_results_mock):
-        self.lava_device1.controlled_by = LAVADevice.CONTROL_PDU
-        ota_started_datetime = datetime.now() - timedelta(minutes=31)
-        self.lava_device1.ota_started = ota_started_datetime
-        self.lava_device1.save()
-        check_ota_completed()
-        self.lava_device1.refresh_from_db()
-        self.assertEqual(self.lava_device1.controlled_by, LAVADevice.CONTROL_LAVA)
-        request_online_mock.assert_called()
-        device_pdu_action_mock.assert_called()
-        report_test_results_mock.assert_called()
 
     @patch("django.conf.settings.DEBUG_REPOSITORY_SCRIPTS", True)
     @patch("subprocess.run")
