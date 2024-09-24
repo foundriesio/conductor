@@ -1223,21 +1223,6 @@ def process_testjob_notification(event_data):
             lava_job.device = lava_db_device
             lava_job.save()
             logger.debug(f"LAVA device is: {lava_db_device.id}")
-        if lava_job.job_type == LAVAJob.JOB_OTA and \
-                event_data.get("state") == "Running" and \
-                lava_db_device:
-            lava_db_device.request_maintenance()
-        if lava_job.job_type == LAVAJob.JOB_OTA and \
-                event_data.get("state") == "Finished" and \
-                lava_db_device:
-            if event_data.get("health") == "Complete":
-                # remove device from factory at the latest possible moment
-                lava_db_device.remove_from_factory(factory=lava_job.project.name)
-                device_pdu_action(lava_db_device.id, power_on=True)
-            else:
-                # report OTA failure?
-                lava_db_device.request_online()
-                logger.error("OTA flashing job failed!")
         if lava_job.job_type == LAVAJob.JOB_LAVA and \
                 event_data.get("state") == "Running" and \
                 lava_db_device:

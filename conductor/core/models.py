@@ -790,11 +790,9 @@ class LAVAJob(models.Model):
     status = models.CharField(null=True, blank=True, max_length=16)
     JOB_LAVA = "LAVA"
     JOB_EL2GO = "EL2GO"
-    JOB_OTA = "OTA"
     JOB_ASSEMBLE = "ASM"
     JOB_CHOICES = [
         (JOB_LAVA, "Lava"),
-        (JOB_OTA, "OTA"),
         (JOB_EL2GO, "EL2GO"),
         (JOB_ASSEMBLE, "Assemble"),
     ]
