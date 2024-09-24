@@ -22,7 +22,6 @@ from conductor.core.models import (
     LAVADeviceType,
     LAVADevice,
     LAVAJob,
-    PDUAgent,
     DEFAULT_TIMEOUT
 )
 from conductor.testplan.models import (
@@ -708,12 +707,6 @@ class LAVADeviceTest(TestCase):
             lava_backend=self.lavabackend1,
             fio_api_token="fio_api_token1"
         )
-        self.pduagent1 = PDUAgent.objects.create(
-            name="pduagent1",
-            state=PDUAgent.STATE_ONLINE,
-            version="1.0",
-            token="token"
-        )
         self.device_type1 = LAVADeviceType.objects.create(
             name="device-type-1",
             net_interface="eth0",
@@ -724,7 +717,6 @@ class LAVADeviceTest(TestCase):
             name = "device-type-1-1",
             auto_register_name = "ota_device_1",
             project = self.project,
-            pduagent=self.pduagent1
         )
 
     @patch("requests.get")
@@ -855,12 +847,6 @@ class TaskTest(TestCase):
             device_type="raspberrypi4-64",
             ostree_hash="previousHash",
             run_name="raspberrypi4-64"
-        )
-        self.pduagent1 = PDUAgent.objects.create(
-            name="pduagent1",
-            state=PDUAgent.STATE_ONLINE,
-            version="1.0",
-            token="token"
         )
         self.previous_build_run_1 = Run.objects.create(
             build=self.previous_build,
@@ -996,49 +982,42 @@ class TaskTest(TestCase):
             name = "imx8mmevk-1",
             auto_register_name = "ota_device_1",
             project = self.project,
-            pduagent=self.pduagent1
         )
         self.lava_device2 = LAVADevice.objects.create(
             device_type = self.device_type2,
             name = "raspberrypi4-64-1",
             auto_register_name = "ota_device_2",
             project = self.project,
-            pduagent=self.pduagent1
         )
         self.lava_device3 = LAVADevice.objects.create(
             device_type = self.device_type3,
             name = "imx8mp-lpddr4-evk-01",
             auto_register_name = "ota_device_3",
             project = self.project,
-            pduagent=self.pduagent1
         )
         self.lava_device4 = LAVADevice.objects.create(
             device_type = self.device_type4,
             name = "imx8mmevk-sec-01",
             auto_register_name = "ota_device_4",
             project = self.project,
-            pduagent=self.pduagent1
         )
         self.lava_device5 = LAVADevice.objects.create(
             device_type = self.device_type5,
             name = "imx6ullevk-01",
             auto_register_name = "ota_device_5",
             project = self.project,
-            pduagent=self.pduagent1
         )
         self.lava_device6 = LAVADevice.objects.create(
             device_type = self.device_type6,
             name = "imx8mq-evk-01",
             auto_register_name = "ota_device_6",
             project = self.project,
-            pduagent=self.pduagent1
         )
         self.lava_device7 = LAVADevice.objects.create(
             device_type = self.device_type7,
             name = "qemu-01",
             auto_register_name = "ota_device_7",
             project = self.project,
-            pduagent=self.pduagent1
         )
         # testplan
         self.lava_device_testplan1 = LAVADevice.objects.create(
@@ -1046,21 +1025,18 @@ class TaskTest(TestCase):
             name = "imx8mmevk-1",
             auto_register_name = "ota_device_1",
             project = self.project_testplan,
-            pduagent=self.pduagent1
         )
         self.lava_device_testplan2 = LAVADevice.objects.create(
             device_type = self.device_type_testplan2,
             name = "imx8mmevk-sec-1",
             auto_register_name = "ota_device_2",
             project = self.project_testplan,
-            pduagent=self.pduagent1
         )
         self.lava_device_testplan3 = LAVADevice.objects.create(
             device_type = self.device_type_testplan3,
             name = "imx93evk-1",
             auto_register_name = "ota_device_3",
             project = self.project_testplan,
-            pduagent=self.pduagent1
         )
         self.testplan1 = TestPlan.objects.create(
             name = "testplan_imx8mm",

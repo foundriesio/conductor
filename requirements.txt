@@ -13,11 +13,8 @@ django-sortedm2m
 GitPython
 psycopg2-binary
 pytz
-pyzmq
 PyYAML
 requests
 setuptools
 tzdata
 whitenoise
-zmq
-

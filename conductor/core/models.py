@@ -533,28 +533,6 @@ class Run(models.Model):
         return "%s (%s)" % (self.run_name, self.build.build_id)
 
 
-class PDUAgent(models.Model):
-    name = models.CharField(max_length=32)
-
-    STATE_ONLINE = "Online"
-    STATE_OFFLINE = "Offline"
-    STATE_CHOICES = [
-        (STATE_ONLINE, "Online"),
-        (STATE_OFFLINE, "Offline")
-    ]
-    state = models.CharField(
-        max_length=16,
-        choices=STATE_CHOICES,
-        default=STATE_OFFLINE
-    )
-    last_ping = models.DateTimeField(null=True, blank=True)
-    version = models.CharField(max_length=32)
-    token = models.CharField(max_length=64)
-    message = models.TextField(blank=True, null=True)
-
-    def __str__(self):
-        return self.name
-
 class LAVADeviceType(models.Model):
     name = models.CharField(max_length=32)
     # name of the device in the Foundries factory
@@ -590,7 +568,6 @@ class LAVADevice(models.Model):
     auto_register_name = models.CharField(max_length=64, null=True, blank=True)
     el2go_name = models.CharField(max_length=64, null=True, blank=True)
     project = models.ForeignKey(Project, on_delete=models.CASCADE)
-    pduagent = models.ForeignKey(PDUAgent, null=True, blank=True, on_delete=models.CASCADE)
     # field to record when device was requested to go to maintenance
     # because it's supposed to run OTA job
     ota_started = models.DateTimeField(null=True, blank=True)

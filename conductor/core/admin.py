@@ -107,10 +107,6 @@ class LAVAJobAdmin(admin.ModelAdmin):
     models = models.LAVAJob
 
 
-class PDUAgentAdmin(admin.ModelAdmin):
-    models = models.PDUAgent
-    list_display = ['__str__', 'state']
-
 admin.site.register(models.LAVABackend, LAVABackendAdmin)
 admin.site.register(models.SQUADBackend, SQUADBackendAdmin)
 admin.site.register(models.Project, ProjectAdmin)
@@ -120,4 +116,3 @@ admin.site.register(models.Run, RunAdmin)
 admin.site.register(models.LAVADeviceType, LAVADeviceTypeAdmin)
 admin.site.register(models.LAVADevice, LAVADeviceAdmin)
 admin.site.register(models.LAVAJob, LAVAJobAdmin)
-admin.site.register(models.PDUAgent, PDUAgentAdmin)
