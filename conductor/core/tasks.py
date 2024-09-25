@@ -1134,21 +1134,6 @@ def __get_testjob_results__(device, job_id):
     return lava_job_results
 
 
-#def test_res(device, job_id):
-#    return __get_testjob_results__(device, job_id)
-
-@celery.task
-def retrieve_lava_results(device_id, job_id):
-    lava_db_device = None
-    try:
-        lava_db_device = LAVADevice.objects.get(pk=device_id)
-    except LAVADevice.DoesNotExist:
-        logger.debug(f"Device with ID {device_id} not found")
-        return
-    lava_results = __get_testjob_results__(lava_db_device, job_id)
-    for suite_name, result in lava_results.items():
-        __report_test_result(lava_db_device, result)
-
 def _find_lava_device(lava_job, device_name, project):
     lava_devices = LAVADevice.objects.filter(name=device_name, project=project)
     # find prompts
@@ -1199,10 +1184,6 @@ def process_testjob_notification(event_data):
             # and update it's target ID
             logger.info(f"Removing {lava_db_device} from Factory {lava_db_device.project.name}")
             lava_db_device.remove_from_factory(factory=lava_job.project.name)
-        if lava_job.job_type == LAVAJob.JOB_LAVA and \
-                event_data.get("state") == "Finished" and \
-                lava_db_device:
-            retrieve_lava_results(lava_db_device.id, job_id)
         if lava_job.job_type == LAVAJob.JOB_EL2GO and \
                 event_data.get("state") == "Running" and \
                 lava_db_device:
@@ -1223,7 +1204,6 @@ def process_testjob_notification(event_data):
         if lava_job.job_type == LAVAJob.JOB_EL2GO and \
                 event_data.get("state") == "Finished" and \
                 lava_db_device:
-            retrieve_lava_results(lava_db_device.id, job_id)
             # remove EL2GO so the device can retrieve credentials
             # in the next job
             logger.info(f"LAVA device {lava_db_device} details:")
@@ -1244,58 +1224,6 @@ def process_testjob_notification(event_data):
 @celery.task
 def process_device_notification(event_data):
     pass
-
-
-def __report_test_result(device, result):
-    token = device.project.fio_api_token
-    if token is None:
-        # fallback to the global token
-        # this will be phased out in the next version
-        token = getattr(settings, "FIO_API_TOKEN", None)
-    authentication = {
-        "OSF-TOKEN": token,
-    }
-
-    url = f"https://api.foundries.io/ota/devices/{device.project.name}-{device.name}/tests/"
-    test_dict = result.copy()
-    test_dict.pop("status")
-    new_test_request = requests.post(url, json=test_dict, headers=authentication)
-    logger.info(f"Reporting test {result['name']} for {device.name}")
-    if new_test_request.status_code == 201:
-        test_details = new_test_request.json()
-        result.update(test_details)
-        details_url = f"{url}{test_details['test-id']}"
-        update_details_request = requests.put(details_url, json=result, headers=authentication)
-        if update_details_request.status_code == 200:
-            logger.debug(f"Successfully reported details for {test_details['test-id']}")
-        else:
-            logger.warning(f"Failed to report details for {test_details['test-id']}")
-    else:
-        logger.warning(f"Failed to create test result for {device.project.name}-{device.name}")
-        logger.warning(new_test_request.text)
-
-
-@celery.task
-def report_test_results(lava_device_id, target_name, ota_update_result=None, ota_update_from=None, result_dict=None):
-    device = None
-    try:
-        device = LAVADevice.objects.get(pk=lava_device_id)
-    except LAVADevice.DoesNotExist:
-        logger.error(f"Device with ID: {lava_device_id} not found!")
-        return
-    if ota_update_result != None:
-        test_name = f"ota_update_from_{ota_update_from}"
-        test_result = "PASSED"
-        if not ota_update_result:
-            test_result = "FAILED"
-        result = {
-            "name": test_name,
-            "status": test_result,
-            "target-name": target_name
-        }
-        __report_test_result(device, result)
-    elif result_dict != None:
-        __report_test_result(device, result_dict)
 
 
 @celery.task

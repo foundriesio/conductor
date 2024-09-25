@@ -1224,7 +1224,6 @@ class TaskTest(TestCase):
         mock_build_details.assert_not_called()
         mock_schedule.assert_not_called()
 
-    @patch('conductor.core.tasks.retrieve_lava_results')
     @patch('conductor.core.models.LAVADevice.add_to_el2go')
     @patch('conductor.core.models.LAVADevice.remove_from_el2go')
     @patch('conductor.core.models.LAVADevice.remove_from_factory')
@@ -1232,20 +1231,17 @@ class TaskTest(TestCase):
             self,
             remove_factory_mock,
             remove_el2go_mock,
-            add_el2go_mock,
-            retrieve_mock):
+            add_el2go_mock):
         event_data = {
             "job": 3,
             "device": self.lava_device_testplan1.name,
             "state": "Running",
         }
         process_testjob_notification(event_data)
-        retrieve_mock.assert_not_called()
         add_el2go_mock.assert_not_called()
         remove_el2go_mock.assert_not_called()
         remove_factory_mock.assert_not_called()
 
-    @patch('conductor.core.tasks.retrieve_lava_results')
     @patch('conductor.core.models.LAVADevice.add_to_el2go')
     @patch('conductor.core.models.LAVADevice.remove_from_el2go')
     @patch('conductor.core.models.LAVADevice.remove_from_factory')
@@ -1253,20 +1249,17 @@ class TaskTest(TestCase):
             self,
             remove_factory_mock,
             remove_el2go_mock,
-            add_el2go_mock,
-            retrieve_mock):
+            add_el2go_mock):
         event_data = {
             "job": self.lavajob1.job_id,
             "device": self.lava_device_testplan1.name,
             "state": "Running",
         }
         process_testjob_notification(event_data)
-        retrieve_mock.assert_not_called()
         add_el2go_mock.assert_not_called()
         remove_el2go_mock.assert_not_called()
         remove_factory_mock.assert_called()
 
-    @patch('conductor.core.tasks.retrieve_lava_results')
     @patch('conductor.core.models.LAVADevice.add_to_el2go')
     @patch('conductor.core.models.LAVADevice.remove_from_el2go')
     @patch('conductor.core.models.LAVADevice.remove_from_factory')
@@ -1274,8 +1267,7 @@ class TaskTest(TestCase):
             self,
             remove_factory_mock,
             remove_el2go_mock,
-            add_el2go_mock,
-            retrieve_mock):
+            add_el2go_mock):
         event_data = {
             "job": self.lavajob1.job_id,
             "device": self.lava_device_testplan1.name,
@@ -1283,12 +1275,10 @@ class TaskTest(TestCase):
             "health": "Complete"
         }
         process_testjob_notification(event_data)
-        retrieve_mock.assert_called()
         add_el2go_mock.assert_not_called()
         remove_el2go_mock.assert_not_called()
         remove_factory_mock.assert_not_called()
 
-    @patch('conductor.core.tasks.retrieve_lava_results')
     @patch('conductor.core.models.LAVADevice.add_to_el2go')
     @patch('conductor.core.models.LAVADevice.remove_from_el2go')
     @patch('conductor.core.models.LAVADevice.remove_from_factory')
@@ -1296,8 +1286,7 @@ class TaskTest(TestCase):
             self,
             remove_factory_mock,
             remove_el2go_mock,
-            add_el2go_mock,
-            retrieve_mock):
+            add_el2go_mock):
         event_data = {
             "job": self.lavajob1.job_id,
             "device": self.lava_device_testplan1.name,
@@ -1305,12 +1294,10 @@ class TaskTest(TestCase):
             "health": "Incomplete"
         }
         process_testjob_notification(event_data)
-        retrieve_mock.assert_called()
         add_el2go_mock.assert_not_called()
         remove_el2go_mock.assert_not_called()
         remove_factory_mock.assert_not_called()
 
-    @patch('conductor.core.tasks.retrieve_lava_results')
     @patch('conductor.core.models.LAVADevice.add_to_el2go')
     @patch('conductor.core.models.LAVADevice.remove_from_el2go')
     @patch('conductor.core.models.LAVADevice.remove_from_factory')
@@ -1318,20 +1305,17 @@ class TaskTest(TestCase):
             self,
             remove_factory_mock,
             remove_el2go_mock,
-            add_el2go_mock,
-            retrieve_mock):
+            add_el2go_mock):
         event_data = {
             "job": self.lavajob2.job_id,
             "device": self.lava_device_testplan2.name,
             "state": "Running"
         }
         process_testjob_notification(event_data)
-        retrieve_mock.assert_not_called()
         add_el2go_mock.assert_called()
         remove_el2go_mock.assert_called()
         remove_factory_mock.assert_called()
 
-    @patch('conductor.core.tasks.retrieve_lava_results')
     @patch('conductor.core.models.LAVADevice.add_to_el2go')
     @patch('conductor.core.models.LAVADevice.remove_from_el2go')
     @patch('conductor.core.models.LAVADevice.remove_from_factory')
@@ -1339,8 +1323,7 @@ class TaskTest(TestCase):
             self,
             remove_factory_mock,
             remove_el2go_mock,
-            add_el2go_mock,
-            retrieve_mock):
+            add_el2go_mock):
         event_data = {
             "job": self.lavajob2.job_id,
             "device": self.lava_device_testplan2.name,
@@ -1348,7 +1331,6 @@ class TaskTest(TestCase):
             "health": "Complete"
         }
         process_testjob_notification(event_data)
-        retrieve_mock.assert_called()
         add_el2go_mock.assert_not_called()
         remove_el2go_mock.assert_called()
         remove_factory_mock.assert_not_called()
