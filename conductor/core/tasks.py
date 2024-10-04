@@ -269,7 +269,7 @@ def restart_failed_runs(self, build_id, request_json):
     for run in request_json.get("runs"):
         if run.get("status") != "PASSED":
             # restart the run
-            if build.restart_counter < settings.MAX_BUILD_RESTARTS:
+            if build.restart_counter < settings.MAX_BUILD_RESTARTS and build.project.restart_failed_builds:
                 if restart_ci_run(build.project, run.get("url")):
                     restarted = True
     if restarted:

@@ -299,6 +299,8 @@ class Project(models.Model):
     disabled = models.BooleanField(
         default=False,
         help_text="When set to True, automatic merges are switched off. It is still possible to manually trigger test rounds.")
+    # if set to True, failed CI builds are restarted MAX_BUILD_RESTART times
+    restart_failed_builds = models.BooleanField(default=True, help_text="Restart failed CI builds")
 
     # test plans
     testplans = models.ManyToManyField(TestPlan, blank=True)
