@@ -73,6 +73,7 @@ class RunAdmin(admin.ModelAdmin):
 class LAVADeviceTypeAdmin(admin.ModelAdmin):
     models = models.LAVADeviceType
     list_filter = ('project',)
+    save_as = True
 
 
 @admin.action(description="Remove from factory")
@@ -101,10 +102,12 @@ class LAVADeviceAdmin(admin.ModelAdmin):
     models = models.LAVADevice
     list_filter = ('project', 'device_type')
     actions = [remove_device_from_factory, remove_device_from_el2go, add_device_to_el2go]
+    save_as = True
 
 
 class LAVAJobAdmin(admin.ModelAdmin):
     models = models.LAVAJob
+    save_as = True
 
 
 admin.site.register(models.LAVABackend, LAVABackendAdmin)
