@@ -553,6 +553,9 @@ class LAVADeviceType(models.Model):
     ]
     architecture = models.CharField(max_length=8, choices=ARCH_CHOICES, default=ARCH_AARCH64)
 
+    class Meta:
+        unique_together = ["name", "project"]
+
     def __str__(self):
         return f"{self.name} ({self.project.name})"
 
