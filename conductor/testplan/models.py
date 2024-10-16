@@ -36,6 +36,7 @@ class LAVAAction(PolymorphicModel):
     namespace = models.CharField(max_length=64, null=True, blank=True)
     connection_namespace = models.CharField(max_length=64, null=True, blank=True)
     timeout = models.ForeignKey(Timeout, on_delete=models.SET_NULL, null=True)
+    docker_image = models.CharField(max_length=256, null=True, blank=True)
     ACTION_DEPLOY = "deploy"
     ACTION_BOOT = "boot"
     ACTION_COMMAND = "command"
@@ -63,6 +64,10 @@ class LAVAAction(PolymorphicModel):
         if self.connection_namespace:
             return_dict[self.action_type].update({
                 "connection-namespace": self.connection_namespace
+            })
+        if self.docker_image:
+            return_dict[self.action_type].update({
+                "docker": {"image": self.docker_image}
             })
 
         return return_dict
