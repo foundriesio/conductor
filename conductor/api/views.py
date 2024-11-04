@@ -194,6 +194,10 @@ def process_jobserv_webhook(request):
         # in case build is not created, exit gracefully
         return HttpResponse("OK")
 
+    # update build status for each call
+    build.build_status = build_status
+    build.save()
+
     if build_status != "PASSED":
         restart_failed_runs.delay(build.pk, request_body_json)
         return HttpResponse("OK")
