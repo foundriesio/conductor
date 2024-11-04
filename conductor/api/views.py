@@ -214,10 +214,10 @@ def process_jobserv_webhook(request):
             "containers" in trigger_name:
         run_url = None
         build_run_list = []
+        dev_names = []
         for run in request_body_json.get("runs"):
             run_url = run.get("url")
             run_name = run.get("name")
-            dev_names = []
             if build.build_type == Build.BUILD_TYPE_CONTAINERS:
                 # create run_name list base ond device type
                 # architectures
@@ -231,8 +231,8 @@ def process_jobserv_webhook(request):
                     continue
             else:
                 dev_names.append(run_name)
-            for dev_name in dev_names:
-                build_run_list.append(create_build_run.si(build.pk, dev_name))
+        for dev_name in dev_names:
+            build_run_list.append(create_build_run.si(build.pk, dev_name))
         if run_url is not None:
             # only call update_build_commit_id once as
             # all runs should contain identical GIT_SHA

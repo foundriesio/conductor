@@ -22,7 +22,7 @@
                 <div class="col-md-4">
                     <strong>LmP Commit ID</strong>
                 </div>
-                <div class="col-md-2">
+                <div class="col-md-1">
                     <strong>Build URL</strong>
                 </div>
                 <div class="col-md-2">
@@ -33,6 +33,9 @@
                 </div>
                 <div class="col-md-1">
                     <strong>Results</strong>
+                </div>
+                <div class="col-md-1">
+                    <strong>Start tests</strong>
                 </div>
             </div>
 
@@ -48,7 +51,7 @@
                     <a href="{{ build.get_lmp_commit_url }}">{{ build.lmp_commit }}</a>
                     {% endif %}
                 </div>
-                <div class="col-md-2">
+                <div class="col-md-1">
                     <a href="{{ build.url }}">{{ build.build_id }}</a><br/>
                 </div>
                 <div class="col-md-2">
@@ -65,6 +68,11 @@
                     {% if build.is_scheduled_tests %}
                     <a href="{{ build.get_qa_reports_url}}">Results</a><br/>
                     {% endif %}
+                </div>
+                <div class="col-md-1">
+                    {% if build.build_type == build.BUILD_TYPE_REGULAR %}
+                    <a class="btn btn-xs btn-success" href="{% url 'projectstarttests' project_id=project.id ci_id=build.id %}">Start QA run</a>
+					{% endif %}
                 </div>
             </div>
             {% endfor %}
@@ -109,8 +117,9 @@
         </div>
     </div>
     <div class="row">
+        <h3>LAVA instance</h3>
         <div class="col-md-12 col-sm-12">
-            <a href="{{ project.lava_url }}">{{ project.lava_url }}</a>
+            <a href="{{ project.lava_backend.lava_url }}">{{ project.lava_backend.lava_url }}</a>
         </div>
     </div>
     <div class="row">

@@ -23,6 +23,7 @@ from cryptography.hazmat.primitives.asymmetric.rsa import RSAPrivateKey
 from cryptography.hazmat.backends import default_backend
 
 from conductor.celery import app as celery
+from celery import chain, group
 from celery.signals import task_internal_error, task_failure
 from celery.utils.log import get_task_logger
 from conductor.core.models import Run, Build, BuildTag, LAVADeviceType, LAVADevice, LAVAJob, Project
@@ -1276,6 +1277,42 @@ def fetch_lmp_code_review():
                         api_build.get("status") == "PASSED":
                     schedule_lmp_pr_tests.delay(build_description)
 
+@celery.task
+def schedule_project_test_round(build_id):
+    build = None
+    try:
+        build = Build.objects.get(pk=build_id)
+    except Build.DoesNotExist:
+        return
+    logger.debug(f"Schedulling tests for {build}")
+    run_url = None
+    build_run_list = []
+    dev_names = []
+    for run in build.run_set.all():
+        run_url = run.get_url()
+        run_name = run.run_name
+        if build.build_type == Build.BUILD_TYPE_CONTAINERS:
+            # create run_name list base ond device type
+            # architectures
+            # container build names are in form "build-architecture"
+            if "-" in run_name:
+                arch_name = run_name.split("-", 1)[1]
+                device_types = LAVADeviceType.objects.filter(project=build.project, architecture=arch_name)
+                for dev_type in device_types:
+                    dev_names.append(dev_type.name)
+            else:
+                continue
+        else:
+            dev_names.append(run_name)
+    for dev_name in dev_names:
+        build_run_list.append(create_build_run.si(build.pk, dev_name))
+    logger.debug(f"RUN URL: {run_url}")
+    if run_url is not None:
+        # only call update_build_commit_id once as
+        # all runs should contain identical GIT_SHA
+        logger.debug("Creating test round tasks")
+        workflow = (update_build_commit_id.si(build.pk, run_url)| tag_build_runs.si(build.pk) | group(build_run_list))
+        workflow.delay()
 
 @celery.task
 def schedule_lmp_pr_tests(lmp_build_description):

@@ -40,7 +40,8 @@ from conductor.core.tasks import (
     schedule_static_delta,
     create_static_delta_build,
     poll_static_delta_build,
-    fetch_lmp_code_review
+    fetch_lmp_code_review,
+    schedule_project_test_round
 )
 
 
@@ -2264,3 +2265,21 @@ class TaskTest(TestCase):
         poll_mock.assert_not_called()
         schedule_mock.assert_not_called()
         self.assertEqual(None, ret_val)
+
+    @patch('conductor.core.tasks.create_build_run.si')
+    @patch('conductor.core.tasks.tag_build_runs.si')
+    @patch('conductor.core.tasks.update_build_commit_id.si')
+    def test_schedule_project_test_round(self, update_mock, tag_mock, create_mock):
+        schedule_project_test_round(self.build.id)
+        update_mock.assert_called()
+        tag_mock.assert_called()
+        create_mock.assert_called()
+
+    @patch('conductor.core.tasks.create_build_run.si')
+    @patch('conductor.core.tasks.tag_build_runs.si')
+    @patch('conductor.core.tasks.update_build_commit_id.si')
+    def test_schedule_project_test_round_no_build(self, update_mock, tag_mock, create_mock):
+        schedule_project_test_round(999)
+        update_mock.assert_not_called()
+        tag_mock.assert_not_called()
+        create_mock.assert_not_called()

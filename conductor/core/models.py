@@ -531,6 +531,9 @@ class Run(models.Model):
     ostree_hash = models.CharField(max_length=64, null=True, blank=True)
     run_name = models.CharField(max_length=32)
 
+    def get_url(self):
+        return f"{self.build.url}/runs/{self.run_name}/"
+
     def __str__(self):
         return "%s (%s)" % (self.run_name, self.build.build_id)
 
