@@ -362,6 +362,19 @@ class Project(models.Model):
             url = f"https://api.foundries.io/projects/lmp/builds/"
         return self._retrieve_api_request(url).get("data")
 
+    def get_last_ci_build_status(self):
+        last_build = self.build_set.filter(build_type__in=[Build.BUILD_TYPE_REGULAR, Build.BUILD_TYPE_OTA, Build.BUILD_TYPE_CONTAINERS]).last()
+        if last_build:
+            api_build = self.ci_build_details(last_build.build_id)
+            return api_build.get("status")
+        return None
+
+    def get_last_build_status(self):
+        last_build = self.build_set.filter(build_type__in=[Build.BUILD_TYPE_REGULAR, Build.BUILD_TYPE_OTA, Build.BUILD_TYPE_CONTAINERS]).last()
+        if last_build:
+            return last_build.build_status 
+        return None
+
     def ci_build_details(self, ci_id):
         domain = settings.FIO_DOMAIN
         if self.fio_meds_domain:

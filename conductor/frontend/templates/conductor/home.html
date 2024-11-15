@@ -7,7 +7,23 @@
     {% for project in projects %}
         <div class="row">
             <a href="#">
-            <div class="col-md-12 col-sm-12">
+            <div class="col-md-1 col-sm-1">
+                {% with project_status=project.get_last_build_status %}
+                    {% if project_status == "FAILED" %}
+                    <span class="badge alert-danger pull-right"><span class="glyphicon glyphicon-remove"></span></span>
+                    {% endif %}
+                    {% if project_status == "RUNNING" %}
+                    <span class="badge alert-primary pull-right"><span class="glyphicon glyphicon-refresh"></span></span>
+                    {% endif %}
+                    {% if project_status == "RUNNING_WITH_FAILURES" %}
+                    <span class="badge alert-warning pull-right"><span class="glyphicon glyphicon-refresh"></span></span>
+                    {% endif %}
+                    {% if project_status == "PASSED" %}
+                    <span class="badge alert-success pull-right"><span class="glyphicon glyphicon-ok"></span></span>
+                    {% endif %}
+                {% endwith %}
+            </div>
+            <div class="col-md-11 col-sm-11">
                 <strong>
                     <a href="{% url 'project-details' project.pk %}">{{ project.name }}</a>
                 </strong>
