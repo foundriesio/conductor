@@ -14,21 +14,10 @@ from urllib.parse import urljoin
 from requests.exceptions import HTTPError
 
 from conductor.testplan.models import TestPlan
+from conductor.utils import yaml_validator
 
 DEFAULT_TIMEOUT=60
 logger = logging.getLogger()
-
-
-def yaml_validator(value):
-    if value is None:
-        return
-    if len(value) == 0:
-        return
-    try:
-        if not isinstance(yaml.safe_load(value), dict):
-            raise ValidationError("Dictionary object expected")
-    except yaml.YAMLError as e:
-        raise ValidationError(e)
 
 
 class LAVABackend(models.Model):
