@@ -30,7 +30,6 @@ setup(
     entry_points={
         'console_scripts': [
             'conductor-admin=conductor.manage:main',
-            'conductor-ws=conductor.run.websockets:main',
             'conductor-worker=conductor.run.worker:main',
             'conductor-listener=conductor.run.listener:main',
         ]
