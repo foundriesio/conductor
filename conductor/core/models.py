@@ -10,7 +10,7 @@ from django.conf import settings
 from django.db import models
 from django.utils import timezone
 from http import HTTPStatus
-from urllib.parse import urljoin
+from urllib.parse import urljoin, urlsplit
 from requests.exceptions import HTTPError
 
 from conductor.testplan.models import TestPlan
@@ -55,6 +55,10 @@ class LAVABackend(models.Model):
             # return random id list
             return [len(definition)]
         return []
+
+    def get_lava_job_url(self, job_id):
+        url_parts = urlsplit(self.lava_url)
+        return f"{url_parts.scheme}://{url_parts.netloc}/scheduler/job/{job_id}"
 
     def get_lava_job_details(self, job_id):
         authentication = {
