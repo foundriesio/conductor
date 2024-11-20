@@ -55,7 +55,11 @@ translate_result = {
 def task_email_notify(sender=None, headers=None, body=None, **kwargs):
     import socket
     kwargs['sender'] = sender
-    subject = "Error: Task {sender.name} ({task_id}): {exception.context} {exception.problem}".format(**kwargs)
+    subject = "Error: Task {sender.name} ({task_id})".format(**kwargs)
+    try:
+        subject = "Error: Task {sender.name} ({task_id}): {exception.context} {exception.problem}".format(**kwargs)
+    except AttributeError:
+        pass
     message = """Task {sender.name} with id {task_id} raised exception:
 {exception!r}
 Task was called with args: {args}
