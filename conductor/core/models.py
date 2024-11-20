@@ -56,6 +56,23 @@ class LAVABackend(models.Model):
             return [len(definition)]
         return []
 
+    def get_lava_job_details(self, job_id):
+        authentication = {
+            "Authorization": "Token %s" % self.lava_api_token,
+        }
+        response = requests.get(
+            urljoin(self.lava_url, f"jobs/{job_id}"),
+            headers=authentication,
+            timeout=DEFAULT_TIMEOUT
+        )
+        try:
+            response.raise_for_status()
+        except HTTPError:
+            logger.error("LAVA request failed")
+            logger.error(response.text)
+            return {}
+        return response.json()
+
     def __str__(self):
         return self.name
 
