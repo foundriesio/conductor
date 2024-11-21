@@ -28,12 +28,12 @@ from celery.signals import task_internal_error, task_failure
 from celery.utils.log import get_task_logger
 from conductor.core.models import Run, Build, BuildTag, LAVADeviceType, LAVADevice, LAVAJob, Project
 from conductor.testplan.models import TestPlan, TestJob
+from conductor.utils import template_from_string
 from datetime import timedelta
 from django.conf import settings
 from django.core.mail import mail_admins
 from django.db import transaction
 from django.template.loader import get_template
-from django.template import engines, TemplateSyntaxError
 from django.utils import timezone
 from git import Repo
 from requests.adapters import HTTPAdapter
@@ -327,24 +327,6 @@ def tag_build_runs(self, build_id):
     return None
 
 
-def _template_from_string(template_string, using=None):
-    """
-    Convert a string into a template object,
-    using a given template engine or using the default backends
-    from settings.TEMPLATES if no engine was specified.
-    """
-    # This function is based on django.template.loader.get_template,
-    # but uses Engine.from_string instead of Engine.get_template.
-    chain = []
-    engine_list = engines.all() if using is None else [engines[using]]
-    for engine in engine_list:
-        try:
-            return engine.from_string(template_string)
-        except TemplateSyntaxError as e:
-            chain.append(e)
-    raise TemplateSyntaxError(template_string, chain=chain)
-
-
 @celery.task(bind=True)
 def create_build_run(self, build_id, run_name, submit_jobs=True):
     logger.debug("Received task for build: %s" % build_id)
@@ -392,7 +374,7 @@ def create_build_run(self, build_id, run_name, submit_jobs=True):
                         "name": plan_testjob.name,
                         "job_type": job_type,
                         "build": build,
-                        "template": _template_from_string(yaml.dump(plan_testjob.get_job_definition(plan), default_flow_style=False))
+                        "template": template_from_string(yaml.dump(plan_testjob.get_job_definition(plan), default_flow_style=False))
                     })
             if build.build_reason and build.build_type in [Build.BUILD_TYPE_OTA, Build.BUILD_TYPE_CONTAINERS]:
                 for plan_testjob in plan.testjobs.filter(is_ota_job=True, is_downgrade_job=False, is_static_delta_job=False):
@@ -403,7 +385,7 @@ def create_build_run(self, build_id, run_name, submit_jobs=True):
                         "name": plan_testjob.name,
                         "job_type": job_type,
                         "build": previous_build,
-                        "template": _template_from_string(yaml.dump(plan_testjob.get_job_definition(plan), default_flow_style=False))
+                        "template": template_from_string(yaml.dump(plan_testjob.get_job_definition(plan), default_flow_style=False))
                     })
                 for plan_testjob in plan.testjobs.filter(is_ota_job=True, is_downgrade_job=True, is_static_delta_job=False):
                     job_type = LAVAJob.JOB_LAVA
@@ -413,7 +395,7 @@ def create_build_run(self, build_id, run_name, submit_jobs=True):
                         "name": plan_testjob.name,
                         "job_type": job_type,
                         "build": build,
-                        "template": _template_from_string(yaml.dump(plan_testjob.get_job_definition(plan), default_flow_style=False))
+                        "template": template_from_string(yaml.dump(plan_testjob.get_job_definition(plan), default_flow_style=False))
                     })
             if build.build_reason and build.build_type in [Build.BUILD_TYPE_CONTAINERS]:
                 for plan_testjob in plan.testjobs.filter(is_assemble_image_job=True):
@@ -421,7 +403,7 @@ def create_build_run(self, build_id, run_name, submit_jobs=True):
                         "name": plan_testjob.name,
                         "job_type": LAVAJob.JOB_ASSEMBLE,
                         "build": build,
-                        "template": _template_from_string(yaml.dump(plan_testjob.get_job_definition(plan), default_flow_style=False))
+                        "template": template_from_string(yaml.dump(plan_testjob.get_job_definition(plan), default_flow_style=False))
                     })
 
     else:
@@ -586,7 +568,7 @@ def submit_single_testjob(self, project_id, build_id, testplan_id, testjob_id):
             "name": testjob.name,
             "job_type": job_type,
             "build": build,
-            "template": _template_from_string(yaml.dump(testjob.get_job_definition(testplan), default_flow_style=False))
+            "template": template_from_string(yaml.dump(testjob.get_job_definition(testplan), default_flow_style=False))
         })
     logger.debug(templates)
     _submit_lava_templates(templates, build, device_type, True, False, True)
@@ -674,7 +656,7 @@ def schedule_static_delta(self, build_id):
                     "name": plan_testjob.name,
                     "job_type": job_type,
                     "build": build.static_from,
-                    "template": _template_from_string(yaml.dump(plan_testjob.get_job_definition(plan), default_flow_style=False))
+                    "template": template_from_string(yaml.dump(plan_testjob.get_job_definition(plan), default_flow_style=False))
                 })
         _submit_lava_templates(templates, build.static_to, device_type, True)
 
@@ -1404,7 +1386,7 @@ def schedule_lmp_pr_tests(lmp_build_description):
                         "name": plan_testjob.name,
                         "job_type": job_type,
                         "build": None,
-                        "template": _template_from_string(yaml.dump(plan_testjob.get_job_definition(plan), default_flow_style=False))
+                        "template": template_from_string(yaml.dump(plan_testjob.get_job_definition(plan), default_flow_style=False))
                     })
         else:
             logger.info("Default test plan disabled")
