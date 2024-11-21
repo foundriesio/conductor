@@ -10,7 +10,7 @@ REPOSITORY_REMOTE=origin
 REPOSITORY_LMP_URL="https://github.com/foundriesio/lmp-manifest"
 REPOSITORY_LMP_REMOTE=lmp
 REPOSITORY_TOKEN=""
-REPOSITORY_DEFAULT_BRANCH=master
+REPOSITORY_DEFAULT_BRANCH=""
 REPOSITORY_TYPE=manifest
 REPOSITORY_DOMAIN="foundries.io"
 UNIT_TEST=""
@@ -68,4 +68,6 @@ if [ "${REPOSITORY_TYPE}" = "manifest" ]; then
     git remote add "${REPOSITORY_LMP_REMOTE}" "${REPOSITORY_LMP_URL}"
 fi
 git fetch --all
-git checkout --track "${REPOSITORY_REMOTE}/${REPOSITORY_DEFAULT_BRANCH}"
+if [ -n "${REPOSITORY_DEFAULT_BRANCH}" ]; then
+    git checkout --track "${REPOSITORY_REMOTE}/${REPOSITORY_DEFAULT_BRANCH}"
+fi
