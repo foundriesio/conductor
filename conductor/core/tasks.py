@@ -28,7 +28,7 @@ from celery.signals import task_internal_error, task_failure
 from celery.utils.log import get_task_logger
 from conductor.core.models import Run, Build, BuildTag, LAVADeviceType, LAVADevice, LAVAJob, Project
 from conductor.testplan.models import TestPlan, TestJob
-from conductor.utils import template_from_string
+from conductor.utils import template_from_string, prepare_context
 from datetime import timedelta
 from django.conf import settings
 from django.core.mail import mail_admins
@@ -458,40 +458,25 @@ def _submit_lava_templates(templates, build, device_type, submit_jobs, watch_job
             run_name=run_name
         )
 
-        context = {
-            "run_name" : run_name,
-            "run_url": run_url,
-            "device_type": run_name,
-            "build_url": lcl_build.url,
-            "build_id": lcl_build.build_id,
+        context = prepare_context(run_name, run_url, lcl_build.url, lcl_build.build_id)
+        context.update({
             "build_commit": lcl_build.commit_id,
             "build_reason": lcl_build.build_reason,
             "trigger": trigger,
 
-            "IMAGE_URL": "%slmp-factory-image-%s.wic.gz" % (run_url, run_name),
-            "BOOTLOADER_URL": "%simx-boot-%s" % (run_url, run_name),
-            "BOOTLOADER_NOHDMI_URL": "%simx-boot-%s-nohdmi" % (run_url, run_name),
-            "SPLIMG_URL": "%sSPL-%s" % (run_url, run_name),
-            "MFGTOOL_URL": f"{lcl_build.url}runs/{run_name}-mfgtools/mfgtool-files.tar.gz",
-            "MFGTOOL_BUILD_URL": f"{lcl_build.url}runs/{run_name}-mfgtools/",
             "LAVA_HEADER": lava_header,
-            "prompts": ["fio@%s" % run_name, "Password:", "root@%s" % run_name],
             "net_interface": device_type.net_interface,
             "os_tree_hash": run.ostree_hash,
             "target": lcl_build.build_id,
             "ota_target": build.build_id,
             "factory": build.project.name,
-        }
+        })
         if lcl_build.lmp_commit:
             context.update(
                 {"lmp_commit": lcl_build.lmp_commit,
                  "lmp_commit_url": lcl_build.get_lmp_commit_url()
                 }
             )
-        if run_name == "raspberrypi4-64":
-            context["BOOTLOADER_URL"] = "%sother/u-boot-%s.bin" % (run_url, run_name)
-        if run_name == "stm32mp1-disco":
-            context["BOOTLOADER_URL"] = "%sother/boot.itb" % (run_url)
         dt_settings = device_type.get_settings()
         for key, value in dt_settings.items():
             try:
@@ -1396,29 +1381,13 @@ def schedule_lmp_pr_tests(lmp_build_description):
         lava_job_definitions = []
         for template in templates:
             run_url = run.get("url")
+            context = prepare_context(run_name, run_url, build_url, build_id)
 
-            context = {
-                "run_url": run_url,
-                "run_name": run_name,
-                "device_type": run_name,
-                "build_url": build_url,
-                "build_id": build_id,
+            context.update({
                 "build_commit": gh_git_sha,
                 "build_reason": reason,
-
-                "IMAGE_URL": "%slmp-base-console-image-%s.wic.gz" % (run_url, run_name),
-                "BOOTLOADER_URL": "%simx-boot-%s" % (run_url, run_name),
-                "BOOTLOADER_NOHDMI_URL": "%simx-boot-%s-nohdmi" % (run_url, run_name),
-                "SPLIMG_URL": "%sSPL-%s" % (run_url, run_name),
-                "MFGTOOL_URL": f"{build_url}runs/build-mfgtool-{run_name}/mfgtool-files.tar.gz",
-                "MFGTOOL_BUILD_URL": f"{build_url}runs/build-mfgtool-{run_name}/",
-                "prompts": ["fio@%s" % run_name, "Password:", "root@%s" % run_name],
                 "net_interface": device_type.net_interface,
-            }
-            if run_name == "raspberrypi4-64":
-                context["BOOTLOADER_URL"] = "%sother/u-boot-%s.bin" % (run_url, run_name)
-            if run_name == "stm32mp1-disco":
-                context["BOOTLOADER_URL"] = "%sother/boot.itb" % (run_url)
+            })
             dt_settings = device_type.get_settings()
             for key, value in dt_settings.items():
                 try:
