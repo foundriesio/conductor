@@ -42,7 +42,7 @@ INSTALLED_APPS = [
     'conductor.frontend',
     'conductor.listener',
     'conductor.testplan',
-    'conductor.uitests',
+    #'conductor.uitests',
 
     # google authentication
     'django.contrib.sites',
