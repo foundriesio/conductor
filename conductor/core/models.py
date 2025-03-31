@@ -758,6 +758,7 @@ class LAVAJob(models.Model):
     job_id = models.IntegerField()
     # actual device can is filled once LAVA assigns it
     device = models.ForeignKey(LAVADevice, null=True, blank=True, on_delete=models.CASCADE)
+    requested_device_type = models.ForeignKey(LAVADeviceType, null=True, blank=True, on_delete=models.CASCADE)
     definition = models.TextField()
     project = models.ForeignKey(Project, on_delete=models.CASCADE, null=True, blank=True)
     status = models.CharField(null=True, blank=True, max_length=16)

@@ -42,6 +42,7 @@ INSTALLED_APPS = [
     'conductor.frontend',
     'conductor.listener',
     'conductor.testplan',
+    'conductor.uitests',
 
     # google authentication
     'django.contrib.sites',
@@ -143,6 +144,15 @@ CELERY_BEAT_SCHEDULE = {
         'task': 'conductor.core.tasks.fetch_lmp_code_review',
         'schedule': crontab(minute='*/27'),
     },
+    # uitests tasks
+    'create_partner_layers': {
+        'task': 'conductor.uitests.tasks.create_partner_layers',
+        'schedule': crontab(day_of_week="1", hour=8, minute=0)
+    },
+    'fetch_layer_updates' : {
+        'task': 'conductor.uitests.tasks.fetch_layer_updates',
+        'schedule': crontab(minute="*")
+    }
 }
 
 CELERY_TASK_DEFAULT_QUEUE = 'celery'
@@ -167,6 +177,13 @@ FIO_UPGRADE_ROLLBACK_MESSAGE = "upgrade/rollback testing"
 FIO_UPGRADE_CONTAINER_MESSAGE = "Force container rebuild"
 FIO_STATIC_DELTA_MESSAGE = "Building static deltas for Target"
 FIO_LAVA_HEADER = "OSF-TOKEN"
+FIO_PARTNER_LAYER_HOME = "%s/partners/" % BASE_DIR
+FIO_PARTNER_LAYER_REMOTE_NAME = "origin"
+# file in github containing all "partner" layer details
+FIO_PARTNER_SETTINGS_FILE = ""
+# github PAT for accessing the file in private repository
+FIO_PARTNER_SETTINGS_FILE_TOKEN = ""
+FIO_PARTNER_API_TOKEN = ""
 
 GH_LMP_PATCH_SOURCE = "fio-github"
 

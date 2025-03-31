@@ -518,6 +518,7 @@ def _submit_lava_templates(templates, build, device_type, submit_jobs, watch_job
             LAVAJob.objects.create(
                 job_id=job,
                 definition=lava_job_definition,
+                requested_device_type=device_type,
                 project=build.project,
                 job_type=job_type,
             )
@@ -1107,7 +1108,7 @@ def __get_testjob_results__(device, job_id):
 
 
 def _find_lava_device(lava_job, device_name, project):
-    lava_devices = LAVADevice.objects.filter(name=device_name, project=project)
+    lava_devices = LAVADevice.objects.filter(name=device_name, project=project, device_type=lava_job.requested_device_type)
     # find prompts
     # prompt should correspond to the MACHINE name from OE build
     definition = yaml.safe_load(lava_job.definition)

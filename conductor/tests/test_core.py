@@ -1115,6 +1115,7 @@ class TaskTest(TestCase):
         self.lavajob1 = LAVAJob.objects.create(
             job_id=1,
             device=self.lava_device_testplan1,
+            requested_device_type=self.device_type_testplan1,
             project=self.project_testplan,
             job_type=LAVAJob.JOB_LAVA,
             definition=definition_lavajob1
@@ -1123,6 +1124,7 @@ class TaskTest(TestCase):
         self.lavajob2 = LAVAJob.objects.create(
             job_id=2,
             device=self.lava_device_testplan2,
+            requested_device_type=self.device_type_testplan2,
             project=self.project_testplan,
             job_type=LAVAJob.JOB_EL2GO,
             definition=definition_lavajob2
