@@ -465,6 +465,9 @@ def _submit_lava_templates(templates, build, device_type, submit_jobs, watch_job
             "trigger": trigger,
 
             "LAVA_HEADER": lava_header,
+            "MFGTOOL_URL": f"{lcl_build.url}runs/{run_name}-mfgtools/mfgtool-files.tar.gz",
+            "MFGTOOL_BUILD_URL": f"{lcl_build.url}runs/{run_name}-mfgtools/",
+
             "net_interface": device_type.net_interface,
             "os_tree_hash": run.ostree_hash,
             "target": lcl_build.build_id,
