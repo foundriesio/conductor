@@ -117,6 +117,15 @@ class DeploymentTest(TestCase):
         self.deployment1.save()
         self.deployment1.images.add(self.downloadImage1)
         self.deployment1.images.add(self.downloadImage2)
+        self.deployment2 = Deployment(
+            deploy_to=Deployment.DEPLOY_FLASHER,
+            name="deploy2",
+            action_type="deploy",
+            failure_retry=3
+        )
+        self.deployment2.save()
+        self.deployment2.images.add(self.downloadImage1)
+        self.deployment2.images.add(self.downloadImage2)
 
     def test_to_yaml(self):
         reference_dict = {
@@ -147,6 +156,30 @@ class DeploymentTest(TestCase):
             }
         }
         self.assertEqual(self.deployment1.to_yaml(), reference_dict)
+    def test_retry_yaml(self):
+        reference_dict = {
+            "deploy": {
+                "to": "flasher",
+                "failure_retry": 3,
+                "images": {
+                    "downloadimage1": {
+                        "url": "https://example.com/image1",
+                        "compression": "gz",
+                        "headers": {
+                            "HEADER1": "VALUE1"
+                        }
+                    },
+                    "downloadimage2": {
+                        "url": "https://example.com/image2",
+                        "compression": "gz",
+                        "headers": {
+                            "HEADER1": "VALUE1"
+                        }
+                    }
+                }
+            }
+        }
+        self.assertEqual(self.deployment2.to_yaml(), reference_dict)
 
         #ToDo: cover more deployment options
 

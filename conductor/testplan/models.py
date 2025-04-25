@@ -206,6 +206,7 @@ class Deployment(LAVAAction):
     images = models.ManyToManyField(DownloadImage)
     postprocess = models.ForeignKey(DeployPostprocess, blank=True, null=True, on_delete=models.SET_NULL)
     name = models.CharField(max_length=32, null=True, blank=True)
+    failure_retry = models.IntegerField(null=True, blank=True)
 
     def to_yaml(self):
         images_dict = {}
@@ -222,6 +223,9 @@ class Deployment(LAVAAction):
             "to": self.deploy_to,
             "images": images_dict
         })
+        if self.failure_retry:
+            deployment_dict[self.action_type].update({"failure_retry": self.failure_retry})
+
         if self.postprocess:
             deployment_dict["deploy"].update({"postprocess": self.postprocess.to_yaml()})
         return deployment_dict
