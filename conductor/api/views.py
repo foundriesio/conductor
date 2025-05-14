@@ -262,7 +262,7 @@ def process_lmp_build(request):
             logger.warning("status not set to PASSED")
             return HttpResponse("OK")
         # check if the build has trigger_name "build-release"
-        if request_body_json.get("trigger_name") in ["build-release", "build-release-stable"]:
+        if request_body_json.get("trigger_name") in ["build-release", "build-release-stable", "build-lts", "build-main", "build-eol"]:
             merge_lmp_manifest.delay()
             return HttpResponse("Created", status=201)
         if request_body_json.get("trigger_name") in ["Code Review"]:
