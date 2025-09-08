@@ -56,7 +56,7 @@ def prepare_context(run_name, run_url, build_url, build_id):
         "MFGTOOL_BUILD_URL": f"{build_url}runs/build-mfgtool-{run_name}/",
         "prompts": [f"fio@{run_name}", "Password:", f"root@{run_name}"],
     }
-    if run_name == "raspberrypi4-64":
+    if run_name in ["raspberrypi4-64", "raspberrypi5"]:
         context["BOOTLOADER_URL"] = f"{run_url}other/u-boot-{run_name}.bin"
     if run_name == "stm32mp1-disco":
         context["BOOTLOADER_URL"] = f"{run_url}other/boot.itb"
