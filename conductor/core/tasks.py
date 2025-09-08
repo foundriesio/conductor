@@ -730,6 +730,10 @@ def update_build_commit_id(build_id, run_url):
         "OSF-TOKEN": token,
     }
 
+    if not run_url:
+        # exit if run_url is nor provided
+        return None
+
     session = requests.Session()
     session.headers.update(authentication)
     run_json_request = requests_retry_session(session=session).get(urljoin(run_url, ".rundef.json"))
@@ -1246,7 +1250,8 @@ def fetch_lmp_code_review():
                 # fetch commit id from first run
                 run = build_description.get("runs")[0]
                 run_url = run.get("run_url")
-                update_build_commit_id.delay(b.pk, run_url)
+                if run_url:
+                    update_build_commit_id.delay(b.pk, run_url)
 
                 if build_type == Build.BUILD_TYPE_CODE_REVIEW and \
                         api_build.get("status") == "PASSED":
